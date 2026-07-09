@@ -233,6 +233,154 @@ a {
   margin: 0;
 }
 
+.course-card-home {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-top: 24px;
+}
+.course-card-home img {
+  margin-bottom: 18px;
+}
+.level-badge {
+  position: absolute;
+  top: 34px;
+  right: 34px;
+  background: var(--primary);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 6px 18px rgba(242, 125, 19, 0.35);
+}
+.course-card-home h3 {
+  margin-bottom: 16px;
+}
+.course-info {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+  margin-top: auto;
+}
+.course-info-item {
+  background: var(--primary-soft);
+  color: var(--muted);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.course-info-item.price {
+  color: var(--primary);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(47, 42, 37, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.modal-overlay[hidden] {
+  display: none;
+}
+.modal {
+  position: relative;
+  background: var(--surface);
+  border-radius: 28px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 40px 90px rgba(47, 42, 37, 0.3);
+  animation: modal-in 0.25s ease;
+}
+@keyframes modal-in {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+.modal-media img {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  border-radius: 28px 28px 0 0;
+}
+.modal-content {
+  padding: 28px 32px 34px;
+}
+.modal-content h3 {
+  font-size: 1.7rem;
+  margin-bottom: 14px;
+}
+.modal-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.modal-badge {
+  background: var(--primary-soft);
+  color: var(--primary);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+.modal-price {
+  font-weight: 800;
+  color: var(--primary);
+  font-size: 1.15rem;
+  margin-bottom: 18px;
+}
+.modal-desc {
+  color: var(--muted);
+  line-height: 1.8;
+  margin-bottom: 18px;
+}
+.modal-highlights h4 {
+  margin-bottom: 10px;
+}
+.modal-highlights ul {
+  margin: 0 0 24px;
+  padding-left: 20px;
+  color: var(--muted);
+  line-height: 1.9;
+}
+.modal-content .btn-enroll {
+  width: 100%;
+}
+
 .bg-orange {
   background: #fff6ee;
 }
