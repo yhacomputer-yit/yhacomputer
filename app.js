@@ -21,18 +21,20 @@
       : "";
   }
 
+  let coursesCache = [];
+
   function renderCourses(courses) {
     const grid = document.getElementById("courses-grid");
     if (!grid) return;
+    coursesCache = courses || [];
     if (!courses || !courses.length) {
       setStatus(grid, "No courses available yet.");
       return;
     }
     grid.innerHTML = courses
-      .map(function (c) {
-        const meta = [c.level, c.duration].filter(Boolean).join(" \u00b7 ");
+      .map(function (c, i) {
         return (
-          '<div class="card">' +
+          '<div class="card course-card-home">' +
           (c.image
             ? '<img src="' +
               escapeHtml(c.image) +
@@ -40,26 +42,97 @@
               escapeHtml(c.title) +
               '">'
             : "") +
+          (c.level
+            ? '<span class="level-badge">' + escapeHtml(c.level) + "</span>"
+            : "") +
           "<h3>" +
           escapeHtml(c.title) +
           "</h3>" +
-          (meta ? '<p class="course-meta">' + escapeHtml(meta) + "</p>" : "") +
-          "<p>" +
-          escapeHtml(c.description) +
-          "</p>" +
-          (c.highlights
-            ? '<p class="course-highlights">' +
-              escapeHtml(c.highlights) +
-              "</p>"
+          '<div class="course-info">' +
+          (c.duration
+            ? '<span class="course-info-item">\u23f1 ' +
+              escapeHtml(c.duration) +
+              "</span>"
             : "") +
           (c.price
-            ? '<div class="price">Fee: ' + escapeHtml(c.price) + "</div>"
+            ? '<span class="course-info-item price">' +
+              escapeHtml(c.price) +
+              "</span>"
             : "") +
-          '<button class="btn-enroll">Enroll Now</button>' +
+          "</div>" +
+          '<button class="btn-enroll" data-course="' +
+          i +
+          '">View Details</button>' +
           "</div>"
         );
       })
       .join("");
+    grid.querySelectorAll("[data-course]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        openCourseModal(coursesCache[Number(btn.dataset.course)]);
+      });
+    });
+  }
+
+  function openCourseModal(c) {
+    if (!c) return;
+    const modal = document.getElementById("course-modal");
+    if (!modal) return;
+    const img = document.getElementById("modal-image");
+    const media = img ? img.parentElement : null;
+    if (c.image) {
+      img.src = c.image;
+      img.alt = c.title || "";
+      if (media) media.hidden = false;
+    } else if (media) {
+      media.hidden = true;
+    }
+    document.getElementById("modal-title").textContent = c.title || "";
+    document.getElementById("modal-badges").innerHTML = [
+      c.subject,
+      c.level,
+      c.duration,
+    ]
+      .filter(Boolean)
+      .map((b) => '<span class="modal-badge">' + escapeHtml(b) + "</span>")
+      .join("");
+    document.getElementById("modal-price").textContent = c.price
+      ? "Fee: " + c.price
+      : "";
+    document.getElementById("modal-desc").textContent = c.description || "";
+    const highlights = document.getElementById("modal-highlights");
+    if (c.highlights) {
+      highlights.innerHTML =
+        "<h4>What you'll learn</h4><ul>" +
+        c.highlights
+          .split(",")
+          .map((h) => "<li>" + escapeHtml(h.trim()) + "</li>")
+          .join("") +
+        "</ul>";
+    } else {
+      highlights.innerHTML = "";
+    }
+    modal.hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeCourseModal() {
+    const modal = document.getElementById("course-modal");
+    if (modal) modal.hidden = true;
+    document.body.style.overflow = "";
+  }
+
+  function setupModal() {
+    const modal = document.getElementById("course-modal");
+    if (!modal) return;
+    const close = document.getElementById("modal-close");
+    if (close) close.addEventListener("click", closeCourseModal);
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) closeCourseModal();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeCourseModal();
+    });
   }
 
   function renderEvents(events) {
@@ -120,6 +193,7 @@
   }
 
   async function init() {
+    setupModal();
     const grids = ["courses-grid", "events-grid", "reviews-grid"]
       .map((id) => document.getElementById(id))
       .filter(Boolean);
