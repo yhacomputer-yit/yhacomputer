@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YHA Computer | Admin</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">YHA <span>COMPUTER</span> Admin</div>
+            <ul class="nav-links">
+                <li><a href="index.html">View site</a></li>
+                <li><a href="#" id="logout-link" hidden>Log out</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="admin-main">
+        <section id="login-view" class="admin-card" hidden>
+            <h2>Admin Login</h2>
+            <p class="admin-hint">Enter the admin password to manage site data.</p>
+            <form id="login-form" class="admin-form">
+                <label>
+                    Password
+                    <input type="password" id="password-input" placeholder="Admin password" autocomplete="current-password" />
+                </label>
+                <button type="submit" class="btn-primary">Unlock</button>
+                <p class="admin-error" id="login-error" hidden></p>
+            </form>
+        </section>
+
+        <section id="manage-view" hidden>
+            <div class="admin-tabs" id="admin-tabs">
+                <button class="admin-tab is-active" data-table="courses">Courses</button>
+                <button class="admin-tab" data-table="events">Events</button>
+                <button class="admin-tab" data-table="reviews">Reviews</button>
+                <button class="admin-tab" data-table="contacts">Contacts</button>
+            </div>
+
+            <div class="admin-panel">
+                <div class="admin-form-wrap" id="form-wrap">
+                    <h3 id="form-title">Add Course</h3>
+                    <form id="record-form" class="admin-form"></form>
+                </div>
+                <div class="admin-list-wrap">
+                    <h3 id="list-title">Existing</h3>
+                    <p class="admin-status" id="list-status"></p>
+                    <div id="record-list" class="admin-list"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="admin.js"></script>
+</body>
+</html>
