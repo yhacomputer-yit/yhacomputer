@@ -208,6 +208,31 @@ a {
   filter: brightness(1.07);
 }
 
+.course-meta {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+.course-highlights {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.event-meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.data-status {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--muted);
+  margin: 0;
+}
+
 .bg-orange {
   background: #fff6ee;
 }
