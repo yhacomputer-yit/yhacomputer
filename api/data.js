@@ -21,7 +21,7 @@ function rowsToObjects(result) {
   });
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   const url = process.env.TURSO_DATABASE_URL;
   const token = process.env.TURSO_AUTH_TOKEN;
 
