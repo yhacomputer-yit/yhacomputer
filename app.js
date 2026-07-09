@@ -1,67 +1,8 @@
-// Loads course, event and review data from the Turso database and renders it
-// into the page. Configuration (database URL + auth token) comes from
-// window.YHA_CONFIG, which is defined in config.js (see config.example.js).
+// Loads course, event and review data from the /api/data serverless endpoint
+// (which reads them from Turso server-side) and renders it into the page.
 
 (function () {
   "use strict";
-
-  const config = window.YHA_CONFIG || {};
-
-  function toHttpUrl(url) {
-    if (!url) return "";
-    // Turso accepts libsql:// URLs; the HTTP API lives on the https:// host.
-    return url.replace(/^libsql:\/\//, "https://").replace(/\/+$/, "");
-  }
-
-  async function runQueries(statements) {
-    const baseUrl = toHttpUrl(config.TURSO_DATABASE_URL);
-    if (!baseUrl || !config.TURSO_AUTH_TOKEN) {
-      throw new Error(
-        "Missing Turso configuration. Copy config.example.js to config.js and fill in your credentials."
-      );
-    }
-
-    const requests = statements.map((sql) => ({
-      type: "execute",
-      stmt: { sql },
-    }));
-    requests.push({ type: "close" });
-
-    const res = await fetch(baseUrl + "/v2/pipeline", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + config.TURSO_AUTH_TOKEN,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ requests }),
-    });
-
-    if (!res.ok) {
-      throw new Error("Turso request failed with status " + res.status);
-    }
-
-    const data = await res.json();
-    return data.results.map((result) => {
-      if (result.type === "error") {
-        throw new Error(result.error && result.error.message);
-      }
-      if (result.response && result.response.type === "execute") {
-        return rowsToObjects(result.response.result);
-      }
-      return null;
-    });
-  }
-
-  function rowsToObjects(result) {
-    const cols = result.cols.map((c) => c.name);
-    return result.rows.map((row) => {
-      const obj = {};
-      row.forEach((cell, i) => {
-        obj[cols[i]] = cell == null ? null : cell.value;
-      });
-      return obj;
-    });
-  }
 
   function escapeHtml(value) {
     if (value == null) return "";
@@ -83,7 +24,7 @@
   function renderCourses(courses) {
     const grid = document.getElementById("courses-grid");
     if (!grid) return;
-    if (!courses.length) {
+    if (!courses || !courses.length) {
       setStatus(grid, "No courses available yet.");
       return;
     }
@@ -124,7 +65,7 @@
   function renderEvents(events) {
     const grid = document.getElementById("events-grid");
     if (!grid) return;
-    if (!events.length) {
+    if (!events || !events.length) {
       setStatus(grid, "No upcoming events yet.");
       return;
     }
@@ -157,7 +98,7 @@
   function renderReviews(reviews) {
     const grid = document.getElementById("reviews-grid");
     if (!grid) return;
-    if (!reviews.length) {
+    if (!reviews || !reviews.length) {
       setStatus(grid, "No reviews yet.");
       return;
     }
@@ -185,16 +126,17 @@
     grids.forEach((g) => setStatus(g, "Loading\u2026"));
 
     try {
-      const [courses, events, reviews] = await runQueries([
-        "SELECT * FROM courses ORDER BY id",
-        "SELECT * FROM events ORDER BY id",
-        "SELECT * FROM reviews ORDER BY id DESC",
-      ]);
-      renderCourses(courses);
-      renderEvents(events);
-      renderReviews(reviews);
+      const res = await fetch("/api/data");
+      if (!res.ok) {
+        throw new Error("Request failed with status " + res.status);
+      }
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      renderCourses(data.courses);
+      renderEvents(data.events);
+      renderReviews(data.reviews);
     } catch (err) {
-      console.error("Failed to load data from Turso:", err);
+      console.error("Failed to load data:", err);
       grids.forEach((g) =>
         setStatus(g, "Could not load data. " + (err.message || ""))
       );
