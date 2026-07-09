@@ -1,0 +1,5 @@
+# Local environment variables (contain the Turso token; never commit)
+.env
+.env.local
+.vercel
+node_modules

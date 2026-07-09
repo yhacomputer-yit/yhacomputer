@@ -32,29 +32,7 @@
 
     <section id="courses" class="section">
         <h2 class="title">Our <span>Premium</span> Courses</h2>
-        <div class="grid">
-            <div class="card">
-                <img src="images/flutter.jpg" alt="Web Design">
-                <h3>Flutter and Dart</h3>
-                <p>Flutter and Dart Mobile Development Class</p>
-                <div class="price">Fee: 400,000 MMK</div>
-                <button class="btn-enroll">Enroll Now</button>
-            </div>
-            <div class="card">
-                <img src="images/python.jpg" alt="Cyber Security">
-                <h3>Python Class</h3>
-                <p>Python Development class</p>
-                <div class="price">Fee: 400,000 MMK</div>
-                <button class="btn-enroll">Enroll Now</button>
-            </div>
-            <div class="card">
-                <img src="images/laravel.jpg" alt="Data Science">
-                <h3>Laravel & Vue</h3>
-                <p>Laravel and Vue Development Class</p>
-                <div class="price">Fee: 300,000 MMK</div>
-                <button class="btn-enroll">Enroll Now</button>
-            </div>
-        </div>
+        <div class="grid" id="courses-grid"></div>
     </section>
 
     <section id="events" class="section bg-orange">
@@ -63,32 +41,14 @@
                 <h2 class="title">Upcoming <span>Events</span></h2>
                 <p>Learn, compete, and connect through practical workshops and community activities.</p>
             </div>
-            <div class="event-grid">
-                <article class="card event-card">
-                    <img src="images/one.jpg" alt="Tech Workshop Photo">
-                    <div class="event-pill">Workshop</div>
-                    <h3>Tech Workshop</h3>
-                    <p>Join our expert session and build real-world skills with guided projects.</p>
-                    <span class="event-date">June 30, 2026</span>
-                </article>
-                <article class="card event-card">
-                    <img src="images/two.jpg" alt="Coding Contest Photo">
-                    <div class="event-pill">Competition</div>
-                    <h3>Coding Contest</h3>
-                    <p>Show your skills, solve fun challenges, and compete for prizes.</p>
-                    <span class="event-date">July 10, 2026</span>
-                </article>
-            </div>
+            <div class="event-grid" id="events-grid"></div>
         </div>
     </section>
 
     <section id="reviews" class="section">
         <div class="container">
             <h2 class="title">Student Reviews</h2>
-            <div class="grid">
-                <div class="card"><p>"The best IT training center in Yangon."</p><h4>- Student A</h4></div>
-                <div class="card"><p>"Exceptional instructors and curriculum."</p><h4>- Student B</h4></div>
-            </div>
+            <div class="grid" id="reviews-grid"></div>
         </div>
     </section>
 
@@ -149,5 +109,6 @@
         </div>
     </footer>
 
+    <script src="app.js"></script>
 </body>
 </html>
