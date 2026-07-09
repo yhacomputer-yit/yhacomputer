@@ -100,7 +100,7 @@ function readBody(req) {
   });
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   const expected = process.env.ADMIN_PASSWORD;
   if (!expected) {
     res.status(500).json({ error: "ADMIN_PASSWORD env var is not set." });
@@ -194,4 +194,4 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     res.status(502).json({ error: String((err && err.message) || err) });
   }
-};
+}
