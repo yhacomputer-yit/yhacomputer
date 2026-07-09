@@ -1,129 +1,13 @@
 <!DOCTYPE html>
-<html lang="my">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/images/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>YHA Computer | Premium IT Training</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-    <nav class="navbar">
-        <div class="container">
-            <div class="logo">YHA <span>COMPUTER</span></div>
-            <ul class="nav-links">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#courses">Courses</a></li>
-                <li><a href="#events">Events</a></li>
-                <li><a href="#reviews">Reviews</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-        </div>
-    </nav>
-
-    <header id="home" class="hero">
-        <div class="hero-content">
-            <p class="eyebrow">Orange + White IT Training</p>
-            <h1>အနာဂတ်နည်းပညာကို<br><span>YHA နဲ့အတူ စတင်လိုက်ပါ</span></h1>
-            <p class="hero-copy">Practical courses, real projects, and strong support for the next generation of tech talent.</p>
-            <a href="#courses" class="btn-primary">Enroll Now</a>
-        </div>
-    </header>
-
-    <section id="courses" class="section">
-        <h2 class="title">Our <span>Premium</span> Courses</h2>
-        <div class="grid" id="courses-grid"></div>
-    </section>
-
-    <section id="events" class="section bg-orange">
-        <div class="container">
-            <div class="section-head">
-                <h2 class="title">Upcoming <span>Events</span></h2>
-                <p>Learn, compete, and connect through practical workshops and community activities.</p>
-            </div>
-            <div class="event-grid" id="events-grid"></div>
-        </div>
-    </section>
-
-    <section id="reviews" class="section">
-        <div class="container">
-            <h2 class="title">Student Reviews</h2>
-            <div class="grid" id="reviews-grid"></div>
-        </div>
-    </section>
-
-    <section id="contact" class="section">
-        <div class="container contact-grid">
-            <div class="contact-details">
-                <h2 class="title">Get In <span>Touch</span></h2>
-                <p>Ready to start your IT journey? Reach out to us for enrollment support, course guidance, or a campus visit.</p>
-                <p class="contact-item"><strong>Email:</strong> info@yhacomputer.com</p>
-                <p class="contact-item"><strong>Phone:</strong> 09-123456789</p>
-            </div>
-            <div class="contact-card">
-                <h3>Send a Message</h3>
-                <form class="contact-form">
-                    <label>
-                        Name
-                        <input type="text" placeholder="Your name" />
-                    </label>
-                    <label>
-                        Email
-                        <input type="email" placeholder="Your email" />
-                    </label>
-                    <label>
-                        Message
-                        <textarea rows="4" placeholder="How can we help you?"></textarea>
-                    </label>
-                    <button type="submit" class="btn-primary">Send Message</button>
-                </form>
-            </div>
-        </div>
-    </section>
-
-    <footer class="footer">
-        <div class="container footer-grid">
-            <div class="footer-brand">
-                <div class="logo">YHA <span>COMPUTER</span></div>
-                <p>Trusted IT training for students and professionals across Myanmar.</p>
-            </div>
-            <div class="footer-links">
-                <h4>Quick Links</h4>
-                <ul>
-                    <li><a href="#home">Home</a></li>
-                    <li><a href="#courses">Courses</a></li>
-                    <li><a href="#events">Events</a></li>
-                    <li><a href="#reviews">Reviews</a></li>
-                    <li><a href="#contact">Contact</a></li>
-                </ul>
-            </div>
-            <div class="footer-contact">
-                <h4>Contact</h4>
-                <p>Email: info@yhacomputer.com</p>
-                <p>Phone: 09-123456789</p>
-                <p>No. 12, Main Road, Yangon</p>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2026 YHA Computer. All rights reserved.</p>
-        </div>
-    </footer>
-
-    <div class="modal-overlay" id="course-modal" hidden>
-        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-            <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
-            <div class="modal-media"><img id="modal-image" src="" alt=""></div>
-            <div class="modal-content">
-                <h3 id="modal-title"></h3>
-                <div class="modal-badges" id="modal-badges"></div>
-                <div class="modal-price" id="modal-price"></div>
-                <p class="modal-desc" id="modal-desc"></p>
-                <div class="modal-highlights" id="modal-highlights"></div>
-                <button class="btn-enroll" id="modal-enroll">Enroll Now</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
-</body>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
