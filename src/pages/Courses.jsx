@@ -1,10 +1,16 @@
+import { useState } from "react";
 import { useSiteData } from "../data.jsx";
 import CourseCard from "../components/CourseCard.jsx";
 
 export default function Courses() {
   const { loading, error, courses } = useSiteData();
   const allowedSubjects = ["Ict", "Programming", "Graphic design"];
-  const filtered = courses.filter((c) => allowedSubjects.includes(c.subject));
+  const filters = ["All", ...allowedSubjects];
+  const [active, setActive] = useState("All");
+  const filtered =
+    active === "All"
+      ? courses.filter((c) => allowedSubjects.includes(c.subject))
+      : courses.filter((c) => c.subject === active);
   const display = filtered.slice(0, 6);
 
   return (
@@ -30,6 +36,20 @@ export default function Courses() {
             </div>
             <span>Choose a course to see the full curriculum</span>
           </div>
+          <div className="subject-filter">
+            {filters.map((filter) => (
+              <button
+                key={filter}
+                type="button"
+                className={
+                  "filter-pill" + (active === filter ? " is-active" : "")
+                }
+                onClick={() => setActive(filter)}
+              >
+                {filter}
+              </button>
+            ))}
+          </div>
           <div className="course-grid">
             {loading &&
               Array.from({ length: 6 }).map((_, index) => (
@@ -51,7 +71,7 @@ export default function Courses() {
                 <span>New Turso records will automatically appear here.</span>
               </div>
             )}
-          {display.map((course) => (
+            {display.map((course) => (
               <CourseCard key={course.id} course={course} />
             ))}
           </div>

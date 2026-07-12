@@ -10,6 +10,7 @@ import CourseDetail from "./pages/CourseDetail.jsx";
 import Events from "./pages/Events.jsx";
 import Reviews from "./pages/Reviews.jsx";
 import Contact from "./pages/Contact.jsx";
+import AboutUs from "./pages/AboutUs.jsx";
 import NotFound from "./pages/NotFound.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="/events" element={<Events />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/about-us" element={<AboutUs />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
