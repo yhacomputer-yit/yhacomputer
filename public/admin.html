@@ -1,60 +1,119 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YHA Computer | Admin</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="admin.css">
-</head>
-<body class="admin-body">
-
-    <nav class="navbar">
-        <div class="container">
-            <div class="logo">YHA <span>COMPUTER</span> Admin</div>
-            <ul class="nav-links">
-                <li><a href="index.html">View site</a></li>
-                <li><a href="#" id="logout-link" hidden>Log out</a></li>
-            </ul>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Manage YHA Computer content stored in Turso." />
+    <title>YHA Computer | Content Admin</title>
+    <link rel="stylesheet" href="/admin.css" />
+  </head>
+  <body class="admin-body">
+    <header class="admin-topbar">
+      <div class="admin-container admin-nav">
+        <a href="/" class="admin-brand">
+          <span class="admin-logo-mark">Y</span>
+          <span>
+            <strong>YHA Computer</strong>
+            <small>Content administration</small>
+          </span>
+        </a>
+        <div class="admin-nav-actions">
+          <a href="/" class="admin-site-link">View public site</a>
+          <button type="button" id="logout-link" class="admin-logout" hidden>
+            Log out
+          </button>
         </div>
-    </nav>
+      </div>
+    </header>
 
-    <main class="admin-main">
-        <section id="login-view" class="admin-card" hidden>
-            <h2>Admin Login</h2>
-            <p class="admin-hint">Enter the admin password to manage site data.</p>
-            <form id="login-form" class="admin-form">
-                <label>
-                    Password
-                    <input type="password" id="password-input" placeholder="Admin password" autocomplete="current-password" />
-                </label>
-                <button type="submit" class="btn-primary">Unlock</button>
-                <p class="admin-error" id="login-error" hidden></p>
-            </form>
-        </section>
+    <main class="admin-main admin-container">
+      <section id="login-view" class="admin-login-layout" hidden>
+        <div class="admin-login-intro">
+          <span class="admin-eyebrow">Secure workspace</span>
+          <h1>Manage every Turso-powered page in one place.</h1>
+          <p>
+            Courses, events, reviews, and contact submissions are read directly
+            from your database, so this dashboard always reflects live content.
+          </p>
+          <div class="admin-feature-list">
+            <div><span>01</span>Update public course content</div>
+            <div><span>02</span>Publish events and reviews</div>
+            <div><span>03</span>Read contact submissions</div>
+          </div>
+        </div>
+        <div class="admin-login-card">
+          <div class="admin-lock" aria-hidden="true">&#9679;</div>
+          <span class="admin-eyebrow">Administrator access</span>
+          <h2>Welcome back</h2>
+          <p class="admin-hint">
+            Enter the configured admin password to open the content workspace.
+          </p>
+          <form id="login-form" class="admin-form">
+            <label>
+              Admin password
+              <input
+                type="password"
+                id="password-input"
+                placeholder="Enter password"
+                autocomplete="current-password"
+                required
+              />
+            </label>
+            <button type="submit" class="admin-button admin-button-primary">
+              Open workspace <span>&rarr;</span>
+            </button>
+            <p class="admin-error" id="login-error" hidden></p>
+          </form>
+        </div>
+      </section>
 
-        <section id="manage-view" hidden>
-            <div class="admin-tabs" id="admin-tabs">
-                <button class="admin-tab is-active" data-table="courses">Courses</button>
-                <button class="admin-tab" data-table="events">Events</button>
-                <button class="admin-tab" data-table="reviews">Reviews</button>
-                <button class="admin-tab" data-table="contacts">Contacts</button>
+      <section id="manage-view" class="admin-workspace" hidden>
+        <div class="workspace-heading">
+          <div>
+            <span class="admin-eyebrow">Turso content workspace</span>
+            <h1>Manage your site</h1>
+            <p id="table-description">
+              Create and update records that appear on the public website.
+            </p>
+          </div>
+          <div class="workspace-status">
+            <span></span>
+            Connected through serverless API
+          </div>
+        </div>
+
+        <div class="admin-tabs" id="admin-tabs" role="tablist">
+          <button class="admin-tab is-active" data-table="courses" role="tab">
+            Courses
+          </button>
+          <button class="admin-tab" data-table="events" role="tab">Events</button>
+          <button class="admin-tab" data-table="reviews" role="tab">Reviews</button>
+          <button class="admin-tab" data-table="contacts" role="tab">Contacts</button>
+        </div>
+
+        <div class="admin-panel">
+          <div class="admin-form-wrap" id="form-wrap">
+            <div class="panel-title">
+              <span>Edit Turso content</span>
+              <h2 id="form-title">Add Course</h2>
             </div>
-
-            <div class="admin-panel">
-                <div class="admin-form-wrap" id="form-wrap">
-                    <h3 id="form-title">Add Course</h3>
-                    <form id="record-form" class="admin-form"></form>
-                </div>
-                <div class="admin-list-wrap">
-                    <h3 id="list-title">Existing</h3>
-                    <p class="admin-status" id="list-status"></p>
-                    <div id="record-list" class="admin-list"></div>
-                </div>
+            <form id="record-form" class="admin-form"></form>
+          </div>
+          <div class="admin-list-wrap">
+            <div class="list-heading">
+              <div>
+                <span>Database records</span>
+                <h2 id="list-title">Courses</h2>
+              </div>
+              <strong id="record-count">0</strong>
             </div>
-        </section>
+            <p class="admin-status" id="list-status"></p>
+            <div id="record-list" class="admin-list"></div>
+          </div>
+        </div>
+      </section>
     </main>
 
-    <script src="admin.js"></script>
-</body>
+    <script src="/admin.js"></script>
+  </body>
 </html>

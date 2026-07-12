@@ -8,6 +8,8 @@
   const SCHEMA = {
     courses: {
       label: "Course",
+      plural: "Courses",
+      description: "Manage the courses displayed across the public catalog.",
       create: true,
       fields: [
         { name: "title", label: "Title", type: "text", required: true },
@@ -22,6 +24,8 @@
     },
     events: {
       label: "Event",
+      plural: "Events",
+      description: "Publish workshops, activities, and upcoming learning events.",
       create: true,
       fields: [
         { name: "title", label: "Title", type: "text", required: true },
@@ -35,6 +39,8 @@
     },
     reviews: {
       label: "Review",
+      plural: "Reviews",
+      description: "Manage student feedback displayed on the reviews page.",
       create: true,
       fields: [
         { name: "name", label: "Student name", type: "text", required: true },
@@ -44,10 +50,12 @@
     },
     contacts: {
       label: "Contact submission",
+      plural: "Contact submissions",
+      description: "Read and manage messages submitted from the public contact form.",
       create: false,
       fields: [
         { name: "name", label: "Name", type: "text" },
-        { name: "email", label: "Email", type: "text" },
+        { name: "email", label: "Email", type: "email" },
         { name: "message", label: "Message", type: "textarea" },
       ],
     },
@@ -110,6 +118,11 @@
     const schema = SCHEMA[currentTable];
     const form = $("record-form");
     const wrap = $("form-wrap");
+    document
+      .querySelector(".admin-panel")
+      .classList.toggle("is-list-only", !schema.create);
+    $("table-description").textContent = schema.description;
+    $("list-title").textContent = schema.plural;
     if (!schema.create) {
       wrap.hidden = true;
       return;
@@ -122,13 +135,21 @@
         .map(function (f) {
           const input =
             f.type === "textarea"
-              ? '<textarea rows="3" name="' + f.name + '"></textarea>'
-              : '<input type="text" name="' + f.name + '" />';
+              ? '<textarea rows="3" name="' + f.name + '"' +
+                (f.required ? " required" : "") +
+                "></textarea>"
+              : '<input type="' +
+                f.type +
+                '" name="' +
+                f.name +
+                '"' +
+                (f.required ? " required" : "") +
+                " />";
           return "<label>" + f.label + input + "</label>";
         })
         .join("") +
       '<div class="admin-form-actions">' +
-      '<button type="submit" class="btn-primary">' +
+      '<button type="submit" class="admin-button admin-button-primary">' +
       (editingId ? "Save changes" : "Add") +
       "</button>" +
       (editingId
@@ -171,7 +192,8 @@
 
   async function loadList() {
     const schema = SCHEMA[currentTable];
-    $("list-title").textContent = schema.label + "s";
+    $("list-title").textContent = schema.plural;
+    $("record-count").textContent = "—";
     const status = $("list-status");
     status.textContent = "Loading\u2026";
     const listEl = $("record-list");
@@ -179,6 +201,7 @@
     try {
       const data = await api("GET", { table: currentTable });
       const rows = data.rows || [];
+      $("record-count").textContent = rows.length;
       status.textContent = rows.length ? "" : "No records yet.";
       listEl.innerHTML = rows.map(renderRow).join("");
       listEl.querySelectorAll("[data-edit]").forEach(function (btn) {
@@ -198,6 +221,7 @@
         showLogin("Session expired. Please log in again.");
         return;
       }
+      $("record-count").textContent = "—";
       status.textContent = "Error: " + err.message;
     }
   }

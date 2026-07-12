@@ -5,7 +5,8 @@
 //
 // Required environment variables (set in Vercel project settings):
 //   TURSO_DATABASE_URL  e.g. libsql://your-db-org.turso.io
-//   TURSO_AUTH_TOKEN    a READ-WRITE Turso auth token (writes need write access)
+//   TURSO_WRITE_AUTH_TOKEN a READ-WRITE Turso auth token
+//   TURSO_AUTH_TOKEN       fallback token for existing deployments
 //   ADMIN_PASSWORD      the password required to use this endpoint
 
 // Editable columns per table. Only these columns are ever written, which also
@@ -56,7 +57,8 @@ function rowsToObjects(result) {
 
 async function execute(sql, args) {
   const url = process.env.TURSO_DATABASE_URL;
-  const token = process.env.TURSO_AUTH_TOKEN;
+  const token =
+    process.env.TURSO_WRITE_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN;
   if (!url || !token) {
     throw new Error("Missing TURSO_DATABASE_URL or TURSO_AUTH_TOKEN env vars.");
   }
