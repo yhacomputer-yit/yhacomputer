@@ -46,11 +46,6 @@ export default function Navbar() {
               </NavLink>
             </li>
           ))}
-          <li>
-            <a className="nav-admin-link" href="/admin.html">
-              Admin
-            </a>
-          </li>
         </ul>
       </div>
     </nav>
