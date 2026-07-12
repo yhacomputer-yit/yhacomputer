@@ -3,6 +3,9 @@ import CourseCard from "../components/CourseCard.jsx";
 
 export default function Courses() {
   const { loading, error, courses } = useSiteData();
+  const allowedSubjects = ["Ict", "Programming", "Graphic design"];
+  const filtered = courses.filter((c) => allowedSubjects.includes(c.subject));
+  const display = filtered.slice(0, 6);
 
   return (
     <>
@@ -22,8 +25,8 @@ export default function Courses() {
         <div className="container">
           <div className="catalog-toolbar">
             <div>
-              <strong>{loading ? "Loading" : courses.length}</strong>
-              <span>{courses.length === 1 ? "course" : "courses"} available</span>
+              <strong>{loading ? "Loading" : display.length}</strong>
+              <span>{display.length === 1 ? "course" : "courses"} available</span>
             </div>
             <span>Choose a course to see the full curriculum</span>
           </div>
@@ -42,13 +45,13 @@ export default function Courses() {
                 <span>{error}</span>
               </div>
             )}
-            {!loading && !error && courses.length === 0 && (
+            {!loading && !error && display.length === 0 && (
               <div className="data-state">
                 <strong>No courses available yet.</strong>
                 <span>New Turso records will automatically appear here.</span>
               </div>
             )}
-            {courses.map((course) => (
+          {display.map((course) => (
               <CourseCard key={course.id} course={course} />
             ))}
           </div>

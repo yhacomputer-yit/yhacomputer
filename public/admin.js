@@ -13,7 +13,7 @@
       create: true,
       fields: [
         { name: "title", label: "Title", type: "text", required: true },
-        { name: "subject", label: "Subject", type: "text" },
+        { name: "subject", label: "Subject", type: "select", required: true, options: ["Ict", "Programming", "Graphic design"] },
         { name: "level", label: "Level", type: "text" },
         { name: "duration", label: "Duration", type: "text" },
         { name: "price", label: "Price", type: "text" },
@@ -138,13 +138,24 @@
               ? '<textarea rows="3" name="' + f.name + '"' +
                 (f.required ? " required" : "") +
                 "></textarea>"
-              : '<input type="' +
-                f.type +
-                '" name="' +
-                f.name +
-                '"' +
-                (f.required ? " required" : "") +
-                " />";
+              : f.type === "select"
+                ? "<select name=\"" + f.name + "\"" +
+                  (f.required ? " required" : "") +
+                  ">" +
+                  (f.options || [])
+                    .map(
+                      (option) =>
+                        '<option value="' + escapeHtml(option) + '">' + escapeHtml(option) + "</option>"
+                    )
+                    .join("") +
+                  "</select>"
+                : '<input type="' +
+                  f.type +
+                  '" name="' +
+                  f.name +
+                  '"' +
+                  (f.required ? " required" : "") +
+                  " />";
           return "<label>" + f.label + input + "</label>";
         })
         .join("") +

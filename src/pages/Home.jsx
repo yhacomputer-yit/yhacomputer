@@ -4,7 +4,10 @@ import CourseCard from "../components/CourseCard.jsx";
 
 export default function Home() {
   const { loading, error, courses, events, reviews } = useSiteData();
-  const featured = courses.slice(0, 3);
+  const allowedSubjects = ["Ict", "Programming", "Graphic design"];
+  const filtered = courses.filter((c) => allowedSubjects.includes(c.subject));
+  const display = filtered.slice(0, 6);
+  const featured = display.slice(0, 3);
   const nextEvents = events.slice(0, 2);
 
   return (
@@ -105,7 +108,7 @@ export default function Home() {
           </div>
           <div className="course-grid">
           {loading &&
-            Array.from({ length: 3 }).map((_, index) => (
+            Array.from({ length: 6 }).map((_, index) => (
               <div className="skeleton-card" key={index} aria-hidden="true">
                 <span />
                 <i />
@@ -118,13 +121,13 @@ export default function Home() {
               <span>{error}</span>
             </div>
           )}
-          {!loading && !error && featured.length === 0 && (
+          {!loading && !error && display.length === 0 && (
             <div className="data-state">
               <strong>No courses available yet.</strong>
               <span>Courses added in the admin dashboard will appear here.</span>
             </div>
           )}
-          {featured.map((c) => (
+          {display.map((c) => (
             <CourseCard key={c.id} course={c} />
           ))}
           </div>
