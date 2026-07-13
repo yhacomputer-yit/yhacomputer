@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useSiteData } from "../data.jsx";
+import Pager from "../components/Pager.jsx";
 
 function resolveImage(value) {
   if (!value) return "";
@@ -82,6 +84,12 @@ function EventItem({ event, index }) {
 
 export default function Events() {
   const { loading, error, events } = useSiteData();
+  const PAGE_SIZE = 6;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(events.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * PAGE_SIZE;
+  const visible = events.slice(start, start + PAGE_SIZE);
 
   return (
     <>
@@ -113,9 +121,14 @@ export default function Events() {
                 <span>Events added in Turso will appear here automatically.</span>
               </div>
             )}
-            {events.map((event, index) => (
-              <EventItem key={event.id} event={event} index={index} />
+            {visible.map((event, i) => (
+              <EventItem
+                key={event.id}
+                event={event}
+                index={start + i}
+              />
             ))}
+            <Pager page={safePage} totalPages={totalPages} onChange={setPage} />
           </div>
         </div>
       </section>

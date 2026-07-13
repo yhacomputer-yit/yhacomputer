@@ -553,6 +553,47 @@ button {
   gap: 12px;
 }
 
+.admin-pager {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.admin-page-btn {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #fdfaf8;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.admin-page-btn:hover:not(:disabled) {
+  border-color: var(--orange);
+  background: #fff;
+}
+
+.admin-page-btn.is-active {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: #fff;
+}
+
+.admin-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .admin-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

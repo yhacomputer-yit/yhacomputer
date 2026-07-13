@@ -65,6 +65,9 @@
   const PW_KEY = "yha_admin_pw";
   let currentTable = "courses";
   let editingId = null;
+  let listRows = [];
+  let listPage = 1;
+  const LIST_PAGE_SIZE = 8;
 
   const $ = (id) => document.getElementById(id);
 
@@ -382,21 +385,11 @@
     listEl.innerHTML = "";
     try {
       const data = await api("GET", { table: currentTable });
-      const rows = data.rows || [];
-      $("record-count").textContent = rows.length;
-      status.textContent = rows.length ? "" : "No records yet.";
-      listEl.innerHTML = rows.map(renderRow).join("");
-      listEl.querySelectorAll("[data-edit]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          const row = rows.find((r) => String(r.id) === btn.dataset.edit);
-          if (row) fillForm(row);
-        });
-      });
-      listEl.querySelectorAll("[data-delete]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          onDelete(btn.dataset.delete);
-        });
-      });
+      listRows = data.rows || [];
+      listPage = 1;
+      $("record-count").textContent = listRows.length;
+      status.textContent = listRows.length ? "" : "No records yet.";
+      renderListPage();
     } catch (err) {
       if (err.status === 401) {
         sessionStorage.removeItem(PW_KEY);
@@ -439,6 +432,77 @@
       "</div>" +
       "</div>"
     );
+  }
+
+  function renderListPage() {
+    const totalPages = Math.max(
+      1,
+      Math.ceil(listRows.length / LIST_PAGE_SIZE)
+    );
+    if (listPage > totalPages) listPage = totalPages;
+    if (listPage < 1) listPage = 1;
+    const start = (listPage - 1) * LIST_PAGE_SIZE;
+    const pageRows = listRows.slice(start, start + LIST_PAGE_SIZE);
+    const listEl = $("record-list");
+    listEl.innerHTML = pageRows.map(renderRow).join("");
+    listEl.querySelectorAll("[data-edit]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const row = listRows.find((r) => String(r.id) === btn.dataset.edit);
+        if (row) fillForm(row);
+      });
+    });
+    listEl.querySelectorAll("[data-delete]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        onDelete(btn.dataset.delete);
+      });
+    });
+    renderPager(totalPages);
+  }
+
+  function renderPager(totalPages) {
+    const pager = $("list-pager");
+    if (!pager) return;
+    if (totalPages <= 1) {
+      pager.hidden = true;
+      pager.innerHTML = "";
+      return;
+    }
+    pager.hidden = false;
+    const pages = [];
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+    pager.innerHTML =
+      '<button type="button" class="admin-page-btn" data-page="' +
+      (listPage - 1) +
+      '"' +
+      (listPage === 1 ? " disabled" : "") +
+      ">Prev</button>" +
+      pages
+        .map(function (p) {
+          return (
+            '<button type="button" class="admin-page-btn' +
+            (p === listPage ? " is-active" : "") +
+            '" data-page="' +
+            p +
+            '">' +
+            p +
+            "</button>"
+          );
+        })
+        .join("") +
+      '<button type="button" class="admin-page-btn" data-page="' +
+      (listPage + 1) +
+      '"' +
+      (listPage === totalPages ? " disabled" : "") +
+      ">Next</button>";
+    pager.querySelectorAll("[data-page]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const target = Number(btn.dataset.page);
+        if (target >= 1 && target <= totalPages) {
+          listPage = target;
+          renderListPage();
+        }
+      });
+    });
   }
 
   async function onSubmit(e) {
