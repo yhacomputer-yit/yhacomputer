@@ -86,6 +86,25 @@ async function execute(sql, args) {
   return first.response.result;
 }
 
+// Ensures every column declared in TABLES[table] actually exists in the
+// database. This lets new fields (e.g. the events `image` column) be added
+// automatically on first write instead of failing with "no such column".
+async function ensureColumns(table) {
+  const needed = TABLES[table];
+  if (!needed || !needed.length) return;
+  const result = await execute("PRAGMA table_info(" + table + ")");
+  const existing = rowsToObjects(result || { cols: [], rows: [] }).map(
+    (row) => row.name
+  );
+  for (const column of needed) {
+    if (!existing.includes(column)) {
+      await execute(
+        "ALTER TABLE " + table + " ADD COLUMN " + column + " TEXT"
+      );
+    }
+  }
+}
+
 function readBody(req) {
   if (req.body && typeof req.body === "object") return Promise.resolve(req.body);
   return new Promise((resolve, reject) => {
@@ -137,6 +156,14 @@ export default async function handler(req, res) {
       res.status(200).json({ rows: rowsToObjects(result) });
       return;
     }
+
+    if (action === "list") {
+      const result = await execute("SELECT * FROM " + table + " ORDER BY id DESC");
+      res.status(200).json({ rows: rowsToObjects(result) });
+      return;
+    }
+
+    await ensureColumns(table);
 
     if (action === "create") {
       const values = body.values || {};
