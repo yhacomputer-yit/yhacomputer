@@ -30,6 +30,7 @@ const TABLES = {
     "category",
     "event_type",
     "duration",
+    "image",
   ],
   reviews: ["name", "course_name", "message"],
   contacts: ["name", "email", "message"],

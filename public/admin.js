@@ -34,6 +34,7 @@
         { name: "date", label: "Date", type: "text" },
         { name: "venue", label: "Venue", type: "text" },
         { name: "duration", label: "Duration", type: "text" },
+        { name: "image", label: "Event images (up to 5)", type: "images" },
         { name: "description", label: "Description", type: "textarea" },
       ],
     },
@@ -155,14 +156,22 @@
                     (f.required ? " required" : "") +
                     " />" +
                     '<img class="admin-image-preview" alt="Image preview" hidden />'
-                  : '<input type="' +
-                    f.type +
-                    '" name="' +
-                    f.name +
-                    '"' +
-                    (f.required ? " required" : "") +
-                    " />";
-          return '<label class="' + (f.type === "image" ? "admin-field-image" : "") + '">' + f.label + input + "</label>";
+                  : f.type === "images"
+                    ? '<input type="file" accept="image/*" multiple class="admin-file-input" />' +
+                      '<input type="text" name="' + f.name + '" placeholder="Upload up to 5 images, or paste URLs/paths separated by |"' +
+                      (f.required ? " required" : "") +
+                      " />" +
+                      '<div class="admin-image-thumbs" hidden></div>'
+                    : '<input type="' +
+                      f.type +
+                      '" name="' +
+                      f.name +
+                      '"' +
+                      (f.required ? " required" : "") +
+                      " />";
+          const labelClass =
+            f.type === "image" || f.type === "images" ? "admin-field-image" : "";
+          return '<label class="' + labelClass + '">' + f.label + input + "</label>";
         })
         .join("") +
       '<div class="admin-form-actions">' +
@@ -176,13 +185,25 @@
       '<p class="admin-error" id="form-error" hidden></p>';
 
     form.querySelectorAll(".admin-file-input").forEach(function (fileInput) {
-      fileInput.addEventListener("change", onImageSelected);
+      fileInput.addEventListener("change", function (e) {
+        const isMultiple =
+          fileInput.getAttribute("multiple") !== null;
+        if (isMultiple) {
+          onImagesSelected(e);
+        } else {
+          onImageSelected(e);
+        }
+      });
     });
     form
       .querySelectorAll('label.admin-field-image input[type="text"]')
       .forEach(function (textInput) {
         textInput.addEventListener("input", function () {
-          updateImagePreview(textInput);
+          if (textInput.closest(".admin-field-image").querySelector(".admin-image-thumbs")) {
+            updateImagesPreview(textInput);
+          } else {
+            updateImagePreview(textInput);
+          }
         });
       });
 
@@ -205,6 +226,7 @@
       const el = form.elements[f.name];
       if (el) el.value = row[f.name] == null ? "" : row[f.name];
       if (f.type === "image" && el) updateImagePreview(el);
+      if (f.type === "images" && el) updateImagesPreview(el);
     });
     $("form-wrap").scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
@@ -279,6 +301,75 @@
       preview.hidden = true;
       preview.removeAttribute("src");
     }
+  }
+
+  async function onImagesSelected(e) {
+    const files = e.target.files ? Array.from(e.target.files).slice(0, 5) : [];
+    if (!files.length) return;
+    const textInput = e.target.parentNode.querySelector('input[type="text"]');
+    if (!textInput) return;
+    const errEl = $("form-error");
+    errEl.hidden = true;
+    try {
+      const dataUrls = await Promise.all(
+        files.map((file) => compressImage(file, 1280, 0.82))
+      );
+      const existing = textInput.value
+        .split("|")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const next = existing.concat(dataUrls).slice(-5);
+      textInput.value = next.join("|");
+      updateImagesPreview(textInput);
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.hidden = false;
+    }
+  }
+
+  function updateImagesPreview(textInput) {
+    const wrap = textInput.parentNode.querySelector(".admin-image-thumbs");
+    if (!wrap) return;
+    const items = textInput.value
+      .split("|")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!items.length) {
+      wrap.innerHTML = "";
+      wrap.hidden = true;
+      return;
+    }
+    wrap.hidden = false;
+    wrap.innerHTML = items
+      .map(function (src, i) {
+        return (
+          '<div class="admin-thumb" data-index="' +
+          i +
+          '">' +
+          '<img src="' +
+          escapeHtml(src) +
+          '" alt="Event image ' +
+          (i + 1) +
+          '" />' +
+          '<button type="button" class="admin-thumb-remove" data-remove="' +
+          i +
+          '" aria-label="Remove image">&times;</button>' +
+          "</div>"
+        );
+      })
+      .join("");
+    wrap.querySelectorAll("[data-remove]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const idx = Number(btn.dataset.remove);
+        const current = textInput.value
+          .split("|")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        current.splice(idx, 1);
+        textInput.value = current.join("|");
+        updateImagesPreview(textInput);
+      });
+    });
   }
 
   async function loadList() {

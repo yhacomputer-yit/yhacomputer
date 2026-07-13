@@ -919,14 +919,18 @@ img {
   border-radius: 26px;
   border: 1px solid var(--line);
   background: var(--surface);
+  color: inherit;
+  text-decoration: none;
   transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .event-row:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow);
+  border-color: rgba(255, 107, 0, 0.4);
 }
 
 .event-number {
@@ -962,6 +966,69 @@ img {
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.75;
+}
+
+.event-gallery {
+  margin-top: 20px;
+}
+
+.event-gallery-main {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--ink);
+}
+
+.event-gallery-main img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.event-row:hover .event-gallery-main img {
+  transform: scale(1.03);
+}
+
+.event-gallery-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.event-thumb {
+  width: 76px;
+  height: 56px;
+  padding: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  background: var(--ink);
+  cursor: pointer;
+  opacity: 0.7;
+  transition:
+    opacity 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.event-thumb:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+.event-thumb.is-active {
+  opacity: 1;
+  border-color: var(--orange);
+}
+
+.event-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .event-facts {
@@ -1246,7 +1313,9 @@ img {
   inset: 0;
   z-index: 1;
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
+  gap: 8px;
   justify-content: space-between;
   padding: 26px;
   pointer-events: none;
@@ -1319,6 +1388,47 @@ img {
 .detail-price strong {
   color: var(--orange-dark);
   font-size: 1.2rem;
+}
+
+.detail-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin: 24px 0 4px;
+}
+
+.detail-stat {
+  display: grid;
+  gap: 3px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #fff7f1;
+}
+
+.detail-stat small {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.detail-stat strong {
+  color: var(--orange-dark);
+  font-size: 0.98rem;
+}
+
+.event-detail-hero {
+  min-height: 420px;
+  max-height: 560px;
+  display: grid;
+}
+
+.event-detail-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .detail-desc {
