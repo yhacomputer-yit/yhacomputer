@@ -1056,36 +1056,51 @@ img {
   font-size: 0.88rem;
 }
 
-.review-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
+.review-masonry {
+  columns: 3;
+  column-gap: 24px;
 }
 
 .review-card {
-  min-height: 330px;
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
-  padding: 36px;
-  border-radius: 28px;
+  width: 100%;
+  margin: 0 0 24px;
+  break-inside: avoid;
+  padding: 32px;
+  border-radius: 26px;
   background: var(--surface);
   border: 1px solid var(--line);
+  border-top: 4px solid var(--orange);
   box-shadow: 0 14px 40px rgba(38, 25, 15, 0.045);
 }
 
 .quote-mark {
-  height: 42px;
+  height: 38px;
   color: var(--orange);
   font-family: Georgia, serif;
-  font-size: 4.2rem;
+  font-size: 4rem;
   line-height: 1;
 }
 
+.review-tag {
+  align-self: flex-start;
+  margin: 6px 0 4px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--orange-soft);
+  color: var(--orange-dark);
+  font-size: 0.7rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 .review-card > p {
-  margin: 24px 0 34px;
+  margin: 18px 0 28px;
   color: var(--ink-soft);
-  font-size: 1.12rem;
-  line-height: 1.85;
+  font-size: 1.05rem;
+  line-height: 1.8;
 }
 
 .review-author {
@@ -1113,6 +1128,94 @@ img {
 
 .review-author small {
   color: var(--muted);
+}
+
+.home-reviews {
+  background: var(--surface);
+}
+
+.home-reviews-grid {
+  display: grid;
+  grid-template-columns: 0.82fr 1.18fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.home-reviews-intro h2 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  margin: 14px 0 18px;
+}
+
+.home-reviews-intro p {
+  color: var(--muted);
+  font-size: 1.02rem;
+  line-height: 1.8;
+  max-width: 420px;
+}
+
+.home-reviews-intro .button {
+  margin-top: 28px;
+}
+
+.review-marquee {
+  position: relative;
+  height: 480px;
+  overflow: hidden;
+  border-radius: 28px;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 14%,
+    #000 86%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 14%,
+    #000 86%,
+    transparent
+  );
+}
+
+.review-marquee-track {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: review-scroll 34s linear infinite;
+}
+
+.review-marquee:hover .review-marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes review-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+.marquee-review {
+  padding: 24px 26px;
+  border-radius: 22px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 30px rgba(38, 25, 15, 0.05);
+}
+
+.marquee-review .quote-mark {
+  height: 30px;
+  font-size: 3rem;
+}
+
+.marquee-review > p {
+  margin: 12px 0 20px;
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+  line-height: 1.75;
 }
 
 .contact-layout {
@@ -1854,11 +1957,27 @@ img {
 
   .course-grid,
   .home-event-grid,
-  .review-grid,
   .value-grid,
   .form-row,
   .footer-grid {
     grid-template-columns: 1fr;
+  }
+
+  .review-masonry {
+    columns: 1;
+  }
+
+  .review-masonry {
+    columns: 2;
+  }
+
+  .home-reviews-grid {
+    grid-template-columns: 1fr;
+    gap: 38px;
+  }
+
+  .review-marquee {
+    height: 420px;
   }
 
   .value-intro,

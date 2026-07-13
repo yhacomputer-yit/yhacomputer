@@ -27,37 +27,40 @@ export default function Reviews() {
       </header>
       <section className="section">
         <div className="container">
-          <div className="review-grid">
-            {loading && <div className="data-state">Loading reviews…</div>}
-            {error && (
-              <div className="data-state data-state-error">
-                <strong>We could not load student reviews.</strong>
-                <span>{error}</span>
-              </div>
-            )}
-            {!loading && !error && reviews.length === 0 && (
-              <div className="data-state">
-                <strong>No reviews yet.</strong>
-                <span>Published Turso reviews will appear here.</span>
-              </div>
-            )}
-            {visible.map((review) => (
-              <article key={review.id} className="review-card">
-                <span className="quote-mark">&ldquo;</span>
-                <p>{review.message}</p>
-                {(review.name || review.course_name) && (
+          {loading && <div className="data-state">Loading reviews…</div>}
+          {error && (
+            <div className="data-state data-state-error">
+              <strong>We could not load student reviews.</strong>
+              <span>{error}</span>
+            </div>
+          )}
+          {!loading && !error && reviews.length === 0 && (
+            <div className="data-state">
+              <strong>No reviews yet.</strong>
+              <span>Published Turso reviews will appear here.</span>
+            </div>
+          )}
+          {visible.length > 0 && (
+            <div className="review-masonry">
+              {visible.map((review) => (
+                <article key={review.id} className="review-card">
+                  <span className="quote-mark">&ldquo;</span>
+                  {review.course_name && (
+                    <span className="review-tag">{review.course_name}</span>
+                  )}
+                  <p>{review.message}</p>
                   <div className="review-author">
-                    {review.name && <span>{review.name.charAt(0).toUpperCase()}</span>}
+                    <span>{review.name ? review.name.charAt(0).toUpperCase() : "?"}</span>
                     <div>
                       {review.name && <strong>{review.name}</strong>}
                       {review.course_name && <small>{review.course_name}</small>}
                     </div>
                   </div>
-                )}
-              </article>
-            ))}
-            <Pager page={safePage} totalPages={totalPages} onChange={setPage} />
-          </div>
+                </article>
+              ))}
+            </div>
+          )}
+          <Pager page={safePage} totalPages={totalPages} onChange={setPage} />
         </div>
       </section>
     </>

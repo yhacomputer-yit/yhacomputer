@@ -9,6 +9,7 @@ export default function Home() {
   const display = filtered.slice(0, 6);
   const featured = display.slice(0, 3);
   const nextEvents = events.slice(0, 2);
+  const marqueeReviews = reviews.length ? [...reviews, ...reviews] : [];
 
   return (
     <>
@@ -190,6 +191,51 @@ export default function Home() {
                     <p>{[event.venue, event.duration].filter(Boolean).join(" · ")}</p>
                   </Link>
                 ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {(loading || error || marqueeReviews.length > 0) && (
+        <section className="section home-reviews">
+          <div className="container home-reviews-grid">
+            <div className="home-reviews-intro">
+              <p className="eyebrow">Student voices</p>
+              <h2>What our students say</h2>
+              <p>
+                Real experiences from learners who studied with YHA Computer,
+                pulled live from Turso.
+              </p>
+              <Link to="/reviews" className="button button-primary">
+                Read all reviews <span>&rarr;</span>
+              </Link>
+            </div>
+            <div className="review-marquee" aria-label="Student reviews">
+              <div className="review-marquee-track">
+                {loading && <div className="data-state">Loading reviews…</div>}
+                {error && (
+                  <div className="data-state data-state-error">
+                    Reviews are temporarily unavailable.
+                  </div>
+                )}
+                {!loading &&
+                  !error &&
+                  marqueeReviews.map((review, i) => (
+                    <article className="marquee-review" key={i}>
+                      <span className="quote-mark">&ldquo;</span>
+                      <p>{review.message}</p>
+                      <div className="review-author">
+                        <span>
+                          {review.name ? review.name.charAt(0).toUpperCase() : "?"}
+                        </span>
+                        <div>
+                          {review.name && <strong>{review.name}</strong>}
+                          {review.course_name && <small>{review.course_name}</small>}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+              </div>
             </div>
           </div>
         </section>
