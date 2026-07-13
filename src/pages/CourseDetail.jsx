@@ -2,6 +2,12 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useSiteData } from "../data.jsx";
 
+function resolveImage(value) {
+  if (!value) return "";
+  if (/^(https?:|data:)/i.test(value)) return value;
+  return "/" + value.replace(/^\/+/, "");
+}
+
 export default function CourseDetail() {
   const { id } = useParams();
   const { loading, error, courses } = useSiteData();
@@ -46,16 +52,12 @@ export default function CourseDetail() {
     );
   }
 
+  const image = resolveImage(course.image);
   const badges = [course.subject, course.level, course.duration].filter(Boolean);
   const highlights = (course.highlights || "")
     .split(",")
     .map((highlight) => highlight.trim())
     .filter(Boolean);
-  const image = course.image
-    ? /^https?:\/\//i.test(course.image)
-      ? course.image
-      : "/" + course.image.replace(/^\/+/, "")
-    : "";
 
   return (
     <div className="detail-page container">
@@ -71,7 +73,10 @@ export default function CourseDetail() {
               {(course.title || "Y").charAt(0).toUpperCase()}
             </span>
           )}
-          <div className="detail-hero-label">YHA Learning Path</div>
+          <div className="detail-hero-overlay">
+            <span className="detail-hero-tag">YHA Learning Path</span>
+            {course.price && <span className="detail-hero-price">{course.price}</span>}
+          </div>
         </div>
         <div className="detail-body">
           <p className="eyebrow">Course overview</p>

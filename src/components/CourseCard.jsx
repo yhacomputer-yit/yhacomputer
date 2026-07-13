@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 export default function CourseCard({ course }) {
   const [imageFailed, setImageFailed] = useState(false);
   const image = course.image
-    ? /^https?:\/\//i.test(course.image)
+    ? /^(https?:|data:)/i.test(course.image)
       ? course.image
       : "/" + course.image.replace(/^\/+/, "")
     : "";

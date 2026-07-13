@@ -17,7 +17,7 @@
         { name: "level", label: "Level", type: "text" },
         { name: "duration", label: "Duration", type: "text" },
         { name: "price", label: "Price", type: "text" },
-        { name: "image", label: "Image path (e.g. images/flutter.jpg)", type: "text" },
+        { name: "image", label: "Course image", type: "image" },
         { name: "description", label: "Description", type: "textarea" },
         { name: "highlights", label: "Highlights", type: "textarea" },
       ],
@@ -149,14 +149,20 @@
                     )
                     .join("") +
                   "</select>"
-                : '<input type="' +
-                  f.type +
-                  '" name="' +
-                  f.name +
-                  '"' +
-                  (f.required ? " required" : "") +
-                  " />";
-          return "<label>" + f.label + input + "</label>";
+                : f.type === "image"
+                  ? '<input type="file" accept="image/*" class="admin-file-input" />' +
+                    '<input type="text" name="' + f.name + '" placeholder="Upload a file or paste a URL/path (e.g. images/flutter.jpg)"' +
+                    (f.required ? " required" : "") +
+                    " />" +
+                    '<img class="admin-image-preview" alt="Image preview" hidden />'
+                  : '<input type="' +
+                    f.type +
+                    '" name="' +
+                    f.name +
+                    '"' +
+                    (f.required ? " required" : "") +
+                    " />";
+          return '<label class="' + (f.type === "image" ? "admin-field-image" : "") + '">' + f.label + input + "</label>";
         })
         .join("") +
       '<div class="admin-form-actions">' +
@@ -168,6 +174,17 @@
         : "") +
       "</div>" +
       '<p class="admin-error" id="form-error" hidden></p>';
+
+    form.querySelectorAll(".admin-file-input").forEach(function (fileInput) {
+      fileInput.addEventListener("change", onImageSelected);
+    });
+    form
+      .querySelectorAll('label.admin-field-image input[type="text"]')
+      .forEach(function (textInput) {
+        textInput.addEventListener("input", function () {
+          updateImagePreview(textInput);
+        });
+      });
 
     if (editingId) {
       const cancel = $("cancel-edit");
@@ -187,6 +204,7 @@
     SCHEMA[currentTable].fields.forEach(function (f) {
       const el = form.elements[f.name];
       if (el) el.value = row[f.name] == null ? "" : row[f.name];
+      if (f.type === "image" && el) updateImagePreview(el);
     });
     $("form-wrap").scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
@@ -199,6 +217,68 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  function compressImage(file, maxDim, quality) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        const img = new Image();
+        img.onload = function () {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            const ratio = Math.min(maxDim / width, maxDim / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          canvas
+            .getContext("2d")
+            .drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = function () {
+          reject(new Error("Could not read the selected image."));
+        };
+        img.src = reader.result;
+      };
+      reader.onerror = function () {
+        reject(new Error("Could not read the selected file."));
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function onImageSelected(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const textInput = e.target.parentNode.querySelector('input[type="text"]');
+    if (!textInput) return;
+    try {
+      const dataUrl = await compressImage(file, 1280, 0.82);
+      textInput.value = dataUrl;
+      updateImagePreview(textInput);
+    } catch (err) {
+      const errEl = $("form-error");
+      errEl.textContent = err.message;
+      errEl.hidden = false;
+    }
+  }
+
+  function updateImagePreview(textInput) {
+    const preview = textInput.parentNode.querySelector(".admin-image-preview");
+    if (!preview) return;
+    const value = textInput.value.trim();
+    if (value) {
+      preview.src = value;
+      preview.hidden = false;
+    } else {
+      preview.hidden = true;
+      preview.removeAttribute("src");
+    }
   }
 
   async function loadList() {
