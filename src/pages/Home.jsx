@@ -198,58 +198,90 @@ export default function Home() {
 
       {(loading || error || marqueeReviews.length > 0) && (
         <section className="section home-reviews">
-          <div className="container home-reviews-grid">
-            <div className="home-reviews-intro">
-              <p className="eyebrow">Student voices</p>
-              <h2>What our students say</h2>
-              <p>
-                Real experiences from learners who studied with YHA Computer,
-                pulled live from Turso.
-              </p>
-              <Link to="/reviews" className="button button-primary">
-                Read all reviews <span>&rarr;</span>
-              </Link>
-            </div>
-            <div className="review-marquee" aria-label="Student reviews">
-              <div className="review-marquee-track">
-                {loading && <div className="data-state">Loading reviews…</div>}
-                {error && (
-                  <div className="data-state data-state-error">
-                    Reviews are temporarily unavailable.
-                  </div>
-                )}
-                {!loading &&
-                  !error &&
-                  marqueeReviews.map((review, i) => (
-                    <article className="marquee-review" key={i}>
-                      <span className="quote-mark">&ldquo;</span>
-                      <p>{review.message}</p>
-                      <div className="review-author">
-                        <span>
-                          {review.name ? review.name.charAt(0).toUpperCase() : "?"}
-                        </span>
-                        <div>
-                          {review.name && <strong>{review.name}</strong>}
-                          {review.course_name && <small>{review.course_name}</small>}
-                        </div>
-                      </div>
-                    </article>
-                  ))}
+          <div className="container home-reviews-head">
+            <p className="eyebrow">Student voices</p>
+            <h2>What our students say</h2>
+            <p>
+              Real experiences from learners who studied with YHA Computer,
+              pulled live from Turso.
+            </p>
+            <Link to="/reviews" className="button button-primary">
+              Read all reviews <span>&rarr;</span>
+            </Link>
+          </div>
+          <div className="review-marquee review-marquee-band" aria-label="Student reviews">
+            {loading && <div className="data-state">Loading reviews…</div>}
+            {error && (
+              <div className="data-state data-state-error">
+                Reviews are temporarily unavailable.
               </div>
-            </div>
+            )}
+            {!loading &&
+              !error &&
+              [0, 1].map((col) => {
+                const columnReviews = marqueeReviews.filter(
+                  (_, i) => i % 2 === col
+                );
+                return (
+                  <div
+                    className={
+                      "review-marquee-col" +
+                      (col === 1 ? " review-marquee-col--reverse" : "")
+                    }
+                    key={col}
+                  >
+                    <div className="review-marquee-track">
+                      {columnReviews.map((review, i) => (
+                        <article className="marquee-review" key={i}>
+                          <span className="quote-mark">&ldquo;</span>
+                          <p>{review.message}</p>
+                          <div className="review-author">
+                            <span>
+                              {review.name
+                                ? review.name.charAt(0).toUpperCase()
+                                : "?"}
+                            </span>
+                            <div>
+                              {review.name && <strong>{review.name}</strong>}
+                              {review.course_name && (
+                                <small>{review.course_name}</small>
+                              )}
+                            </div>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         </section>
       )}
 
       <section className="section section-cta">
         <div className="container cta-card">
-          <div>
+          <div className="cta-card-text">
             <p className="eyebrow">Ready when you are</p>
             <h2>Choose a course with confidence.</h2>
+            <p className="cta-sub">
+              Tell us your goals and budget, and our team will help you pick the
+              path that fits you best.
+            </p>
+            <Link to="/contact" className="button button-light">
+              Ask for guidance <span>&rarr;</span>
+            </Link>
           </div>
-          <Link to="/contact" className="button button-light">
-            Ask for guidance <span>&rarr;</span>
-          </Link>
+          <ul className="cta-points">
+            <li>
+              <span>01</span> Free, honest course advice
+            </li>
+            <li>
+              <span>02</span> Flexible class schedules
+            </li>
+            <li>
+              <span>03</span> Hands-on, practical training
+            </li>
+          </ul>
         </div>
       </section>
     </>
