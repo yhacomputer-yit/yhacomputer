@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useSiteData } from "../data.jsx";
 import Pager from "../components/Pager.jsx";
+import { useSeo } from "../seo.js";
 
 function resolveImage(value) {
   if (!value) return "";
@@ -84,6 +85,12 @@ function EventItem({ event, index }) {
 
 export default function Events() {
   const { loading, error, events } = useSiteData();
+  useSeo({
+    title: "Events",
+    description:
+      "Discover YHA Computer workshops, community activities and learning events in Myanmar — published live from Turso.",
+    url: "/events",
+  });
   const PAGE_SIZE = 6;
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(events.length / PAGE_SIZE));

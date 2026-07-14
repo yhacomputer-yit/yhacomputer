@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useSiteData } from "../data.jsx";
+import { useSeo } from "../seo.js";
 
 function resolveImage(value) {
   if (!value) return "";
@@ -91,11 +92,32 @@ export default function CourseDetail() {
       : {}),
   };
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: "Courses", item: `${siteUrl}/courses` },
+      { "@type": "ListItem", position: 3, name: course.title, item: courseUrl },
+    ],
+  };
+
+  useSeo({
+    title: course.title,
+    description: course.description,
+    image: image || undefined,
+    url: `/courses/${course.id}`,
+  });
+
   return (
     <div className="detail-page container">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(courseJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <Link to="/courses" className="back-link">
         &larr; Back to courses

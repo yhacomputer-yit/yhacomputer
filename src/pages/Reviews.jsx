@@ -1,9 +1,16 @@
 import { useState } from "react";
 import { useSiteData } from "../data.jsx";
 import Pager from "../components/Pager.jsx";
+import { useSeo } from "../seo.js";
 
 export default function Reviews() {
   const { loading, error, reviews } = useSiteData();
+  useSeo({
+    title: "Reviews",
+    description:
+      "Read real reviews from YHA Computer students in Myanmar — honest experiences about courses, training quality and learning support, published live from Turso.",
+    url: "/reviews",
+  });
   const PAGE_SIZE = 6;
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(reviews.length / PAGE_SIZE));

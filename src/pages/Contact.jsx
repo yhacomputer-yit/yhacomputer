@@ -1,8 +1,16 @@
 import { useState } from "react";
+import { useSeo } from "../seo.js";
 
 export default function Contact() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState({ type: "idle", message: "" });
+
+  useSeo({
+    title: "Contact",
+    description:
+      "Get in touch with the YHA Computer team in Myanmar. Ask about course levels, schedules, enrollment, or which learning path best matches your goals.",
+    url: "/contact",
+  });
 
   const onChange = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -33,6 +41,31 @@ export default function Contact() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            name: "YHA Computer",
+            image: "https://www.yha-edu.tech/images/logo.png",
+            url: "https://www.yha-edu.tech/",
+            email: "yhacomputer@gmail.com",
+            telephone: "+95 9 882 328992",
+            priceRange: "$$",
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: "No.29, 6th Floor, Insein Rd",
+              addressLocality: "Yangon",
+              postalCode: "11041",
+              addressCountry: "MM",
+            },
+            hasMap: "https://maps.app.goo.gl/XV3TSdhK1ogpT7jH7",
+            areaServed: "Myanmar",
+            sameAs: [],
+          }),
+        }}
+      />
       <header className="page-hero page-hero-contact">
         <div className="container page-hero-grid">
           <div>
@@ -67,6 +100,32 @@ export default function Contact() {
                 <strong>Get clear guidance</strong>
                 <p>Our team reviews your message from the admin dashboard.</p>
               </div>
+            </div>
+            <div className="contact-details">
+              <h3>YHA Computer</h3>
+              <p className="contact-details-address">
+                No.29, 6th Floor, Insein Rd, Yangon 11041, Myanmar
+              </p>
+              <ul>
+                <li>
+                  <span>Phone</span>
+                  <a href="tel:+959882328992">+95 9 882 328992</a>
+                </li>
+                <li>
+                  <span>Email</span>
+                  <a href="mailto:yhacomputer@gmail.com">yhacomputer@gmail.com</a>
+                </li>
+                <li>
+                  <span>Map</span>
+                  <a
+                    href="https://maps.app.goo.gl/XV3TSdhK1ogpT7jH7"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open in Google Maps
+                  </a>
+                </li>
+              </ul>
             </div>
           </aside>
           <div className="contact-card">

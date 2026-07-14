@@ -1,9 +1,16 @@
 import { Link } from "react-router-dom";
 import { useSiteData } from "../data.jsx";
 import CourseCard from "../components/CourseCard.jsx";
+import { useSeo } from "../seo.js";
 
 export default function Home() {
   const { loading, error, courses, events, reviews } = useSiteData();
+  useSeo({
+    title: "Practical IT Courses & Training in Myanmar",
+    description:
+      "YHA Computer (YIT) offers practical IT courses in Myanmar — web development, Python, Flutter, Laravel, C#, MERN stack, ICT basics and graphic design, plus events and student reviews.",
+    url: "/",
+  });
   const allowedSubjects = ["Ict", "Programming", "Graphic design"];
   const filtered = courses.filter((c) => allowedSubjects.includes(c.subject));
   const display = filtered.slice(0, 6);
@@ -13,6 +20,31 @@ export default function Home() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            name: "YHA Computer",
+            image: "https://www.yha-edu.tech/images/logo.png",
+            url: "https://www.yha-edu.tech/",
+            email: "yhacomputer@gmail.com",
+            telephone: "+95 9 882 328992",
+            priceRange: "$$",
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: "No.29, 6th Floor, Insein Rd",
+              addressLocality: "Yangon",
+              postalCode: "11041",
+              addressCountry: "MM",
+            },
+            hasMap: "https://maps.app.goo.gl/XV3TSdhK1ogpT7jH7",
+            areaServed: "Myanmar",
+            sameAs: [],
+          }),
+        }}
+      />
       <header className="hero">
         <div className="container hero-grid">
           <div className="hero-content">

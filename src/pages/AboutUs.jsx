@@ -1,6 +1,13 @@
 import { Link } from "react-router-dom";
+import { useSeo } from "../seo.js";
 
 export default function AboutUs() {
+  useSeo({
+    title: "About Us",
+    description:
+      "Learn about YHA Computer (YIT) — a Myanmar-based IT training institute helping learners build practical technology skills through real projects and supportive teaching.",
+    url: "/about-us",
+  });
   return (
     <>
       <header className="page-hero page-hero-orange">

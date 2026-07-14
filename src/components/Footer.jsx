@@ -27,6 +27,29 @@ export default function Footer() {
             <li><Link to="/contact">Contact</Link></li>
           </ul>
         </div>
+        <div className="footer-contact">
+          <h4>Contact</h4>
+          <ul>
+            <li className="footer-contact-address">
+              No.29, 6th Floor, Insein Rd, Yangon 11041, Myanmar
+            </li>
+            <li>
+              <a href="tel:+959882328992">+95 9 882 328992</a>
+            </li>
+            <li>
+              <a href="mailto:yhacomputer@gmail.com">yhacomputer@gmail.com</a>
+            </li>
+            <li>
+              <a
+                href="https://maps.app.goo.gl/XV3TSdhK1ogpT7jH7"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View on Google Maps
+              </a>
+            </li>
+          </ul>
+        </div>
         <div className="footer-cta">
           <span className="eyebrow">Start learning</span>
           <h4>Need help choosing a course?</h4>

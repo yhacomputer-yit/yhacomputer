@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useSiteData } from "../data.jsx";
+import { useSeo } from "../seo.js";
 
 function resolveImage(value) {
   if (!value) return "";
@@ -99,11 +100,32 @@ export default function EventDetail() {
       : {}),
   };
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: "Events", item: `${siteUrl}/events` },
+      { "@type": "ListItem", position: 3, name: event.title, item: eventUrl },
+    ],
+  };
+
+  useSeo({
+    title: event.title,
+    description: event.description,
+    image: heroImage || undefined,
+    url: `/events/${event.id}`,
+  });
+
   return (
     <div className="detail-page container">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <Link to="/events" className="back-link">
         &larr; Back to events

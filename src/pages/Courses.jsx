@@ -1,9 +1,16 @@
 import { useState } from "react";
 import { useSiteData } from "../data.jsx";
 import CourseCard from "../components/CourseCard.jsx";
+import { useSeo } from "../seo.js";
 
 export default function Courses() {
   const { loading, error, courses } = useSiteData();
+  useSeo({
+    title: "Courses",
+    description:
+      "Browse YHA Computer courses in Myanmar — web development, Python, Flutter, Laravel, C#, MERN stack, ICT basics and graphic design. Find the right learning path for you.",
+    url: "/courses",
+  });
   const allowedSubjects = ["Ict", "Programming", "Graphic design"];
   const filters = ["All", ...allowedSubjects];
   const [active, setActive] = useState("All");
