@@ -59,8 +59,44 @@ export default function CourseDetail() {
     .map((highlight) => highlight.trim())
     .filter(Boolean);
 
+  const siteUrl = "https://www.yha-edu.tech";
+  const numericPrice = course.price
+    ? parseFloat(course.price.replace(/[^0-9.]/g, ""))
+    : null;
+  const courseUrl = `${siteUrl}/courses/${course.id}`;
+
+  const courseJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    name: course.title,
+    description: course.description || `${course.title} course by YHA Computer.`,
+    provider: {
+      "@type": "EducationalOrganization",
+      name: "YHA Computer",
+      sameAs: siteUrl,
+    },
+    url: courseUrl,
+    ...(image ? { image: image.startsWith("http") ? image : `${siteUrl}${image}` } : {}),
+    ...(badges.length ? { educationalLevel: badges.join(", ") } : {}),
+    ...(numericPrice && !Number.isNaN(numericPrice)
+      ? {
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "MMK",
+            price: numericPrice,
+            availability: "https://schema.org/InStock",
+            url: courseUrl,
+          },
+        }
+      : {}),
+  };
+
   return (
     <div className="detail-page container">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(courseJsonLd) }}
+      />
       <Link to="/courses" className="back-link">
         &larr; Back to courses
       </Link>

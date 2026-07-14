@@ -68,8 +68,43 @@ export default function EventDetail() {
     event.duration && { label: "Duration", value: event.duration },
   ].filter(Boolean);
 
+  const siteUrl = "https://www.yha-edu.tech";
+  const eventUrl = `${siteUrl}/events/${event.id}`;
+  const heroImage = gallery.length > 0 ? gallery[0] : "";
+
+  const eventJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: event.title,
+    description: event.description || `${event.title} hosted by YHA Computer.`,
+    url: eventUrl,
+    ...(heroImage
+      ? { image: heroImage.startsWith("http") ? heroImage : `${siteUrl}${heroImage}` }
+      : {}),
+    ...(event.date ? { startDate: event.date } : {}),
+    ...(tags.length ? { eventType: tags.join(", ") } : {}),
+    organizer: {
+      "@type": "EducationalOrganization",
+      name: "YHA Computer",
+      sameAs: siteUrl,
+    },
+    ...(event.venue
+      ? {
+          location: {
+            "@type": "Place",
+            name: event.venue,
+            address: event.venue,
+          },
+        }
+      : {}),
+  };
+
   return (
     <div className="detail-page container">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
+      />
       <Link to="/events" className="back-link">
         &larr; Back to events
       </Link>
