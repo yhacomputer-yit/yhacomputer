@@ -45,7 +45,7 @@ function EventItem({ event, index }) {
                       "event-thumb" + (i === 0 ? " is-active" : "")
                     }
                   >
-                     <img src={src} alt="" loading="lazy" width="120" height="80" />
+                      <img src={src} alt={`${event.title} thumbnail ${i + 1}`} loading="lazy" width="120" height="80" />
                   </span>
                 ))}
               </div>
