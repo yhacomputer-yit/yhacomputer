@@ -14,7 +14,7 @@ export default function CourseCard({ course }) {
     <article className="course-card">
       <Link to={"/courses/" + course.id} className="course-card-media">
         {image && !imageFailed ? (
-          <img src={image} alt={course.title} onError={() => setImageFailed(true)} />
+          <img src={image} alt={course.title} loading="lazy" width="400" height="260" onError={() => setImageFailed(true)} />
         ) : (
           <span className="course-image-fallback" aria-hidden="true">
             {(course.title || "Y").charAt(0).toUpperCase()}

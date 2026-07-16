@@ -136,6 +136,9 @@ export default function EventDetail() {
             <img
               src={gallery[active] || gallery[0]}
               alt={event.title}
+              loading="lazy"
+              width="800"
+              height="500"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
               }}
@@ -190,7 +193,7 @@ export default function EventDetail() {
                   onClick={() => setActive(i)}
                   aria-label={"View image " + (i + 1)}
                 >
-                  <img src={src} alt="" loading="lazy" />
+                   <img src={src} alt="" loading="lazy" width="120" height="80" />
                 </button>
               ))}
             </div>

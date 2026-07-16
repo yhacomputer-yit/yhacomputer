@@ -125,7 +125,7 @@ export default function CourseDetail() {
       <article className="detail-card">
         <div className="detail-hero">
           {image && !imageFailed ? (
-            <img src={image} alt={course.title} onError={() => setImageFailed(true)} />
+            <img src={image} alt={course.title} loading="lazy" width="800" height="500" onError={() => setImageFailed(true)} />
           ) : (
             <span className="detail-image-fallback" aria-hidden="true">
               {(course.title || "Y").charAt(0).toUpperCase()}

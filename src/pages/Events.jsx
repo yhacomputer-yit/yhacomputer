@@ -34,7 +34,7 @@ function EventItem({ event, index }) {
         {images.length > 0 && (
           <div className="event-gallery">
             <div className="event-gallery-main">
-              <img src={images[0]} alt={event.title} loading="lazy" />
+              <img src={images[0]} alt={event.title} loading="lazy" width="600" height="400" />
             </div>
             {images.length > 1 && (
               <div className="event-gallery-thumbs">
@@ -45,7 +45,7 @@ function EventItem({ event, index }) {
                       "event-thumb" + (i === 0 ? " is-active" : "")
                     }
                   >
-                    <img src={src} alt="" loading="lazy" />
+                     <img src={src} alt="" loading="lazy" width="120" height="80" />
                   </span>
                 ))}
               </div>
