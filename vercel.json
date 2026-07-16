@@ -1,5 +1,59 @@
 {
   "rewrites": [
     { "source": "/((?!api/|assets/|images/|admin).*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://www.google-analytics.com https://*.turso.io https://api.turso.tech; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'"
+        },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/images/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(css|js|woff2?|svg|png|jpg|jpeg|gif|webp|ico|json|xml|txt|webmanifest)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, s-maxage=300, stale-while-revalidate=86400" }
+      ]
+    }
+  ],
+  "redirects": [
+    { "source": "/.env", "destination": "/404.html", "statusCode": 404 },
+    { "source": "/package.json", "destination": "/404.html", "statusCode": 404 },
+    { "source": "/package-lock.json", "destination": "/404.html", "statusCode": 404 },
+    { "source": "/vite.config.js", "destination": "/404.html", "statusCode": 404 },
+    { "source": "/.gitignore", "destination": "/404.html", "statusCode": 404 },
+    { "source": "/vercel.json", "destination": "/404.html", "statusCode": 404 }
   ]
 }

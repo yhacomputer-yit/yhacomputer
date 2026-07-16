@@ -1,10 +1,12 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import adminHandler from "./api/admin.js";
+import contactHandler from "./api/contact.js";
 import dataHandler from "./api/data.js";
 
 const apiHandlers = new Map([
   ["/api/admin", adminHandler],
+  ["/api/contact", contactHandler],
   ["/api/data", dataHandler],
 ]);
 
@@ -47,6 +49,7 @@ export default defineConfig(({ mode }) => {
   for (const name of [
     "TURSO_DATABASE_URL",
     "TURSO_AUTH_TOKEN",
+    "TURSO_WRITE_AUTH_TOKEN",
     "ADMIN_PASSWORD",
   ]) {
     if (!process.env[name] && env[name]) {

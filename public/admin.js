@@ -8,20 +8,24 @@
   const SCHEMA = {
     courses: {
       label: "Course",
+      plural: "Courses",
+      description: "Manage the courses displayed across the public catalog.",
       create: true,
       fields: [
         { name: "title", label: "Title", type: "text", required: true },
-        { name: "subject", label: "Subject", type: "text" },
+        { name: "subject", label: "Subject", type: "select", required: true, options: ["Ict", "Programming", "Graphic design"] },
         { name: "level", label: "Level", type: "text" },
         { name: "duration", label: "Duration", type: "text" },
         { name: "price", label: "Price", type: "text" },
-        { name: "image", label: "Image path (e.g. images/flutter.jpg)", type: "text" },
+        { name: "image", label: "Course image", type: "image" },
         { name: "description", label: "Description", type: "textarea" },
         { name: "highlights", label: "Highlights", type: "textarea" },
       ],
     },
     events: {
       label: "Event",
+      plural: "Events",
+      description: "Publish workshops, activities, and upcoming learning events.",
       create: true,
       fields: [
         { name: "title", label: "Title", type: "text", required: true },
@@ -30,11 +34,14 @@
         { name: "date", label: "Date", type: "text" },
         { name: "venue", label: "Venue", type: "text" },
         { name: "duration", label: "Duration", type: "text" },
+        { name: "image", label: "Event images (up to 5)", type: "images" },
         { name: "description", label: "Description", type: "textarea" },
       ],
     },
     reviews: {
       label: "Review",
+      plural: "Reviews",
+      description: "Manage student feedback displayed on the reviews page.",
       create: true,
       fields: [
         { name: "name", label: "Student name", type: "text", required: true },
@@ -44,10 +51,12 @@
     },
     contacts: {
       label: "Contact submission",
+      plural: "Contact submissions",
+      description: "Read and manage messages submitted from the public contact form.",
       create: false,
       fields: [
         { name: "name", label: "Name", type: "text" },
-        { name: "email", label: "Email", type: "text" },
+        { name: "email", label: "Email", type: "email" },
         { name: "message", label: "Message", type: "textarea" },
       ],
     },
@@ -56,6 +65,9 @@
   const PW_KEY = "yha_admin_pw";
   let currentTable = "courses";
   let editingId = null;
+  let listRows = [];
+  let listPage = 1;
+  const LIST_PAGE_SIZE = 8;
 
   const $ = (id) => document.getElementById(id);
 
@@ -110,6 +122,11 @@
     const schema = SCHEMA[currentTable];
     const form = $("record-form");
     const wrap = $("form-wrap");
+    document
+      .querySelector(".admin-panel")
+      .classList.toggle("is-list-only", !schema.create);
+    $("table-description").textContent = schema.description;
+    $("list-title").textContent = schema.plural;
     if (!schema.create) {
       wrap.hidden = true;
       return;
@@ -122,13 +139,46 @@
         .map(function (f) {
           const input =
             f.type === "textarea"
-              ? '<textarea rows="3" name="' + f.name + '"></textarea>'
-              : '<input type="text" name="' + f.name + '" />';
-          return "<label>" + f.label + input + "</label>";
+              ? '<textarea rows="3" name="' + f.name + '"' +
+                (f.required ? " required" : "") +
+                "></textarea>"
+              : f.type === "select"
+                ? "<select name=\"" + f.name + "\"" +
+                  (f.required ? " required" : "") +
+                  ">" +
+                  (f.options || [])
+                    .map(
+                      (option) =>
+                        '<option value="' + escapeHtml(option) + '">' + escapeHtml(option) + "</option>"
+                    )
+                    .join("") +
+                  "</select>"
+                : f.type === "image"
+                  ? '<input type="file" accept="image/*" class="admin-file-input" />' +
+                    '<input type="text" name="' + f.name + '" placeholder="Upload a file or paste a URL/path (e.g. images/flutter.jpg)"' +
+                    (f.required ? " required" : "") +
+                    " />" +
+                    '<img class="admin-image-preview" alt="Image preview" hidden />'
+                  : f.type === "images"
+                    ? '<input type="file" accept="image/*" multiple class="admin-file-input" />' +
+                      '<input type="text" name="' + f.name + '" placeholder="Upload up to 5 images, or paste URLs/paths separated by |"' +
+                      (f.required ? " required" : "") +
+                      " />" +
+                      '<div class="admin-image-thumbs" hidden></div>'
+                    : '<input type="' +
+                      f.type +
+                      '" name="' +
+                      f.name +
+                      '"' +
+                      (f.required ? " required" : "") +
+                      " />";
+          const labelClass =
+            f.type === "image" || f.type === "images" ? "admin-field-image" : "";
+          return '<label class="' + labelClass + '">' + f.label + input + "</label>";
         })
         .join("") +
       '<div class="admin-form-actions">' +
-      '<button type="submit" class="btn-primary">' +
+      '<button type="submit" class="admin-button admin-button-primary">' +
       (editingId ? "Save changes" : "Add") +
       "</button>" +
       (editingId
@@ -136,6 +186,29 @@
         : "") +
       "</div>" +
       '<p class="admin-error" id="form-error" hidden></p>';
+
+    form.querySelectorAll(".admin-file-input").forEach(function (fileInput) {
+      fileInput.addEventListener("change", function (e) {
+        const isMultiple =
+          fileInput.getAttribute("multiple") !== null;
+        if (isMultiple) {
+          onImagesSelected(e);
+        } else {
+          onImageSelected(e);
+        }
+      });
+    });
+    form
+      .querySelectorAll('label.admin-field-image input[type="text"]')
+      .forEach(function (textInput) {
+        textInput.addEventListener("input", function () {
+          if (textInput.closest(".admin-field-image").querySelector(".admin-image-thumbs")) {
+            updateImagesPreview(textInput);
+          } else {
+            updateImagePreview(textInput);
+          }
+        });
+      });
 
     if (editingId) {
       const cancel = $("cancel-edit");
@@ -155,6 +228,8 @@
     SCHEMA[currentTable].fields.forEach(function (f) {
       const el = form.elements[f.name];
       if (el) el.value = row[f.name] == null ? "" : row[f.name];
+      if (f.type === "image" && el) updateImagePreview(el);
+      if (f.type === "images" && el) updateImagesPreview(el);
     });
     $("form-wrap").scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
@@ -169,35 +244,159 @@
       .replace(/'/g, "&#039;");
   }
 
+  function compressImage(file, maxDim, quality) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        const img = new Image();
+        img.onload = function () {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            const ratio = Math.min(maxDim / width, maxDim / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          canvas
+            .getContext("2d")
+            .drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = function () {
+          reject(new Error("Could not read the selected image."));
+        };
+        img.src = reader.result;
+      };
+      reader.onerror = function () {
+        reject(new Error("Could not read the selected file."));
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function onImageSelected(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const textInput = e.target.parentNode.querySelector('input[type="text"]');
+    if (!textInput) return;
+    try {
+      const dataUrl = await compressImage(file, 1280, 0.82);
+      textInput.value = dataUrl;
+      updateImagePreview(textInput);
+    } catch (err) {
+      const errEl = $("form-error");
+      errEl.textContent = err.message;
+      errEl.hidden = false;
+    }
+  }
+
+  function updateImagePreview(textInput) {
+    const preview = textInput.parentNode.querySelector(".admin-image-preview");
+    if (!preview) return;
+    const value = textInput.value.trim();
+    if (value) {
+      preview.src = value;
+      preview.hidden = false;
+    } else {
+      preview.hidden = true;
+      preview.removeAttribute("src");
+    }
+  }
+
+  async function onImagesSelected(e) {
+    const files = e.target.files ? Array.from(e.target.files).slice(0, 5) : [];
+    if (!files.length) return;
+    const textInput = e.target.parentNode.querySelector('input[type="text"]');
+    if (!textInput) return;
+    const errEl = $("form-error");
+    errEl.hidden = true;
+    try {
+      const dataUrls = await Promise.all(
+        files.map((file) => compressImage(file, 1280, 0.82))
+      );
+      const existing = textInput.value
+        .split("|")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const next = existing.concat(dataUrls).slice(-5);
+      textInput.value = next.join("|");
+      updateImagesPreview(textInput);
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.hidden = false;
+    }
+  }
+
+  function updateImagesPreview(textInput) {
+    const wrap = textInput.parentNode.querySelector(".admin-image-thumbs");
+    if (!wrap) return;
+    const items = textInput.value
+      .split("|")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!items.length) {
+      wrap.innerHTML = "";
+      wrap.hidden = true;
+      return;
+    }
+    wrap.hidden = false;
+    wrap.innerHTML = items
+      .map(function (src, i) {
+        return (
+          '<div class="admin-thumb" data-index="' +
+          i +
+          '">' +
+          '<img src="' +
+          escapeHtml(src) +
+          '" alt="Event image ' +
+          (i + 1) +
+          '" />' +
+          '<button type="button" class="admin-thumb-remove" data-remove="' +
+          i +
+          '" aria-label="Remove image">&times;</button>' +
+          "</div>"
+        );
+      })
+      .join("");
+    wrap.querySelectorAll("[data-remove]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const idx = Number(btn.dataset.remove);
+        const current = textInput.value
+          .split("|")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        current.splice(idx, 1);
+        textInput.value = current.join("|");
+        updateImagesPreview(textInput);
+      });
+    });
+  }
+
   async function loadList() {
     const schema = SCHEMA[currentTable];
-    $("list-title").textContent = schema.label + "s";
+    $("list-title").textContent = schema.plural;
+    $("record-count").textContent = "—";
     const status = $("list-status");
     status.textContent = "Loading\u2026";
     const listEl = $("record-list");
     listEl.innerHTML = "";
     try {
       const data = await api("GET", { table: currentTable });
-      const rows = data.rows || [];
-      status.textContent = rows.length ? "" : "No records yet.";
-      listEl.innerHTML = rows.map(renderRow).join("");
-      listEl.querySelectorAll("[data-edit]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          const row = rows.find((r) => String(r.id) === btn.dataset.edit);
-          if (row) fillForm(row);
-        });
-      });
-      listEl.querySelectorAll("[data-delete]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          onDelete(btn.dataset.delete);
-        });
-      });
+      listRows = data.rows || [];
+      listPage = 1;
+      $("record-count").textContent = listRows.length;
+      status.textContent = listRows.length ? "" : "No records yet.";
+      renderListPage();
     } catch (err) {
       if (err.status === 401) {
         sessionStorage.removeItem(PW_KEY);
         showLogin("Session expired. Please log in again.");
         return;
       }
+      $("record-count").textContent = "—";
       status.textContent = "Error: " + err.message;
     }
   }
@@ -233,6 +432,77 @@
       "</div>" +
       "</div>"
     );
+  }
+
+  function renderListPage() {
+    const totalPages = Math.max(
+      1,
+      Math.ceil(listRows.length / LIST_PAGE_SIZE)
+    );
+    if (listPage > totalPages) listPage = totalPages;
+    if (listPage < 1) listPage = 1;
+    const start = (listPage - 1) * LIST_PAGE_SIZE;
+    const pageRows = listRows.slice(start, start + LIST_PAGE_SIZE);
+    const listEl = $("record-list");
+    listEl.innerHTML = pageRows.map(renderRow).join("");
+    listEl.querySelectorAll("[data-edit]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const row = listRows.find((r) => String(r.id) === btn.dataset.edit);
+        if (row) fillForm(row);
+      });
+    });
+    listEl.querySelectorAll("[data-delete]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        onDelete(btn.dataset.delete);
+      });
+    });
+    renderPager(totalPages);
+  }
+
+  function renderPager(totalPages) {
+    const pager = $("list-pager");
+    if (!pager) return;
+    if (totalPages <= 1) {
+      pager.hidden = true;
+      pager.innerHTML = "";
+      return;
+    }
+    pager.hidden = false;
+    const pages = [];
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+    pager.innerHTML =
+      '<button type="button" class="admin-page-btn" data-page="' +
+      (listPage - 1) +
+      '"' +
+      (listPage === 1 ? " disabled" : "") +
+      ">Prev</button>" +
+      pages
+        .map(function (p) {
+          return (
+            '<button type="button" class="admin-page-btn' +
+            (p === listPage ? " is-active" : "") +
+            '" data-page="' +
+            p +
+            '">' +
+            p +
+            "</button>"
+          );
+        })
+        .join("") +
+      '<button type="button" class="admin-page-btn" data-page="' +
+      (listPage + 1) +
+      '"' +
+      (listPage === totalPages ? " disabled" : "") +
+      ">Next</button>";
+    pager.querySelectorAll("[data-page]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const target = Number(btn.dataset.page);
+        if (target >= 1 && target <= totalPages) {
+          listPage = target;
+          renderListPage();
+        }
+      });
+    });
   }
 
   async function onSubmit(e) {

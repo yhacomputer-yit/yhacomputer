@@ -5,7 +5,8 @@
 //
 // Required environment variables (set in Vercel project settings):
 //   TURSO_DATABASE_URL  e.g. libsql://your-db-org.turso.io
-//   TURSO_AUTH_TOKEN    a READ-WRITE Turso auth token (writes need write access)
+//   TURSO_WRITE_AUTH_TOKEN a READ-WRITE Turso auth token
+//   TURSO_AUTH_TOKEN       fallback token for existing deployments
 //   ADMIN_PASSWORD      the password required to use this endpoint
 
 // Editable columns per table. Only these columns are ever written, which also
@@ -29,6 +30,7 @@ const TABLES = {
     "category",
     "event_type",
     "duration",
+    "image",
   ],
   reviews: ["name", "course_name", "message"],
   contacts: ["name", "email", "message"],
@@ -56,7 +58,8 @@ function rowsToObjects(result) {
 
 async function execute(sql, args) {
   const url = process.env.TURSO_DATABASE_URL;
-  const token = process.env.TURSO_AUTH_TOKEN;
+  const token =
+    process.env.TURSO_WRITE_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN;
   if (!url || !token) {
     throw new Error("Missing TURSO_DATABASE_URL or TURSO_AUTH_TOKEN env vars.");
   }
@@ -81,6 +84,25 @@ async function execute(sql, args) {
     throw new Error(first.error && first.error.message);
   }
   return first.response.result;
+}
+
+// Ensures every column declared in TABLES[table] actually exists in the
+// database. This lets new fields (e.g. the events `image` column) be added
+// automatically on first write instead of failing with "no such column".
+async function ensureColumns(table) {
+  const needed = TABLES[table];
+  if (!needed || !needed.length) return;
+  const result = await execute("PRAGMA table_info(" + table + ")");
+  const existing = rowsToObjects(result || { cols: [], rows: [] }).map(
+    (row) => row.name
+  );
+  for (const column of needed) {
+    if (!existing.includes(column)) {
+      await execute(
+        "ALTER TABLE " + table + " ADD COLUMN " + column + " TEXT"
+      );
+    }
+  }
 }
 
 function readBody(req) {
@@ -134,6 +156,14 @@ export default async function handler(req, res) {
       res.status(200).json({ rows: rowsToObjects(result) });
       return;
     }
+
+    if (action === "list") {
+      const result = await execute("SELECT * FROM " + table + " ORDER BY id DESC");
+      res.status(200).json({ rows: rowsToObjects(result) });
+      return;
+    }
+
+    await ensureColumns(table);
 
     if (action === "create") {
       const values = body.values || {};
