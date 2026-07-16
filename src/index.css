@@ -1840,6 +1840,40 @@ img {
   color: #fff;
 }
 
+.footer-social {
+  margin-top: 18px;
+}
+
+.footer-social h4 {
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.social-links a {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.social-links a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
 .footer-cta .eyebrow {
   display: block;
   margin-bottom: 10px;

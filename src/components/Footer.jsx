@@ -57,6 +57,16 @@ export default function Footer() {
             Talk to our team
           </Link>
         </div>
+        <div className="footer-social">
+          <h4>Follow us</h4>
+          <div className="social-links">
+            <a href="https://www.facebook.com/yhacomputer" target="_blank" rel="noopener noreferrer" aria-label="Facebook">Facebook</a>
+            <a href="https://www.youtube.com/@yha-computer" target="_blank" rel="noopener noreferrer" aria-label="YouTube">YouTube</a>
+            <a href="https://x.com/yhacomputer" target="_blank" rel="noopener noreferrer" aria-label="X">X</a>
+            <a href="https://www.linkedin.com/company/yha-computer" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">LinkedIn</a>
+            <a href="https://www.instagram.com/yhacomputer" target="_blank" rel="noopener noreferrer" aria-label="Instagram">Instagram</a>
+          </div>
+        </div>
       </div>
       <div className="footer-bottom">
         <p>&copy; {new Date().getFullYear()} YHA Computer. All rights reserved.</p>
