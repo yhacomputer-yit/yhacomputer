@@ -1845,7 +1845,7 @@ img {
 }
 
 .footer-social h4 {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   font-size: 0.9rem;
 }
 
@@ -1855,23 +1855,37 @@ img {
   gap: 8px;
 }
 
-.social-links a {
-  padding: 8px 14px;
-  border-radius: 999px;
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.7);
-  font-size: 0.78rem;
-  font-weight: 800;
+  text-decoration: none;
   transition:
     background 0.2s ease,
     color 0.2s ease,
-    border-color 0.2s ease;
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
-.social-links a:hover {
+.social-link:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
   border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.social-link svg {
+  flex: 0 0 auto;
+  opacity: 0.85;
+}
+
+.social-link:hover svg {
+  opacity: 1;
 }
 
 .footer-cta .eyebrow {
