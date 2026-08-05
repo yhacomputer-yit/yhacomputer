@@ -45,7 +45,21 @@ export default function AdminDashboard() {
       });
       if (res.ok) {
         setAuthenticated(true);
-        setNotifications(siteNotifications || []);
+        const notifRes = await fetch("/api/admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "list",
+            table: "notifications",
+            password,
+          }),
+        });
+        if (notifRes.ok) {
+          const notifData = await notifRes.json();
+          setNotifications(notifData.rows || []);
+        } else {
+          setNotifications(siteNotifications || []);
+        }
       } else {
         const data = await res.json();
         setPasswordError(data.error || "Invalid password.");
