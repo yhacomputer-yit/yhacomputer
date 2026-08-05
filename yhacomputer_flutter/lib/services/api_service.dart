@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/course.dart';
 import '../models/event.dart';
 import '../models/review.dart';
+import '../models/notification_model.dart';
 
 class ApiService {
   static const String baseUrl = 'https://www.yha-edu.tech';
@@ -54,11 +55,23 @@ class ApiService {
     final reviews = (data['reviews'] as List? ?? [])
         .map((json) => Review.fromJson(json))
         .toList();
+    final notifications = (data['notifications'] as List? ?? [])
+        .map((json) => NotificationModel.fromJson(json))
+        .toList();
     return {
       'courses': courses,
       'events': events,
       'reviews': reviews,
+      'notifications': notifications,
     };
+  }
+
+  static Future<List<NotificationModel>> fetchNotifications() async {
+    final data = await fetchData();
+    final notifications = (data['notifications'] as List? ?? [])
+        .map((json) => NotificationModel.fromJson(json))
+        .toList();
+    return notifications;
   }
 
   static Future<Map<String, dynamic>> adminRequest(
@@ -111,6 +124,45 @@ class ApiService {
       throw _ApiException('Unable to reach the server. Please check your internet connection and try again.');
     } catch (e) {
       throw _ApiException('Something went wrong while sending your message. Please try again later.');
+    }
+  }
+
+  static Future<Map<String, dynamic>> createNotification({
+    required String title,
+    required String message,
+    int? courseId,
+    String? password,
+  }) async {
+    final url = Uri.parse('$baseUrl/api/admin');
+    final body = <String, dynamic>{
+      'action': 'create',
+      'table': 'notifications',
+      'values': {
+        'title': title,
+        'message': message,
+        'course_id': courseId,
+        'is_read': 0,
+      },
+    };
+
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+    };
+    if (password != null && password.isNotEmpty) {
+      headers['x-admin-password'] = password;
+    }
+
+    try {
+      final response = await http.post(url, headers: headers, body: json.encode(body)).timeout(_timeout);
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      final errorBody = json.decode(response.body);
+      throw _ApiException(errorBody['error'] ?? 'Request failed');
+    } on http.ClientException {
+      throw _ApiException('Unable to reach the server. Please check your internet connection.');
+    } catch (e) {
+      throw _ApiException('Something went wrong. Please try again later.');
     }
   }
 }

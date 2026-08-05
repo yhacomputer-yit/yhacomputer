@@ -7,7 +7,7 @@ import 'screens/event_detail_screen.dart';
 import 'screens/reviews_screen.dart';
 import 'screens/about_us_screen.dart';
 import 'screens/contact_screen.dart';
-import 'screens/admin_screen.dart';
+import 'screens/notifications_screen.dart';
 import 'theme/app_theme.dart';
 
 class YHAComputerApp extends StatelessWidget {
@@ -35,7 +35,7 @@ class YHAComputerApp extends StatelessWidget {
         '/reviews': (context) => const ReviewsScreen(),
         '/about-us': (context) => const AboutUsScreen(),
         '/contact': (context) => const ContactScreen(),
-        '/admin': (context) => const AdminScreen(),
+        '/notifications': (context) => const NotificationsScreen(),
       },
     );
   }

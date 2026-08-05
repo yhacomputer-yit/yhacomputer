@@ -34,6 +34,7 @@ const TABLES = {
   ],
   reviews: ["name", "course_name", "message"],
   contacts: ["name", "email", "message"],
+  notifications: ["title", "message", "course_id", "is_read"],
 };
 
 function toHttpUrl(url) {

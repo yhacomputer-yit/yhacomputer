@@ -29,6 +29,7 @@ async function fetchFromTurso(url, token) {
     { type: "execute", stmt: { sql: "SELECT * FROM courses ORDER BY id" } },
     { type: "execute", stmt: { sql: "SELECT * FROM events ORDER BY id" } },
     { type: "execute", stmt: { sql: "SELECT * FROM reviews ORDER BY id DESC" } },
+    { type: "execute", stmt: { sql: "SELECT * FROM notifications ORDER BY id DESC" } },
     { type: "close" },
   ];
 
@@ -56,8 +57,8 @@ async function fetchFromTurso(url, token) {
     return null;
   });
 
-  const [courses, events, reviews] = parsed;
-  return { courses, events, reviews };
+  const [courses, events, reviews, notifications] = parsed;
+  return { courses, events, reviews, notifications };
 }
 
 export default async function handler(req, res) {

@@ -11,6 +11,7 @@ class NavBar extends StatelessWidget {
       '/',
       '/courses',
       '/events',
+      '/notifications',
       '/reviews',
       '/about-us',
       '/contact',
@@ -30,7 +31,7 @@ class NavBar extends StatelessWidget {
       indicatorColor: AppColors.primaryContainer,
       elevation: 8,
       shadowColor: AppColors.shadow,
-      destinations: const [
+      destinations: [
         NavigationDestination(
           icon: Icon(Icons.home_outlined),
           selectedIcon: Icon(Icons.home, color: AppColors.primary),
@@ -45,6 +46,11 @@ class NavBar extends StatelessWidget {
           icon: Icon(Icons.event_outlined),
           selectedIcon: Icon(Icons.event, color: AppColors.primary),
           label: 'Events',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.notifications_outlined),
+          selectedIcon: Icon(Icons.notifications, color: AppColors.primary),
+          label: 'Notifications',
         ),
         NavigationDestination(
           icon: Icon(Icons.star_outline),
@@ -71,12 +77,14 @@ class NavBar extends StatelessWidget {
         return 1;
       case '/events':
         return 2;
-      case '/reviews':
+      case '/notifications':
         return 3;
-      case '/about-us':
+      case '/reviews':
         return 4;
-      case '/contact':
+      case '/about-us':
         return 5;
+      case '/contact':
+        return 6;
       default:
         return 0;
     }

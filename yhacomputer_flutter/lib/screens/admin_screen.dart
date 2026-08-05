@@ -35,6 +35,9 @@ class _AdminScreenState extends State<AdminScreen> {
   final _eventTypeController = TextEditingController();
   final _eventDateController = TextEditingController();
   final _courseNameController = TextEditingController();
+  final _notifTitleController = TextEditingController();
+  final _notifMessageController = TextEditingController();
+  final _notifCourseIdController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -131,8 +134,8 @@ class _AdminScreenState extends State<AdminScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             color: AppColors.surface,
-            child: Row(
-              children: ['courses', 'events', 'reviews', 'contacts']
+              child: Row(
+              children: ['courses', 'events', 'reviews', 'contacts', 'notifications']
                   .map((table) {
                 final selected = activeTable == table;
                 return Expanded(
@@ -159,7 +162,9 @@ class _AdminScreenState extends State<AdminScreen> {
                           ),
                         ),
                         child: Text(
-                          table[0].toUpperCase() + table.substring(1),
+                          table == 'notifications'
+                              ? 'Noti'
+                              : table[0].toUpperCase() + table.substring(1),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: selected
@@ -364,6 +369,9 @@ class _AdminScreenState extends State<AdminScreen> {
       _eventTypeController.clear();
       _eventDateController.clear();
       _courseNameController.clear();
+      _notifTitleController.clear();
+      _notifMessageController.clear();
+      _notifCourseIdController.clear();
     } else {
       _titleController.text = row['title'] ?? '';
       _descriptionController.text = row['description'] ?? '';
@@ -381,6 +389,10 @@ class _AdminScreenState extends State<AdminScreen> {
       _eventTypeController.text = row['event_type'] ?? '';
       _eventDateController.text = row['date'] ?? '';
       _courseNameController.text = row['course_name'] ?? '';
+      _notifTitleController.text = row['title'] ?? '';
+      _notifMessageController.text = row['message'] ?? '';
+      _notifCourseIdController.text =
+          row['course_id'] != null ? '${row['course_id']}' : '';
     }
 
     showModalBottomSheet(
@@ -474,6 +486,12 @@ class _AdminScreenState extends State<AdminScreen> {
           _textField(_nameController, 'Name', required: true),
           _textField(_emailController, 'Email', required: true),
           _textField(_messageController, 'Message', maxLines: 3, required: true),
+        ];
+      case 'notifications':
+        return [
+          _textField(_notifTitleController, 'Title', required: true),
+          _textField(_notifMessageController, 'Message', maxLines: 3, required: true),
+          _textField(_notifCourseIdController, 'Course ID (optional)'),
         ];
       default:
         return [_textField(_titleController, 'Title')];
@@ -574,6 +592,15 @@ class _AdminScreenState extends State<AdminScreen> {
           'name': _nameController.text,
           'email': _emailController.text,
           'message': _messageController.text,
+        };
+      case 'notifications':
+        return {
+          'title': _notifTitleController.text,
+          'message': _notifMessageController.text,
+          'course_id': _notifCourseIdController.text.isNotEmpty
+              ? int.tryParse(_notifCourseIdController.text)
+              : null,
+          'is_read': 0,
         };
       default:
         return {'title': _titleController.text};

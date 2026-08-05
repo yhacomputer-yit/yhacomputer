@@ -9,6 +9,7 @@ export function DataProvider({ children }) {
     courses: [],
     events: [],
     reviews: [],
+    notifications: [],
   });
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export function DataProvider({ children }) {
           courses: data.courses || [],
           events: data.events || [],
           reviews: data.reviews || [],
+          notifications: data.notifications || [],
         });
       } catch (err) {
         if (!active) return;
