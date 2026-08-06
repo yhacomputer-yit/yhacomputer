@@ -60,6 +60,18 @@
         { name: "message", label: "Message", type: "textarea" },
       ],
     },
+    notifications: {
+      label: "Notification",
+      plural: "Notifications",
+      description: "Send and manage push notifications to app users.",
+      create: true,
+      fields: [
+        { name: "title", label: "Title", type: "text", required: true },
+        { name: "message", label: "Message", type: "textarea", required: true },
+        { name: "course_id", label: "Course ID", type: "text" },
+        { name: "is_read", label: "Is Read", type: "select", options: ["0", "1"] },
+      ],
+    },
   };
 
   const PW_KEY = "yha_admin_pw";

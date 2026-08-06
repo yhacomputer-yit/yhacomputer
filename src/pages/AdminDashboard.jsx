@@ -16,6 +16,7 @@ export default function AdminDashboard() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [notifTitle, setNotifTitle] = useState("");
   const [notifMessage, setNotifMessage] = useState("");
   const [notifCourseId, setNotifCourseId] = useState("");
@@ -74,6 +75,29 @@ export default function AdminDashboard() {
     setPassword("");
     setPasswordError("");
     setNotifications([]);
+  };
+
+  const handleRefreshNotifications = async () => {
+    setRefreshing(true);
+    try {
+      const notifRes = await fetch("/api/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "list",
+          table: "notifications",
+          password,
+        }),
+      });
+      if (notifRes.ok) {
+        const notifData = await notifRes.json();
+        setNotifications(notifData.rows || []);
+      }
+    } catch {
+      setNotifError("Failed to refresh notifications.");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleSendNotification = async (e) => {
@@ -397,9 +421,32 @@ export default function AdminDashboard() {
                     fontSize: 20,
                     marginBottom: 16,
                     letterSpacing: "-0.03em",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
                   }}
                 >
                   Recent Notifications ({notifications.length})
+                  <button
+                    type="button"
+                    onClick={handleRefreshNotifications}
+                    disabled={refreshing}
+                    style={{
+                      padding: "4px 12px",
+                      background: refreshing
+                        ? "var(--muted)"
+                        : "var(--orange)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: refreshing ? "not-allowed" : "pointer",
+                      opacity: refreshing ? 0.6 : 1,
+                    }}
+                  >
+                    {refreshing ? "Refreshing..." : "Refresh"}
+                  </button>
                 </h2>
                 {notifications.length === 0 ? (
                   <p style={{ color: "var(--muted)" }}>
