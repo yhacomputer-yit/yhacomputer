@@ -76,6 +76,7 @@
 
   const PW_KEY = "yha_admin_pw";
   let currentTable = "courses";
+  let currentView = "list";
   let editingId = null;
   let listRows = [];
   let listPage = 1;
@@ -109,10 +110,34 @@
     return data;
   }
 
+  function switchView(view) {
+    currentView = view;
+    const listSection = $("list-view");
+    const formSection = $("form-view");
+    const viewTabs = document.querySelectorAll(".admin-view-tab");
+
+    viewTabs.forEach(function (tab) {
+      tab.classList.toggle("is-active", tab.dataset.view === view);
+    });
+
+    if (view === "list") {
+      listSection.hidden = false;
+      listSection.classList.add("is-active");
+      formSection.hidden = true;
+      formSection.classList.remove("is-active");
+    } else {
+      formSection.hidden = false;
+      formSection.classList.add("is-active");
+      listSection.hidden = true;
+      listSection.classList.remove("is-active");
+    }
+  }
+
   function showManage() {
     $("login-view").hidden = true;
     $("manage-view").hidden = false;
     $("logout-link").hidden = false;
+    switchView("list");
     renderForm();
     loadList();
   }
@@ -133,17 +158,7 @@
   function renderForm() {
     const schema = SCHEMA[currentTable];
     const form = $("record-form");
-    const wrap = $("form-wrap");
-    document
-      .querySelector(".admin-panel")
-      .classList.toggle("is-list-only", !schema.create);
-    $("table-description").textContent = schema.description;
     $("list-title").textContent = schema.plural;
-    if (!schema.create) {
-      wrap.hidden = true;
-      return;
-    }
-    wrap.hidden = false;
     $("form-title").textContent =
       (editingId ? "Edit " : "Add ") + schema.label;
     form.innerHTML =
@@ -230,12 +245,14 @@
 
   function resetForm() {
     editingId = null;
+    switchView("list");
     renderForm();
   }
 
   function fillForm(row) {
     editingId = row.id;
     renderForm();
+    switchView("form");
     const form = $("record-form");
     SCHEMA[currentTable].fields.forEach(function (f) {
       const el = form.elements[f.name];
@@ -243,7 +260,6 @@
       if (f.type === "image" && el) updateImagePreview(el);
       if (f.type === "images" && el) updateImagesPreview(el);
     });
-    $("form-wrap").scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   function escapeHtml(value) {
@@ -283,7 +299,7 @@
         img.src = reader.result;
       };
       reader.onerror = function () {
-        reject(new Error("Could not read the selected file."));
+        reject(new Error("Could not read the file."));
       };
       reader.readAsDataURL(file);
     });
@@ -575,6 +591,7 @@
     document.querySelectorAll(".admin-tab").forEach(function (t) {
       t.classList.toggle("is-active", t.dataset.table === table);
     });
+    switchView("list");
     renderForm();
     loadList();
   }
@@ -605,6 +622,16 @@
     document.querySelectorAll(".admin-tab").forEach(function (t) {
       t.addEventListener("click", function () {
         selectTable(t.dataset.table);
+      });
+    });
+
+    document.querySelectorAll(".admin-view-tab").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        const view = tab.dataset.view;
+        if (view === "form" && !SCHEMA[currentTable].create) {
+          return;
+        }
+        switchView(view);
       });
     });
 

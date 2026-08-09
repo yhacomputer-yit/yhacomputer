@@ -50,7 +50,8 @@
 
     <div class="admin-sidebar-overlay" id="sidebar-overlay"></div>
 
-    <main class="admin-main admin-container">
+    <main class="admin-main">
+      <div class="admin-container">
       <button type="button" class="admin-menu-toggle" id="menu-toggle" aria-label="Open menu">
         <span></span>
         <span></span>
@@ -98,42 +99,49 @@
       </section>
 
       <section id="manage-view" class="admin-workspace" hidden>
-        <div class="workspace-heading">
-          <div>
-            <span class="admin-eyebrow">Turso content workspace</span>
-            <h1>Manage your site</h1>
-            <p id="table-description">
-              Create and update records that appear on the public website.
-            </p>
-          </div>
-          <div class="workspace-status">
-            <span></span>
-            Connected through serverless API
-          </div>
+
+
+        <div class="admin-view-tabs" id="view-tabs">
+          <button class="admin-view-tab is-active" data-view="list" role="tab">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            List View
+          </button>
+          <button class="admin-view-tab" data-view="form" role="tab">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            Form View
+          </button>
         </div>
 
         <div class="admin-panel">
-          <div class="admin-form-wrap" id="form-wrap">
-            <div class="panel-title">
-              <span>Edit Turso content</span>
-              <h2 id="form-title">Add Course</h2>
-            </div>
-            <form id="record-form" class="admin-form"></form>
-          </div>
-          <div class="admin-list-wrap">
-            <div class="list-heading">
-              <div>
-                <span>Database records</span>
-                <h2 id="list-title">Courses</h2>
+          <div id="list-view" class="admin-view-section is-active">
+            <div class="admin-list-wrap">
+              <div class="list-heading">
+                <div>
+                  <span>Database records</span>
+                  <h2 id="list-title">Courses</h2>
+                </div>
+                <div>
+                  <strong id="record-count">0</strong>
+                </div>
               </div>
-              <strong id="record-count">0</strong>
+              <p class="admin-status" id="list-status"></p>
+              <div id="record-list" class="admin-list"></div>
+              <div id="list-pager" class="admin-pager" hidden></div>
             </div>
-            <p class="admin-status" id="list-status"></p>
-            <div id="record-list" class="admin-list"></div>
-            <div id="list-pager" class="admin-pager" hidden></div>
+          </div>
+
+          <div id="form-view" class="admin-view-section" hidden>
+            <div class="admin-form-wrap">
+              <div class="panel-title">
+                <span>Edit Turso content</span>
+                <h2 id="form-title">Add Course</h2>
+              </div>
+              <form id="record-form" class="admin-form"></form>
+            </div>
           </div>
         </div>
       </section>
+      </div>
     </main>
 
     <script src="/admin.js"></script>
