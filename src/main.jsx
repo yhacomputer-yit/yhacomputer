@@ -12,6 +12,7 @@ import EventDetail from "./pages/EventDetail.jsx";
 import Reviews from "./pages/Reviews.jsx";
 import Contact from "./pages/Contact.jsx";
 import AboutUs from "./pages/AboutUs.jsx";
+import Exam from "./pages/Exam.jsx";
 import NotFound from "./pages/NotFound.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -28,6 +29,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/about-us" element={<AboutUs />} />
+            <Route path="/exam" element={<Exam />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
