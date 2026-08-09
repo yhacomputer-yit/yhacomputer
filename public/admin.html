@@ -26,7 +26,37 @@
       </div>
     </header>
 
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="admin-sidebar-header">
+        <div class="admin-brand">
+          <span class="admin-logo-mark">Y</span>
+          <div>
+            <strong>YHA Computer</strong>
+            <small>Admin</small>
+          </div>
+        </div>
+        <button type="button" class="admin-sidebar-close" id="sidebar-close" aria-label="Close menu">
+          ×
+        </button>
+      </div>
+      <nav class="admin-sidebar-nav">
+        <button class="admin-tab is-active" data-table="courses" role="tab">Courses</button>
+        <button class="admin-tab" data-table="events" role="tab">Events</button>
+        <button class="admin-tab" data-table="reviews" role="tab">Reviews</button>
+        <button class="admin-tab" data-table="contacts" role="tab">Contacts</button>
+        <button class="admin-tab" data-table="notifications" role="tab">Notifications</button>
+      </nav>
+    </aside>
+
+    <div class="admin-sidebar-overlay" id="sidebar-overlay"></div>
+
     <main class="admin-main admin-container">
+      <button type="button" class="admin-menu-toggle" id="menu-toggle" aria-label="Open menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
       <section id="login-view" class="admin-login-layout" hidden>
         <div class="admin-login-intro">
           <span class="admin-eyebrow">Secure workspace</span>
@@ -80,15 +110,6 @@
             <span></span>
             Connected through serverless API
           </div>
-        </div>
-
-        <div class="admin-tabs" id="admin-tabs" role="tablist">
-          <button class="admin-tab is-active" data-table="courses" role="tab">
-            Courses
-          </button>
-          <button class="admin-tab" data-table="events" role="tab">Events</button>
-          <button class="admin-tab" data-table="reviews" role="tab">Reviews</button>
-          <button class="admin-tab" data-table="contacts" role="tab">Contacts</button>
         </div>
 
         <div class="admin-panel">

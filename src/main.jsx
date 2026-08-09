@@ -13,7 +13,6 @@ import Reviews from "./pages/Reviews.jsx";
 import Contact from "./pages/Contact.jsx";
 import AboutUs from "./pages/AboutUs.jsx";
 import NotFound from "./pages/NotFound.jsx";
-import AdminDashboard from "./pages/AdminDashboard.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -29,7 +28,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/about-us" element={<AboutUs />} />
-            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

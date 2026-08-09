@@ -608,6 +608,31 @@
       });
     });
 
+    const sidebar = $("admin-sidebar");
+    const overlay = $("sidebar-overlay");
+    const menuToggle = $("menu-toggle");
+    const sidebarClose = $("sidebar-close");
+
+    function openSidebar() {
+      sidebar.classList.add("is-open");
+      overlay.style.display = "block";
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove("is-open");
+      overlay.style.display = "none";
+    }
+
+    if (menuToggle) {
+      menuToggle.addEventListener("click", openSidebar);
+    }
+    if (sidebarClose) {
+      sidebarClose.addEventListener("click", closeSidebar);
+    }
+    if (overlay) {
+      overlay.addEventListener("click", closeSidebar);
+    }
+
     if (getPassword()) {
       showManage();
     } else {
