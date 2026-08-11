@@ -704,6 +704,16 @@ button {
   color: var(--danger);
 }
 
+.btn-mini.btn-password {
+  border-color: #c3d9f0;
+  color: #1a5f9e;
+  background: #f0f7fc;
+}
+
+.btn-mini.btn-password:hover {
+  background: #daeefb;
+}
+
 /* Slide Sidebar - Narrower */
 .admin-sidebar {
   position: fixed;

@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
-export default function CourseCard({ course }) {
+export default function CourseCard({ course, subjects = [] }) {
   const [imageFailed, setImageFailed] = useState(false);
   const image = course.image
     ? /^(https?:|data:)/i.test(course.image)
       ? course.image
       : "/" + course.image.replace(/^\/+/, "")
     : "";
-  const metadata = [course.subject, course.level].filter(Boolean);
+  const metadata = [course.level, course.duration].filter(Boolean);
+  const category = course.subject ? [course.subject] : [];
 
   return (
     <article className="course-card">
@@ -23,8 +24,8 @@ export default function CourseCard({ course }) {
         {course.level && <span className="course-level">{course.level}</span>}
       </Link>
       <div className="course-card-body">
-        {metadata.length > 0 && (
-          <div className="course-kicker">{metadata.join(" · ")}</div>
+        {category.length > 0 && (
+          <div className="course-kicker">{category.join(" · ")}</div>
         )}
         <h3>
           <Link to={"/courses/" + course.id}>{course.title}</Link>

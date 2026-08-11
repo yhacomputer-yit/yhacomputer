@@ -13,13 +13,59 @@
       create: true,
       fields: [
         { name: "title", label: "Title", type: "text", required: true },
-        { name: "subject", label: "Subject", type: "select", required: true, options: ["Ict", "Programming", "Graphic design"] },
         { name: "level", label: "Level", type: "text" },
         { name: "duration", label: "Duration", type: "text" },
         { name: "price", label: "Price", type: "text" },
         { name: "image", label: "Course image", type: "image" },
+        { name: "subject", label: "Subject", type: "text" },
         { name: "description", label: "Description", type: "textarea" },
-        { name: "highlights", label: "Highlights", type: "textarea" },
+      ],
+    },
+    subjects: {
+      label: "Subject",
+      plural: "Subjects",
+      description: "Manage subjects for courses.",
+      create: true,
+      fields: [
+        { name: "course_id", label: "Course", type: "select-dynamic", required: true, optionsTable: "courses", optionsLabel: "title", optionsValue: "id" },
+        { name: "name", label: "Subject Name", type: "text", required: true },
+        { name: "description", label: "Description", type: "textarea" },
+      ],
+    },
+    sessions: {
+      label: "Session",
+      plural: "Sessions",
+      description: "Manage class sessions and time slots for courses.",
+      create: true,
+      fields: [
+        { name: "course_id", label: "Course", type: "select-dynamic", required: true, optionsTable: "courses", optionsLabel: "title", optionsValue: "id" },
+        { name: "name", label: "Session Name", type: "text", required: true },
+        { name: "start_time", label: "Start Time", type: "text", placeholder: "e.g. 10:30" },
+        { name: "end_time", label: "End Time", type: "text", placeholder: "e.g. 12:00" },
+      ],
+    },
+    teachers: {
+      label: "Teacher",
+      plural: "Teachers",
+      description: "Manage teachers.",
+      create: true,
+      fields: [
+        { name: "name", label: "Name", type: "text", required: true },
+        { name: "email", label: "Email", type: "email" },
+        { name: "phone", label: "Phone", type: "text" },
+        { name: "specialization", label: "Specialization", type: "text" },
+        { name: "image", label: "Image", type: "image" },
+        { name: "bio", label: "Bio", type: "textarea" },
+      ],
+    },
+    course_teachers: {
+      label: "Course Teacher",
+      plural: "Course Teachers",
+      description: "Assign teachers to courses.",
+      create: true,
+      fields: [
+        { name: "course_id", label: "Course", type: "select-dynamic", required: true, optionsTable: "courses", optionsLabel: "title", optionsValue: "id" },
+        { name: "teacher_id", label: "Teacher", type: "select-dynamic", required: true, optionsTable: "teachers", optionsLabel: "name", optionsValue: "id" },
       ],
     },
     events: {
@@ -45,7 +91,7 @@
       create: true,
       fields: [
         { name: "name", label: "Student name", type: "text", required: true },
-        { name: "course_name", label: "Course", type: "text" },
+        { name: "course_id", label: "Course", type: "select-dynamic", required: false, optionsTable: "courses", optionsLabel: "title", optionsValue: "id" },
         { name: "message", label: "Message", type: "textarea", required: true },
       ],
     },
@@ -72,7 +118,34 @@
         { name: "is_read", label: "Is Read", type: "select", options: ["0", "1"] },
       ],
     },
-  };
+    students: {
+      label: "Student",
+      plural: "Students",
+      description: "Manage registered students and their credentials.",
+      create: true,
+      fields: [
+        { name: "student_id", label: "Student ID", type: "text", readonly: true },
+        { name: "name", label: "Full Name", type: "text", required: true },
+        { name: "email", label: "Email", type: "email" },
+        { name: "phone", label: "Phone", type: "text" },
+        { name: "father_name", label: "Father Name", type: "text" },
+        { name: "mother_name", label: "Mother Name", type: "text" },
+        { name: "nrc_number", label: "NRC Number", type: "text" },
+        { name: "register_date", label: "Register Date", type: "text" },
+        { name: "enroll_date", label: "Enroll Date", type: "text" },
+        { name: "viber_phone", label: "Viber Phone", type: "text" },
+        { name: "city", label: "City", type: "text" },
+        { name: "township", label: "Township", type: "text" },
+        { name: "birthday", label: "Birthday", type: "text" },
+        { name: "gender", label: "Gender", type: "select", options: ["Male", "Female", "Other"] },
+        { name: "image", label: "Image", type: "image" },
+        { name: "education", label: "Education", type: "text" },
+        { name: "status", label: "Status", type: "select", options: ["pending", "active", "inactive", "completed"] },
+         { name: "course_id", label: "Course ID", type: "text" },
+         { name: "session_id", label: "Session ID", type: "text" },
+       ],
+     },
+   };
 
   const PW_KEY = "yha_admin_pw";
   let currentTable = "courses";
@@ -81,6 +154,7 @@
   let listRows = [];
   let listPage = 1;
   const LIST_PAGE_SIZE = 8;
+  let pendingSelectValues = {};
 
   const $ = (id) => document.getElementById(id);
 
@@ -168,10 +242,12 @@
             f.type === "textarea"
               ? '<textarea rows="3" name="' + f.name + '"' +
                 (f.required ? " required" : "") +
+                (f.readonly ? " readonly" : "") +
                 "></textarea>"
               : f.type === "select"
                 ? "<select name=\"" + f.name + "\"" +
                   (f.required ? " required" : "") +
+                  (f.readonly ? " disabled" : "") +
                   ">" +
                   (f.options || [])
                     .map(
@@ -180,25 +256,32 @@
                     )
                     .join("") +
                   "</select>"
-                : f.type === "image"
-                  ? '<input type="file" accept="image/*" class="admin-file-input" />' +
-                    '<input type="text" name="' + f.name + '" placeholder="Upload a file or paste a URL/path (e.g. images/flutter.jpg)"' +
+                : f.type === "select-dynamic"
+                  ? '<select name="' + f.name + '" data-options-table="' + escapeHtml(f.optionsTable) + '" data-options-label="' + escapeHtml(f.optionsLabel) + '" data-options-value="' + escapeHtml(f.optionsValue) + '"' +
                     (f.required ? " required" : "") +
-                    " />" +
-                    '<img class="admin-image-preview" alt="Image preview" hidden />'
-                  : f.type === "images"
-                    ? '<input type="file" accept="image/*" multiple class="admin-file-input" />' +
-                      '<input type="text" name="' + f.name + '" placeholder="Upload up to 5 images, or paste URLs/paths separated by |"' +
+                    (f.readonly ? " disabled" : "") +
+                    "><option value=\"\">Loading...</option></select>"
+                  : f.type === "image"
+                    ? '<input type="file" accept="image/*" class="admin-file-input" />' +
+                      '<input type="text" name="' + f.name + '" placeholder="Upload a file or paste a URL/path (e.g. images/flutter.jpg)"' +
                       (f.required ? " required" : "") +
+                      (f.readonly ? " readonly" : "") +
                       " />" +
-                      '<div class="admin-image-thumbs" hidden></div>'
-                    : '<input type="' +
-                      f.type +
-                      '" name="' +
-                      f.name +
-                      '"' +
-                      (f.required ? " required" : "") +
-                      " />";
+                      '<img class="admin-image-preview" alt="Image preview" hidden />'
+                    : f.type === "images"
+                      ? '<input type="file" accept="image/*" multiple class="admin-file-input" />' +
+                        '<input type="text" name="' + f.name + '" placeholder="Upload up to 5 images, or paste URLs/paths separated by |"' +
+                        (f.required ? " required" : "") +
+                        " />" +
+                        '<div class="admin-image-thumbs" hidden></div>'
+                      : '<input type="' +
+                        f.type +
+                        '" name="' +
+                        f.name +
+                        '"' +
+                        (f.required ? " required" : "") +
+                        (f.readonly ? " readonly" : "") +
+                        " />";
           const labelClass =
             f.type === "image" || f.type === "images" ? "admin-field-image" : "";
           return '<label class="' + labelClass + '">' + f.label + input + "</label>";
@@ -213,6 +296,37 @@
         : "") +
       "</div>" +
       '<p class="admin-error" id="form-error" hidden></p>';
+
+    form.querySelectorAll("select[data-options-table]").forEach(function (selectEl) {
+      const table = selectEl.getAttribute("data-options-table");
+      const labelField = selectEl.getAttribute("data-options-label");
+      const valueField = selectEl.getAttribute("data-options-value");
+      api("GET", { table: table })
+        .then(function (data) {
+          const rows = data.rows || [];
+          const fieldName = selectEl.getAttribute("name");
+          selectEl.innerHTML =
+            '<option value="">Select...</option>' +
+            rows
+              .map(function (row) {
+                return (
+                  '<option value="' +
+                  escapeHtml(String(row[valueField] || "")) +
+                  '">' +
+                  escapeHtml(String(row[labelField] || "")) +
+                  "</option>"
+                );
+              })
+              .join("");
+          if (pendingSelectValues[fieldName] !== undefined) {
+            selectEl.value = pendingSelectValues[fieldName];
+            delete pendingSelectValues[fieldName];
+          }
+        })
+        .catch(function () {
+          selectEl.innerHTML = '<option value="">Error loading options</option>';
+        });
+    });
 
     form.querySelectorAll(".admin-file-input").forEach(function (fileInput) {
       fileInput.addEventListener("change", function (e) {
@@ -251,12 +365,25 @@
 
   function fillForm(row) {
     editingId = row.id;
+    pendingSelectValues = {};
+    SCHEMA[currentTable].fields.forEach(function (f) {
+      if (f.type === "select-dynamic" && row[f.name] != null) {
+        pendingSelectValues[f.name] = String(row[f.name]);
+      }
+    });
     renderForm();
     switchView("form");
     const form = $("record-form");
     SCHEMA[currentTable].fields.forEach(function (f) {
       const el = form.elements[f.name];
-      if (el) el.value = row[f.name] == null ? "" : row[f.name];
+      if (!el) return;
+      if (f.type === "select-dynamic") {
+        if (pendingSelectValues[f.name] !== undefined) {
+          el.value = pendingSelectValues[f.name];
+        }
+      } else {
+        el.value = row[f.name] == null ? "" : row[f.name];
+      }
       if (f.type === "image" && el) updateImagePreview(el);
       if (f.type === "images" && el) updateImagesPreview(el);
     });
@@ -434,6 +561,7 @@
     const primary = schema.fields[0].name;
     const secondary = schema.fields[1] ? schema.fields[1].name : null;
     const bodyField = schema.fields.find((f) => f.type === "textarea");
+    const isStudent = currentTable === "students";
     return (
       '<div class="admin-item">' +
       '<div class="admin-item-body">' +
@@ -442,6 +570,9 @@
       "</strong>" +
       (secondary && row[secondary]
         ? '<span class="admin-item-sub">' + escapeHtml(row[secondary]) + "</span>"
+        : "") +
+      (isStudent && row.course_id
+        ? '<span class="admin-item-sub">Course: ' + escapeHtml(row.course_id) + "</span>"
         : "") +
       (bodyField && row[bodyField.name]
         ? "<p>" + escapeHtml(row[bodyField.name]) + "</p>"
@@ -453,6 +584,9 @@
       '<div class="admin-item-actions">' +
       (schema.create
         ? '<button class="btn-mini" data-edit="' + row.id + '">Edit</button>'
+        : "") +
+      (isStudent
+        ? '<button class="btn-mini btn-password" data-generate="' + row.id + '">Generate Password</button>'
         : "") +
       '<button class="btn-mini btn-danger" data-delete="' +
       row.id +
@@ -482,6 +616,11 @@
     listEl.querySelectorAll("[data-delete]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         onDelete(btn.dataset.delete);
+      });
+    });
+    listEl.querySelectorAll("[data-generate]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        onGeneratePassword(btn.dataset.generate);
       });
     });
     renderPager(totalPages);
@@ -531,6 +670,21 @@
         }
       });
     });
+  }
+
+  async function onGeneratePassword(id) {
+    if (!window.confirm("Generate a new password for this student?")) return;
+    try {
+      const data = await api("POST", {
+        action: "generate_password",
+        table: "students",
+        id: id,
+      });
+      window.alert("New password: " + data.password + "\nPlease share it with the student.");
+      loadList();
+    } catch (err) {
+      window.alert("Failed to generate password: " + err.message);
+    }
   }
 
   async function onSubmit(e) {

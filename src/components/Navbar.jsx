@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext.jsx";
+import { useSiteData } from "../data.jsx";
 
 const links = [
   { to: "/", label: "Home", end: true },
   { to: "/courses", label: "Courses" },
+  { to: "/teachers", label: "Teachers" },
   { to: "/events", label: "Events" },
   { to: "/reviews", label: "Reviews" },
   { to: "/about-us", label: "About Us" },
@@ -12,11 +15,28 @@ const links = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const { pathname } = useLocation();
+  const { user, logout } = useAuth();
+  const { notifications } = useSiteData();
+  const notifRef = useRef(null);
 
   useEffect(() => {
     setOpen(false);
+    setNotifOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotifOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
     <nav className="navbar">
@@ -47,6 +67,68 @@ export default function Navbar() {
               </NavLink>
             </li>
           ))}
+          {user ? (
+            <>
+              <li>
+                <NavLink to="/student/dashboard">Dashboard</NavLink>
+              </li>
+              <li className="nav-notif-item" ref={notifRef}>
+                <button
+                  type="button"
+                  className="nav-notif-btn"
+                  aria-label="Notifications"
+                  onClick={() => setNotifOpen((v) => !v)}
+                >
+                  &#128276;
+                  {unreadCount > 0 && (
+                    <span className="notif-badge">{unreadCount}</span>
+                  )}
+                </button>
+                {notifOpen && (
+                  <div className="notif-panel">
+                    <div className="notif-panel-header">
+                      <h4>Notifications</h4>
+                      <button
+                        type="button"
+                        className="notif-close"
+                        onClick={() => setNotifOpen(false)}
+                      >
+                        &times;
+                      </button>
+                    </div>
+                    {notifications.length === 0 ? (
+                      <p className="notif-empty">No notifications yet.</p>
+                    ) : (
+                      <ul className="notif-list">
+                        {notifications.map((n) => (
+                          <li
+                            key={n.id}
+                            className={"notif-item" + (n.is_read ? " is-read" : "")}
+                          >
+                            <strong>{n.title}</strong>
+                            {n.message && <p>{n.message}</p>}
+                            <small>{n.created_at ? new Date(n.created_at).toLocaleString() : ""}</small>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </li>
+              <li>
+                <button className="nav-logout" onClick={logout}>Logout</button>
+              </li>
+            </>
+          ) : (
+            <>
+              <li>
+                <NavLink to="/login" className="nav-auth-link">Login</NavLink>
+              </li>
+              <li>
+                <NavLink to="/register" className="nav-auth-link nav-admin-link">Register</NavLink>
+              </li>
+            </>
+          )}
         </ul>
       </div>
     </nav>

@@ -4,19 +4,24 @@ import CourseCard from "../components/CourseCard.jsx";
 import { useSeo } from "../seo.js";
 
 export default function Home() {
-  const { loading, error, courses, events, reviews } = useSiteData();
+  const { loading, error, courses, subjects, events, reviews } = useSiteData();
   useSeo({
     title: "Practical IT Courses & Training in Myanmar",
     description:
       "YHA Computer (YIT) offers practical IT courses in Myanmar — web development, Python, Flutter, Laravel, C#, MERN stack, ICT basics and graphic design, plus events and student reviews.",
     url: "/",
   });
-  const allowedSubjects = ["Ict", "Programming", "Graphic design"];
-  const filtered = courses.filter((c) => allowedSubjects.includes(c.subject));
+
+  const allowedSubjects = ["ict", "programming", "graphic design"];
+  const filtered = courses.filter((course) =>
+    allowedSubjects.includes(String(course.subject || "").toLowerCase().trim())
+  );
   const display = filtered.slice(0, 6);
   const featured = display.slice(0, 3);
   const nextEvents = events.slice(0, 2);
   const marqueeReviews = reviews.length ? [...reviews, ...reviews] : [];
+  const getCourseSubjects = (courseId) =>
+    subjects.filter((s) => String(s.course_id) === String(courseId));
 
   return (
     <>
@@ -161,7 +166,7 @@ export default function Home() {
             </div>
           )}
           {display.map((c) => (
-            <CourseCard key={c.id} course={c} />
+            <CourseCard key={c.id} course={c} subjects={getCourseSubjects(c.id)} />
           ))}
           </div>
         </div>

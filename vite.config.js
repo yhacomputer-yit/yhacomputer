@@ -3,11 +3,13 @@ import react from "@vitejs/plugin-react";
 import adminHandler from "./api/admin.js";
 import contactHandler from "./api/contact.js";
 import dataHandler from "./api/data.js";
+import authHandler from "./api/auth.js";
 
 const apiHandlers = new Map([
   ["/api/admin", adminHandler],
   ["/api/contact", contactHandler],
   ["/api/data", dataHandler],
+  ["/api/auth", authHandler],
 ]);
 
 function localApi() {

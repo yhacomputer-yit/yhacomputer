@@ -4,20 +4,27 @@ import CourseCard from "../components/CourseCard.jsx";
 import { useSeo } from "../seo.js";
 
 export default function Courses() {
-  const { loading, error, courses } = useSiteData();
+  const { loading, error, courses, subjects, sessions, teachers, courseTeachers } = useSiteData();
   useSeo({
     title: "Courses",
     description:
       "Browse YHA Computer courses in Myanmar — web development, Python, Flutter, Laravel, C#, MERN stack, ICT basics and graphic design. Find the right learning path for you.",
     url: "/courses",
   });
-  const allowedSubjects = ["Ict", "Programming", "Graphic design"];
-  const filters = ["All", ...allowedSubjects];
+
+  const categories = ["All", "Programming", "ICT", "Graphic Design"];
   const [active, setActive] = useState("All");
+
+  const normalizedActive = active === "All" ? null : active.toLowerCase().trim();
+
   const filtered =
     active === "All"
-      ? courses.filter((c) => allowedSubjects.includes(c.subject))
-      : courses.filter((c) => c.subject === active);
+      ? courses
+      : courses.filter((course) =>
+          String(course.subject || "")
+            .toLowerCase()
+            .trim() === normalizedActive
+        );
   const display = filtered.slice(0, 6);
 
   return (
@@ -44,7 +51,7 @@ export default function Courses() {
             <span>Choose a course to see the full curriculum</span>
           </div>
           <div className="subject-filter">
-            {filters.map((filter) => (
+            {categories.map((filter) => (
               <button
                 key={filter}
                 type="button"
@@ -79,7 +86,7 @@ export default function Courses() {
               </div>
             )}
             {display.map((course) => (
-              <CourseCard key={course.id} course={course} />
+              <CourseCard key={course.id} course={course} subjects={subjects.filter((s) => String(s.course_id) === String(course.id))} />
             ))}
           </div>
         </div>

@@ -7,9 +7,14 @@ export function DataProvider({ children }) {
     loading: true,
     error: null,
     courses: [],
+    subjects: [],
+    sessions: [],
+    teachers: [],
+    courseTeachers: [],
     events: [],
     reviews: [],
     notifications: [],
+    contacts: [],
   });
 
   useEffect(() => {
@@ -25,9 +30,14 @@ export function DataProvider({ children }) {
           loading: false,
           error: null,
           courses: data.courses || [],
+          subjects: data.subjects || [],
+          sessions: data.sessions || [],
+          teachers: data.teachers || [],
+          courseTeachers: data.courseTeachers || [],
           events: data.events || [],
           reviews: data.reviews || [],
           notifications: data.notifications || [],
+          contacts: data.contacts || [],
         });
       } catch (err) {
         if (!active) return;

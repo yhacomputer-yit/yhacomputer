@@ -11,7 +11,7 @@ function resolveImage(value) {
 
 export default function CourseDetail() {
   const { id } = useParams();
-  const { loading, error, courses } = useSiteData();
+  const { loading, error, courses, subjects, sessions, teachers, courseTeachers } = useSiteData();
   const [imageFailed, setImageFailed] = useState(false);
 
   if (loading) {
@@ -55,10 +55,13 @@ export default function CourseDetail() {
 
   const image = resolveImage(course.image);
   const badges = [course.subject, course.level, course.duration].filter(Boolean);
-  const highlights = (course.highlights || "")
-    .split(",")
-    .map((highlight) => highlight.trim())
-    .filter(Boolean);
+
+  const courseSubjects = subjects.filter((s) => String(s.course_id) === String(course.id));
+  const courseSessions = sessions.filter((s) => String(s.course_id) === String(course.id));
+  const courseTeacherIds = courseTeachers
+    .filter((ct) => String(ct.course_id) === String(course.id))
+    .map((ct) => String(ct.teacher_id));
+  const courseTeachersList = teachers.filter((t) => courseTeacherIds.includes(String(t.id)));
 
   const siteUrl = "https://www.yha-edu.tech";
   const numericPrice = course.price
@@ -148,6 +151,15 @@ export default function CourseDetail() {
               ))}
             </div>
           )}
+          {courseSubjects.length > 0 && (
+            <div className="detail-badges" style={{ marginTop: 10 }}>
+              {courseSubjects.map((subject) => (
+                <span key={subject.id} className="detail-badge">
+                  {subject.name}
+                </span>
+              ))}
+            </div>
+          )}
           {course.price && (
             <div className="detail-price">
               <small>Course fee</small>
@@ -155,14 +167,44 @@ export default function CourseDetail() {
             </div>
           )}
           {course.description && <p className="detail-desc">{course.description}</p>}
-          {highlights.length > 0 && (
-            <div className="detail-highlights">
-              <h2>What you&apos;ll learn</h2>
+          {courseSubjects.length > 0 && (
+            <div className="detail-section">
+              <h2>Subjects</h2>
               <ul>
-                {highlights.map((highlight) => (
-                  <li key={highlight}>
+                {courseSubjects.map((subject) => (
+                  <li key={subject.id}>
                     <span>&#10003;</span>
-                    {highlight}
+                    <div>
+                      <strong>{subject.name}</strong>
+                      {subject.description && <p>{subject.description}</p>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {courseSessions.length > 0 && (
+            <div className="detail-section">
+              <h2>Sessions</h2>
+              <ul>
+                {courseSessions.map((session) => (
+                  <li key={session.id}>
+                    <span>&#128337;</span>
+                    <strong>{session.name}</strong>: {session.start_time} - {session.end_time}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {courseTeachersList.length > 0 && (
+            <div className="detail-section">
+              <h2>Teachers</h2>
+              <ul>
+                {courseTeachersList.map((teacher) => (
+                  <li key={teacher.id}>
+                    <span>&#128100;</span>
+                    <strong>{teacher.name}</strong>
+                    {teacher.specialization ? ` — ${teacher.specialization}` : ""}
                   </li>
                 ))}
               </ul>

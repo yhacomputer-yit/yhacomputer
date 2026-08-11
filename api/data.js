@@ -27,9 +27,14 @@ let cache = { at: 0, value: null };
 async function fetchFromTurso(url, token) {
   const requests = [
     { type: "execute", stmt: { sql: "SELECT * FROM courses ORDER BY id" } },
+    { type: "execute", stmt: { sql: "SELECT * FROM subjects ORDER BY id" } },
+    { type: "execute", stmt: { sql: "SELECT * FROM sessions ORDER BY id" } },
+    { type: "execute", stmt: { sql: "SELECT * FROM teachers ORDER BY id" } },
+    { type: "execute", stmt: { sql: "SELECT * FROM course_teachers ORDER BY id" } },
     { type: "execute", stmt: { sql: "SELECT * FROM events ORDER BY id" } },
     { type: "execute", stmt: { sql: "SELECT * FROM reviews ORDER BY id DESC" } },
     { type: "execute", stmt: { sql: "SELECT * FROM notifications ORDER BY id DESC" } },
+    { type: "execute", stmt: { sql: "SELECT * FROM contacts ORDER BY id DESC" } },
     { type: "close" },
   ];
 
@@ -57,8 +62,8 @@ async function fetchFromTurso(url, token) {
     return null;
   });
 
-  const [courses, events, reviews, notifications] = parsed;
-  return { courses, events, reviews, notifications };
+  const [courses, subjects, sessions, teachers, courseTeachers, events, reviews, notifications, contacts] = parsed;
+  return { courses, subjects, sessions, teachers, courseTeachers, events, reviews, notifications, contacts };
 }
 
 export default async function handler(req, res) {

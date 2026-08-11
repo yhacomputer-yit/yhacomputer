@@ -11,6 +11,8 @@
 
 // Editable columns per table. Only these columns are ever written, which also
 // prevents arbitrary column names from reaching the SQL.
+import crypto from "crypto";
+
 const TABLES = {
   courses: [
     "title",
@@ -22,6 +24,29 @@ const TABLES = {
     "duration",
     "highlights",
   ],
+  subjects: [
+    "course_id",
+    "name",
+    "description",
+  ],
+  sessions: [
+    "course_id",
+    "name",
+    "start_time",
+    "end_time",
+  ],
+  teachers: [
+    "name",
+    "email",
+    "phone",
+    "specialization",
+    "image",
+    "bio",
+  ],
+  course_teachers: [
+    "course_id",
+    "teacher_id",
+  ],
   events: [
     "title",
     "description",
@@ -32,9 +57,33 @@ const TABLES = {
     "duration",
     "image",
   ],
-  reviews: ["name", "course_name", "message"],
+  reviews: ["name", "course_id", "message"],
   contacts: ["name", "email", "message"],
   notifications: ["title", "message", "course_id", "is_read"],
+  students: [
+    "student_id",
+    "name",
+    "email",
+    "phone",
+    "father_name",
+    "mother_name",
+    "nrc_number",
+    "register_date",
+    "enroll_date",
+    "viber_phone",
+    "city",
+    "township",
+    "birthday",
+    "gender",
+    "image",
+    "education",
+    "status",
+    "course_id",
+    "session_id",
+    "password_hash",
+    "created_at",
+    "updated_at",
+  ],
 };
 
 function toHttpUrl(url) {
@@ -106,6 +155,42 @@ async function ensureColumns(table) {
   }
 }
 
+async function ensureTable(table) {
+  try {
+    await execute("SELECT 1 FROM " + table + " LIMIT 1");
+  } catch (e) {
+    const needed = TABLES[table];
+    if (!needed || !needed.length) throw e;
+    const cols = needed.map((c) => c + " TEXT").join(", ");
+    await execute(
+      "CREATE TABLE IF NOT EXISTS " + table + " (id INTEGER PRIMARY KEY AUTOINCREMENT, " + cols + ")"
+    );
+  }
+}
+
+function hashPassword(password) {
+  return crypto.createHash("sha256").update(password).digest("hex");
+}
+
+function generatePassword() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let password = "";
+  for (let i = 0; i < 8; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+}
+
+async function ensureStudentsTable() {
+  try {
+    await execute(
+      "CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT UNIQUE, name TEXT, email TEXT, phone TEXT, father_name TEXT, mother_name TEXT, nrc_number TEXT, register_date TEXT, enroll_date TEXT, viber_phone TEXT, city TEXT, township TEXT, birthday TEXT, gender TEXT, image TEXT, education TEXT, status TEXT, course_id TEXT, session_id TEXT, password_hash TEXT, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')))"
+    );
+  } catch (e) {
+    // Table might already exist
+  }
+}
+
 function readBody(req) {
   if (req.body && typeof req.body === "object") return Promise.resolve(req.body);
   return new Promise((resolve, reject) => {
@@ -153,17 +238,13 @@ export default async function handler(req, res) {
     const columns = TABLES[table];
 
     if (action === "list") {
+      await ensureTable(table);
       const result = await execute("SELECT * FROM " + table + " ORDER BY id DESC");
       res.status(200).json({ rows: rowsToObjects(result) });
       return;
     }
 
-    if (action === "list") {
-      const result = await execute("SELECT * FROM " + table + " ORDER BY id DESC");
-      res.status(200).json({ rows: rowsToObjects(result) });
-      return;
-    }
-
+    await ensureTable(table);
     await ensureColumns(table);
 
     if (action === "create") {
@@ -218,6 +299,28 @@ export default async function handler(req, res) {
       }
       await execute("DELETE FROM " + table + " WHERE id = ?", [id]);
       res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (action === "generate_password") {
+      await ensureStudentsTable();
+      const id = body.id;
+      if (!id) {
+        res.status(400).json({ error: "Missing student id." });
+        return;
+      }
+      const newPassword = generatePassword();
+      const passwordHash = hashPassword(newPassword);
+      const now = new Date().toISOString();
+      await execute(
+        "UPDATE students SET password_hash = ?, updated_at = ? WHERE id = ?",
+        [passwordHash, now, id]
+      );
+      res.status(200).json({
+        ok: true,
+        password: newPassword,
+        message: "Password generated successfully.",
+      });
       return;
     }
 
