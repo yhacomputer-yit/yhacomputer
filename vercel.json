@@ -7,8 +7,8 @@
       "source": "/(.*)",
       "headers": [
         {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://www.google-analytics.com https://*.turso.io https://api.turso.tech; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'"
+           "key": "Content-Security-Policy",
+           "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://vercel.live; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' data: https://cdnjs.cloudflare.com; connect-src 'self' https://www.google-analytics.com https://*.turso.io https://api.turso.tech; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'"
         },
         { "key": "X-Frame-Options", "value": "DENY" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
