@@ -1,79 +1,27 @@
-// Vercel serverless function: queries the Turso database server-side using
-// credentials from environment variables and returns courses, events and
-// reviews as JSON. The auth token never reaches the browser.
-//
-// Required environment variables (set them in the Vercel project settings):
-//   TURSO_DATABASE_URL  e.g. libsql://your-db-org.turso.io
-//   TURSO_AUTH_TOKEN    a read-only Turso auth token
-
-function toHttpUrl(url) {
-  return url.replace(/^libsql:\/\//, "https://").replace(/\/+$/, "");
-}
-
-function rowsToObjects(result) {
-  const cols = result.cols.map((c) => c.name);
-  return result.rows.map((row) => {
-    const obj = {};
-    row.forEach((cell, i) => {
-      obj[cols[i]] = cell == null ? null : cell.value;
-    });
-    return obj;
-  });
-}
+import { ensureSchema, query } from "./_db.js";
 
 const CACHE_TTL_MS = 60 * 1000;
 let cache = { at: 0, value: null };
 
-async function fetchFromTurso(url, token) {
-  const requests = [
-    { type: "execute", stmt: { sql: "SELECT * FROM courses ORDER BY id" } },
-    { type: "execute", stmt: { sql: "SELECT * FROM subjects ORDER BY id" } },
-    { type: "execute", stmt: { sql: "SELECT * FROM sessions ORDER BY id" } },
-    { type: "execute", stmt: { sql: "SELECT * FROM teachers ORDER BY id" } },
-    { type: "execute", stmt: { sql: "SELECT * FROM course_teachers ORDER BY id" } },
-    { type: "execute", stmt: { sql: "SELECT * FROM events ORDER BY id" } },
-    { type: "execute", stmt: { sql: "SELECT * FROM reviews ORDER BY id DESC" } },
-    { type: "execute", stmt: { sql: "SELECT * FROM notifications ORDER BY id DESC" } },
-    { type: "execute", stmt: { sql: "SELECT * FROM contacts ORDER BY id DESC" } },
-    { type: "close" },
-  ];
-
-  const response = await fetch(toHttpUrl(url) + "/v2/pipeline", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ requests }),
-  });
-
-  if (!response.ok) {
-    throw new Error("Turso request failed with status " + response.status);
-  }
-
-  const data = await response.json();
-  const parsed = data.results.map((result) => {
-    if (result.type === "error") {
-      throw new Error(result.error && result.error.message);
-    }
-    if (result.response && result.response.type === "execute") {
-      return rowsToObjects(result.response.result);
-    }
-    return null;
-  });
-
-  const [courses, subjects, sessions, teachers, courseTeachers, events, reviews, notifications, contacts] = parsed;
-  return { courses, subjects, sessions, teachers, courseTeachers, events, reviews, notifications, contacts };
+async function fetchPublicData() {
+  await ensureSchema();
+  const [courses, subjects, sessions, teachers, courseTeachers, events, reviews, notifications] = await Promise.all([
+    query("SELECT * FROM courses ORDER BY id"),
+    query("SELECT * FROM subjects ORDER BY id"),
+    query("SELECT * FROM sessions ORDER BY id"),
+    query("SELECT * FROM teachers ORDER BY id"),
+    query("SELECT * FROM course_teachers ORDER BY id"),
+    query("SELECT * FROM events ORDER BY COALESCE(date, created_at) DESC, id DESC"),
+    query("SELECT id, name, course_id, message, created_at FROM reviews ORDER BY id DESC"),
+    query("SELECT id, title, message, course_id, is_read, created_at FROM notifications ORDER BY id DESC"),
+  ]);
+  return { courses, subjects, sessions, teachers, courseTeachers, events, reviews, notifications };
 }
 
 export default async function handler(req, res) {
-  const url = process.env.TURSO_DATABASE_URL;
-  const token = process.env.TURSO_AUTH_TOKEN;
-
-  if (!url || !token) {
-    res
-      .status(500)
-      .json({ error: "Missing TURSO_DATABASE_URL or TURSO_AUTH_TOKEN env vars." });
+  if (req.method !== "GET") {
+    res.setHeader("Allow", "GET");
+    res.status(405).json({ error: "Method not allowed." });
     return;
   }
 
@@ -85,16 +33,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const value = await fetchFromTurso(url, token);
+    const value = await fetchPublicData();
     cache = { at: now, value };
     res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=86400");
     res.status(200).json(value);
-  } catch (err) {
+  } catch (error) {
     if (cache.value) {
       res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=300");
       res.status(200).json(cache.value);
       return;
     }
-    res.status(502).json({ error: String((err && err.message) || err) });
+    res.status(502).json({ error: String(error?.message || error) });
   }
 }

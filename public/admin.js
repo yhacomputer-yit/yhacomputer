@@ -19,6 +19,7 @@
         { name: "image", label: "Course image", type: "image" },
         { name: "subject", label: "Subject", type: "text" },
         { name: "description", label: "Description", type: "textarea" },
+        { name: "highlights", label: "Highlights (one per line)", type: "textarea" },
       ],
     },
     subjects: {
@@ -114,7 +115,7 @@
       fields: [
         { name: "title", label: "Title", type: "text", required: true },
         { name: "message", label: "Message", type: "textarea", required: true },
-        { name: "course_id", label: "Course ID", type: "text" },
+        { name: "course_id", label: "Course", type: "select-dynamic", optionsTable: "courses", optionsLabel: "title", optionsValue: "id" },
         { name: "is_read", label: "Is Read", type: "select", options: ["0", "1"] },
       ],
     },
@@ -141,8 +142,8 @@
         { name: "image", label: "Image", type: "image" },
         { name: "education", label: "Education", type: "text" },
         { name: "status", label: "Status", type: "select", options: ["pending", "active", "inactive", "completed"] },
-         { name: "course_id", label: "Course ID", type: "text" },
-         { name: "session_id", label: "Session ID", type: "text" },
+        { name: "course_id", label: "Course", type: "select-dynamic", optionsTable: "courses", optionsLabel: "title", optionsValue: "id" },
+        { name: "session_id", label: "Session", type: "select-dynamic", optionsTable: "sessions", optionsLabel: "name", optionsValue: "id" },
        ],
      },
    };

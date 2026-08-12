@@ -61,5 +61,6 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), localApi()],
+    server: { allowedHosts: true },
   };
 });

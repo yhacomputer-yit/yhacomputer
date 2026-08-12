@@ -11,7 +11,7 @@
 
 // Editable columns per table. Only these columns are ever written, which also
 // prevents arbitrary column names from reaching the SQL.
-import crypto from "crypto";
+import { ensureSchema, execute, generatePassword, hashPassword, query } from "./_db.js";
 
 const TABLES = {
   courses: [
@@ -86,110 +86,14 @@ const TABLES = {
   ],
 };
 
-function toHttpUrl(url) {
-  return url.replace(/^libsql:\/\//, "https://").replace(/\/+$/, "");
-}
 
-function toArg(value) {
-  if (value == null || value === "") return { type: "null" };
-  return { type: "text", value: String(value) };
-}
 
-function rowsToObjects(result) {
-  const cols = result.cols.map((c) => c.name);
-  return result.rows.map((row) => {
-    const obj = {};
-    row.forEach((cell, i) => {
-      obj[cols[i]] = cell == null ? null : cell.value;
-    });
-    return obj;
-  });
-}
 
-async function execute(sql, args) {
-  const url = process.env.TURSO_DATABASE_URL;
-  const token =
-    process.env.TURSO_WRITE_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN;
-  if (!url || !token) {
-    throw new Error("Missing TURSO_DATABASE_URL or TURSO_AUTH_TOKEN env vars.");
-  }
-  const requests = [
-    { type: "execute", stmt: { sql, args: (args || []).map(toArg) } },
-    { type: "close" },
-  ];
-  const response = await fetch(toHttpUrl(url) + "/v2/pipeline", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ requests }),
-  });
-  if (!response.ok) {
-    throw new Error("Turso request failed with status " + response.status);
-  }
-  const data = await response.json();
-  const first = data.results[0];
-  if (first.type === "error") {
-    throw new Error(first.error && first.error.message);
-  }
-  return first.response.result;
-}
 
-// Ensures every column declared in TABLES[table] actually exists in the
-// database. This lets new fields (e.g. the events `image` column) be added
-// automatically on first write instead of failing with "no such column".
-async function ensureColumns(table) {
-  const needed = TABLES[table];
-  if (!needed || !needed.length) return;
-  const result = await execute("PRAGMA table_info(" + table + ")");
-  const existing = rowsToObjects(result || { cols: [], rows: [] }).map(
-    (row) => row.name
-  );
-  for (const column of needed) {
-    if (!existing.includes(column)) {
-      await execute(
-        "ALTER TABLE " + table + " ADD COLUMN " + column + " TEXT"
-      );
-    }
-  }
-}
 
-async function ensureTable(table) {
-  try {
-    await execute("SELECT 1 FROM " + table + " LIMIT 1");
-  } catch (e) {
-    const needed = TABLES[table];
-    if (!needed || !needed.length) throw e;
-    const cols = needed.map((c) => c + " TEXT").join(", ");
-    await execute(
-      "CREATE TABLE IF NOT EXISTS " + table + " (id INTEGER PRIMARY KEY AUTOINCREMENT, " + cols + ")"
-    );
-  }
-}
 
-function hashPassword(password) {
-  return crypto.createHash("sha256").update(password).digest("hex");
-}
 
-function generatePassword() {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let password = "";
-  for (let i = 0; i < 8; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return password;
-}
 
-async function ensureStudentsTable() {
-  try {
-    await execute(
-      "CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT UNIQUE, name TEXT, email TEXT, phone TEXT, father_name TEXT, mother_name TEXT, nrc_number TEXT, register_date TEXT, enroll_date TEXT, viber_phone TEXT, city TEXT, township TEXT, birthday TEXT, gender TEXT, image TEXT, education TEXT, status TEXT, course_id TEXT, session_id TEXT, password_hash TEXT, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')))"
-    );
-  } catch (e) {
-    // Table might already exist
-  }
-}
 
 function readBody(req) {
   if (req.body && typeof req.body === "object") return Promise.resolve(req.body);
@@ -224,6 +128,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    await ensureSchema();
     let body = {};
     if (req.method === "POST") {
       body = await readBody(req);
@@ -238,14 +143,13 @@ export default async function handler(req, res) {
     const columns = TABLES[table];
 
     if (action === "list") {
-      await ensureTable(table);
-      const result = await execute("SELECT * FROM " + table + " ORDER BY id DESC");
-      res.status(200).json({ rows: rowsToObjects(result) });
+      const rows = await query("SELECT * FROM " + table + " ORDER BY id DESC");
+      const safeRows = table === "students"
+        ? rows.map(({ password_hash, ...row }) => ({ ...row, password_set: Boolean(password_hash) }))
+        : rows;
+      res.status(200).json({ rows: safeRows });
       return;
     }
-
-    await ensureTable(table);
-    await ensureColumns(table);
 
     if (action === "create") {
       const values = body.values || {};
@@ -303,7 +207,10 @@ export default async function handler(req, res) {
     }
 
     if (action === "generate_password") {
-      await ensureStudentsTable();
+      if (table !== "students") {
+        res.status(400).json({ error: "Password generation is only available for students." });
+        return;
+      }
       const id = body.id;
       if (!id) {
         res.status(400).json({ error: "Missing student id." });

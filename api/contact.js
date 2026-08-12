@@ -1,10 +1,4 @@
-function toHttpUrl(url) {
-  return url.replace(/^libsql:\/\//, "https://").replace(/\/+$/, "");
-}
-
-function toArg(value) {
-  return { type: "text", value };
-}
+import { ensureSchema, execute } from "./_db.js";
 
 function readBody(req) {
   if (req.body && typeof req.body === "object") return Promise.resolve(req.body);
@@ -12,9 +6,7 @@ function readBody(req) {
     let raw = "";
     req.on("data", (chunk) => {
       raw += chunk;
-      if (raw.length > 20_000) {
-        reject(new Error("Request body is too large."));
-      }
+      if (raw.length > 20_000) reject(new Error("Request body is too large."));
     });
     req.on("end", () => {
       try {
@@ -34,18 +26,11 @@ export default async function handler(req, res) {
     return;
   }
 
-  const url = process.env.TURSO_DATABASE_URL;
-  const token =
-    process.env.TURSO_WRITE_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN;
-  if (!url || !token) {
-    res.status(500).json({ error: "Contact service is not configured." });
-    return;
-  }
-
   try {
+    await ensureSchema();
     const body = await readBody(req);
     const name = String(body.name || "").trim();
-    const email = String(body.email || "").trim();
+    const email = String(body.email || "").trim().toLowerCase();
     const message = String(body.message || "").trim();
 
     if (!name || !email || !message) {
@@ -56,42 +41,14 @@ export default async function handler(req, res) {
       res.status(400).json({ error: "One or more fields are too long." });
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
       res.status(400).json({ error: "Enter a valid email address." });
       return;
     }
 
-    const response = await fetch(toHttpUrl(url) + "/v2/pipeline", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + token,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        requests: [
-          {
-            type: "execute",
-            stmt: {
-              sql: "INSERT INTO contacts (name, email, message) VALUES (?, ?, ?)",
-              args: [name, email, message].map(toArg),
-            },
-          },
-          { type: "close" },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Turso request failed with status " + response.status);
-    }
-    const data = await response.json();
-    const result = data.results[0];
-    if (result.type === "error") {
-      throw new Error(result.error && result.error.message);
-    }
-
-    res.status(201).json({ ok: true });
+    await execute("INSERT INTO contacts (name, email, message) VALUES (?, ?, ?)", [name, email, message]);
+    res.status(201).json({ ok: true, message: "Thanks — your message has been sent." });
   } catch (error) {
-    res.status(502).json({ error: String(error.message || error) });
+    res.status(502).json({ error: String(error?.message || error) });
   }
 }
