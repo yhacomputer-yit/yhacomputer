@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/course.dart';
+import '../models/subject.dart';
 import '../widgets/nav_bar.dart';
 import '../theme/app_theme.dart';
 
@@ -17,6 +18,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   bool loading = true;
   String error = '';
   Course? course;
+  List<Subject> courseSubjects = [];
 
   @override
   void initState() {
@@ -32,11 +34,18 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     try {
       final data = await ApiService.fetchAll();
       final courses = data['courses'] as List<Course>;
+      final subjects = data['subjects'] as List<Subject>;
+      final loadedCourse = courses.firstWhere(
+        (c) => c.id == widget.courseId,
+        orElse: () => Course(title: ''),
+      );
+      final loadedSubjects = subjects
+          .where((subject) => subject.courseId == loadedCourse.id)
+          .toList();
+      if (!mounted) return;
       setState(() {
-        course = courses.firstWhere(
-          (c) => c.id == widget.courseId,
-          orElse: () => Course(title: ''),
-        );
+        course = loadedCourse;
+        courseSubjects = loadedSubjects;
         loading = false;
       });
     } catch (e) {
@@ -132,7 +141,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     }
 
     final badges = course!.badgeList;
-    final highlights = course!.highlightList;
 
     return Scaffold(
       body: LayoutBuilder(
@@ -248,17 +256,18 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                           style: AppTextStyles.bodyLarge.copyWith(height: 1.7),
                         ),
                       ],
-                      if (highlights.isNotEmpty) ...[
+                      if (courseSubjects.isNotEmpty) ...[
                         const SizedBox(height: 28),
                         Text(
-                          "What you'll learn",
+                          'Subjects',
                           style: AppTextStyles.titleLarge,
                         ),
                         const SizedBox(height: 14),
-                        ...highlights.map(
-                          (h) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
+                        ...courseSubjects.map(
+                          (subject) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Icon(
                                   Icons.check_circle,
@@ -267,9 +276,23 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
-                                  child: Text(
-                                    h,
-                                    style: AppTextStyles.bodyMedium.copyWith(height: 1.5),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        subject.name,
+                                        style: AppTextStyles.bodyMedium.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      if (subject.description != null && subject.description!.isNotEmpty) ...[
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          subject.description!,
+                                          style: AppTextStyles.bodyMedium.copyWith(height: 1.5),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
                               ],

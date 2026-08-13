@@ -26,7 +26,6 @@ class _AdminScreenState extends State<AdminScreen> {
   final _subjectController = TextEditingController();
   final _levelController = TextEditingController();
   final _durationController = TextEditingController();
-  final _highlightsController = TextEditingController();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _messageController = TextEditingController();
@@ -360,7 +359,6 @@ class _AdminScreenState extends State<AdminScreen> {
       _subjectController.clear();
       _levelController.clear();
       _durationController.clear();
-      _highlightsController.clear();
       _nameController.clear();
       _emailController.clear();
       _messageController.clear();
@@ -380,7 +378,6 @@ class _AdminScreenState extends State<AdminScreen> {
       _subjectController.text = row['subject'] ?? '';
       _levelController.text = row['level'] ?? '';
       _durationController.text = row['duration'] ?? '';
-      _highlightsController.text = row['highlights'] ?? '';
       _nameController.text = row['name'] ?? '';
       _emailController.text = row['email'] ?? '';
       _messageController.text = row['message'] ?? '';
@@ -462,7 +459,6 @@ class _AdminScreenState extends State<AdminScreen> {
           _textField(_subjectController, 'Subject'),
           _textField(_levelController, 'Level'),
           _textField(_durationController, 'Duration'),
-          _textField(_highlightsController, 'Highlights (comma separated)'),
         ];
       case 'events':
         return [
@@ -568,7 +564,6 @@ class _AdminScreenState extends State<AdminScreen> {
           'subject': _subjectController.text,
           'level': _levelController.text,
           'duration': _durationController.text,
-          'highlights': _highlightsController.text,
         };
       case 'events':
         return {

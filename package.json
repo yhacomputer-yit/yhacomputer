@@ -8,8 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "db:seed": "node scripts/seed-db.js",
-    "db:verify": "node scripts/verify-live-data.js",
-    "db:clear-highlights": "node scripts/clear-course-highlights.js"
+    "db:verify": "node scripts/verify-live-data.js"
   },
   "dependencies": {
     "pdfjs-dist": "^6.2.108",

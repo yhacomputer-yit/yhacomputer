@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/course.dart';
+import '../models/subject.dart';
 import '../models/event.dart';
 import '../models/review.dart';
 import '../models/notification_model.dart';
@@ -49,6 +50,9 @@ class ApiService {
     final courses = (data['courses'] as List? ?? [])
         .map((json) => Course.fromJson(json))
         .toList();
+    final subjects = (data['subjects'] as List? ?? [])
+        .map((json) => Subject.fromJson(json))
+        .toList();
     final events = (data['events'] as List? ?? [])
         .map((json) => Event.fromJson(json))
         .toList();
@@ -60,6 +64,7 @@ class ApiService {
         .toList();
     return {
       'courses': courses,
+      'subjects': subjects,
       'events': events,
       'reviews': reviews,
       'notifications': notifications,

@@ -22,7 +22,6 @@ const TABLES = {
     "subject",
     "level",
     "duration",
-    "highlights",
   ],
   subjects: [
     "course_id",

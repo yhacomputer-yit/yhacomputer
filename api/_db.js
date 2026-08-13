@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 const TABLE_COLUMNS = {
-  courses: ["title", "description", "price", "image", "subject", "level", "duration", "highlights", "created_at", "updated_at"],
+  courses: ["title", "description", "price", "image", "subject", "level", "duration", "created_at", "updated_at"],
   subjects: ["course_id", "name", "description", "created_at"],
   sessions: ["course_id", "name", "start_time", "end_time", "created_at"],
   teachers: ["name", "email", "phone", "specialization", "image", "bio", "created_at"],
@@ -23,7 +23,6 @@ const CREATE_STATEMENTS = [
     subject TEXT,
     level TEXT,
     duration TEXT,
-    highlights TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,

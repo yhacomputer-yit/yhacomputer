@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS courses (
   subject TEXT,
   level TEXT,
   duration TEXT,
-  highlights TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -131,3 +130,4 @@ CREATE INDEX IF NOT EXISTS idx_contacts_created_at ON contacts(created_at);
 
 -- Existing deployments with students.course_id/session_id as TEXT are repaired by
 -- api/_db.js into integer foreign keys while preserving valid references.
+-- Course curriculum content belongs in the subjects table; the legacy highlights field is not used.

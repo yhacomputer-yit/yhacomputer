@@ -101,10 +101,6 @@ async function seed() {
     courses[course.key] = Number(row.id);
   }
 
-  // The subjects table is the single source of curriculum content.
-  // Clear legacy highlights so course records cannot duplicate that content.
-  await execute("UPDATE courses SET highlights = NULL WHERE highlights IS NOT NULL");
-
   const subjectRows = [
     [courses.web, "HTML & CSS", "Responsive page structure and styling foundations."],
     [courses.web, "JavaScript", "Interactive interfaces and browser fundamentals."],

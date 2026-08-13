@@ -7,7 +7,6 @@ class Course {
   final String? subject;
   final String? level;
   final String? duration;
-  final String? highlights;
 
   Course({
     this.id,
@@ -18,20 +17,21 @@ class Course {
     this.subject,
     this.level,
     this.duration,
-    this.highlights,
   });
 
   factory Course.fromJson(Map<String, dynamic> json) {
+    int? parseInt(dynamic value) => value is int ? value : int.tryParse('$value');
+    String? asString(dynamic value) => value == null ? null : value.toString();
+
     return Course(
-      id: json['id'] is int ? json['id'] : null,
-      title: json['title'] ?? '',
-      description: json['description'],
-      price: json['price'],
-      image: json['image'],
-      subject: json['subject'],
-      level: json['level'],
-      duration: json['duration'],
-      highlights: json['highlights'],
+      id: parseInt(json['id']),
+      title: json['title']?.toString() ?? '',
+      description: asString(json['description']),
+      price: asString(json['price']),
+      image: asString(json['image']),
+      subject: asString(json['subject']),
+      level: asString(json['level']),
+      duration: asString(json['duration']),
     );
   }
 
@@ -45,16 +45,10 @@ class Course {
       'subject': subject,
       'level': level,
       'duration': duration,
-      'highlights': highlights,
     };
   }
 
   List<String> get badgeList {
     return [subject, level, duration].where((v) => v != null && v.isNotEmpty).cast<String>().toList();
-  }
-
-  List<String> get highlightList {
-    if (highlights == null || highlights!.isEmpty) return [];
-    return highlights!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
   }
 }
