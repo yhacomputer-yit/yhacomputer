@@ -13,10 +13,7 @@
       <div class="admin-container admin-nav">
         <a href="/" class="admin-brand">
           <span class="admin-logo-mark">Y</span>
-          <span>
-            <strong>YHA Computer</strong>
-            <small>Catalog workspace</small>
-          </span>
+          <span><strong>YHA Admin</strong></span>
         </a>
         <div class="admin-nav-actions">
           <a href="/" class="admin-site-link">View public site</a>
@@ -27,33 +24,23 @@
 
     <aside class="admin-sidebar" id="admin-sidebar" aria-label="Admin navigation">
       <div class="admin-sidebar-header">
-        <div class="admin-brand">
-          <span class="admin-logo-mark">Y</span>
-          <div>
-            <strong>YHA Computer</strong>
-            <small>Live data manager</small>
-          </div>
-        </div>
+        <strong class="admin-sidebar-title">Menu</strong>
         <button type="button" class="admin-sidebar-close" id="sidebar-close" aria-label="Close menu">×</button>
       </div>
       <nav class="admin-sidebar-nav">
-        <span class="admin-nav-label">Course builder</span>
-        <button class="admin-tab is-active" data-table="courses" role="tab"><span>01</span> Courses</button>
-        <button class="admin-tab" data-table="subjects" role="tab"><span>02</span> Subjects</button>
-        <button class="admin-tab" data-table="sessions" role="tab"><span>03</span> Sessions</button>
-        <button class="admin-tab" data-table="teachers" role="tab"><span>04</span> Teachers</button>
-        <button class="admin-tab" data-table="course_teachers" role="tab"><span>05</span> Teacher assignments</button>
-        <span class="admin-nav-label">Community & operations</span>
+        <span class="admin-nav-label">Catalog</span>
+        <button class="admin-tab is-active" data-table="courses" role="tab">Courses</button>
+        <button class="admin-tab" data-table="subjects" role="tab">Subjects</button>
+        <button class="admin-tab" data-table="sessions" role="tab">Sessions</button>
+        <button class="admin-tab" data-table="teachers" role="tab">Teachers</button>
+        <button class="admin-tab" data-table="course_teachers" role="tab">Assignments</button>
+        <span class="admin-nav-label">Manage</span>
         <button class="admin-tab" data-table="events" role="tab">Events</button>
         <button class="admin-tab" data-table="reviews" role="tab">Reviews</button>
         <button class="admin-tab" data-table="notifications" role="tab">Notifications</button>
         <button class="admin-tab" data-table="students" role="tab">Students</button>
         <button class="admin-tab" data-table="contacts" role="tab">Contact inbox</button>
       </nav>
-      <div class="admin-sidebar-foot">
-        <strong>Catalog rule</strong>
-        <p>Create a course first, then attach its subjects, sessions, and teachers.</p>
-      </div>
     </aside>
 
     <div class="admin-sidebar-overlay" id="sidebar-overlay"></div>
@@ -72,67 +59,35 @@
         </div>
 
         <section id="login-view" class="admin-login-layout" hidden>
-          <div class="admin-login-intro">
-            <span class="admin-eyebrow">Secure live workspace</span>
-            <h1>Manage the Turso course catalog with confidence.</h1>
-            <p>Every update made here appears on the public YHA website. Build a complete learning path by entering the course, its subjects, sessions, and teacher assignment in order.</p>
-            <div class="admin-feature-list">
-              <div><span>01</span>Create complete course records</div>
-              <div><span>02</span>Add curriculum subjects and class times</div>
-              <div><span>03</span>Publish live Turso changes</div>
-            </div>
-          </div>
           <div class="admin-login-card">
-            <div class="admin-lock" aria-hidden="true">●</div>
-            <span class="admin-eyebrow">Administrator access</span>
-            <h2>Welcome back</h2>
-            <p class="admin-hint">Enter the configured admin password to open the live catalog workspace.</p>
+            <h2>Admin login</h2>
             <form id="login-form" class="admin-form">
               <label>Admin password
                 <input type="password" id="password-input" placeholder="Enter password" autocomplete="current-password" required />
               </label>
-              <button type="submit" class="admin-button admin-button-primary">Open workspace <span>→</span></button>
+              <button type="submit" class="admin-button admin-button-primary">Sign in</button>
               <p class="admin-error" id="login-error" hidden></p>
             </form>
           </div>
         </section>
 
         <section id="manage-view" class="admin-workspace" hidden>
-          <div class="admin-workspace-hero">
-            <div>
-              <span class="admin-eyebrow">Live Turso catalog</span>
-              <h1 id="workspace-title">Build complete course records.</h1>
-              <p id="workspace-description">Create a course first, then add its subjects, sessions, and teacher assignments.</p>
+          <div class="admin-workspace-toolbar">
+            <h1 id="workspace-title">Courses</h1>
+            <div class="admin-workspace-actions">
+              <div class="admin-view-tabs" id="view-tabs">
+                <button class="admin-view-tab is-active" data-view="list" role="tab">List</button>
+                <button class="admin-view-tab" data-view="form" role="tab">Form</button>
+              </div>
+              <button type="button" class="admin-button admin-button-primary" id="new-record">+ Add</button>
             </div>
-            <button type="button" class="admin-button admin-button-primary" id="new-record">+ Add course</button>
-          </div>
-
-          <div class="admin-summary-grid" aria-label="Catalog counts">
-            <article><span>Courses</span><strong id="summary-courses">—</strong></article>
-            <article><span>Subjects</span><strong id="summary-subjects">—</strong></article>
-            <article><span>Sessions</span><strong id="summary-sessions">—</strong></article>
-            <article><span>Teachers</span><strong id="summary-teachers">—</strong></article>
-          </div>
-
-          <div class="admin-guidance" id="admin-guidance">
-            <span class="admin-guidance-step">1</span>
-            <p><strong>Recommended workflow:</strong> Add a course, add its individual subjects, add a class session, then assign a teacher. Use the same sequence for every new program.</p>
-            <span class="admin-guidance-status">Course builder</span>
-          </div>
-
-          <div class="admin-view-tabs" id="view-tabs">
-            <button class="admin-view-tab is-active" data-view="list" role="tab">Records</button>
-            <button class="admin-view-tab" data-view="form" role="tab">Add / edit</button>
           </div>
 
           <div class="admin-panel">
             <div id="list-view" class="admin-view-section is-active">
               <div class="admin-list-wrap">
                 <div class="list-heading">
-                  <div>
-                    <span id="list-kicker">Live database records</span>
-                    <h2 id="list-title">Courses</h2>
-                  </div>
+                  <div><h2 id="list-title">Courses</h2></div>
                   <div class="admin-count"><strong id="record-count">0</strong><span>records</span></div>
                 </div>
                 <p class="admin-status" id="list-status"></p>
@@ -143,11 +98,7 @@
 
             <div id="form-view" class="admin-view-section" hidden>
               <div class="admin-form-wrap">
-                <div class="panel-title">
-                  <span id="form-kicker">Live Turso data entry</span>
-                  <h2 id="form-title">Add course</h2>
-                  <p id="form-help">Complete the course details below. Add subjects and sessions after saving this course.</p>
-                </div>
+                <div class="panel-title"><h2 id="form-title">Add course</h2></div>
                 <form id="record-form" class="admin-form"></form>
               </div>
             </div>

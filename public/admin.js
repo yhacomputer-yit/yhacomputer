@@ -178,14 +178,14 @@
     const description = $("workspace-description");
     const formHelp = $("form-help");
     const listKicker = $("list-kicker");
-    if (title) title.textContent = "Manage " + schema.plural.toLowerCase() + ".";
+    if (title) title.textContent = schema.plural;
     if (description) description.textContent = TABLE_HELP[currentTable] || schema.description;
     if (formHelp) formHelp.textContent = TABLE_HELP[currentTable] || schema.description;
     if (listKicker) listKicker.textContent = "Live Turso " + schema.plural.toLowerCase();
     const newRecord = $("new-record");
     if (newRecord) {
       newRecord.hidden = !schema.create;
-      newRecord.textContent = schema.create ? "+ Add " + schema.label.toLowerCase() : "";
+      newRecord.textContent = schema.create ? "+ Add " + schema.label : "";
     }
   }
 
