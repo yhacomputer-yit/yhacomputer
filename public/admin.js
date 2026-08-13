@@ -848,6 +848,12 @@
     syncWorkspaceCopy();
     renderForm();
     loadList();
+    const sidebar = $("admin-sidebar");
+    const overlay = $("sidebar-overlay");
+    const menuToggle = $("menu-toggle");
+    if (sidebar) sidebar.classList.remove("is-open");
+    if (overlay) overlay.style.display = "none";
+    if (menuToggle) menuToggle.setAttribute("aria-expanded", "false");
   }
 
   async function onLogin(e) {
@@ -898,11 +904,13 @@
     function openSidebar() {
       sidebar.classList.add("is-open");
       overlay.style.display = "block";
+      menuToggle.setAttribute("aria-expanded", "true");
     }
 
     function closeSidebar() {
       sidebar.classList.remove("is-open");
       overlay.style.display = "none";
+      menuToggle.setAttribute("aria-expanded", "false");
     }
 
     if (menuToggle) {
@@ -914,6 +922,9 @@
     if (overlay) {
       overlay.addEventListener("click", closeSidebar);
     }
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && sidebar.classList.contains("is-open")) closeSidebar();
+    });
 
     if (getPassword()) {
       showManage();

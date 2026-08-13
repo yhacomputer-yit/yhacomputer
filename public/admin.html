@@ -60,9 +60,16 @@
 
     <main class="admin-main">
       <div class="admin-container">
-        <button type="button" class="admin-menu-toggle" id="menu-toggle" aria-label="Open menu">
-          <span></span><span></span><span></span>
-        </button>
+        <div class="admin-mobile-toolbar">
+          <button type="button" class="admin-menu-toggle" id="menu-toggle" aria-label="Open navigation menu">
+            <span></span><span></span><span></span>
+          </button>
+          <div>
+            <strong>Catalog manager</strong>
+            <span>Live Turso data</span>
+          </div>
+          <span class="admin-live-indicator"><i></i>Live</span>
+        </div>
 
         <section id="login-view" class="admin-login-layout" hidden>
           <div class="admin-login-intro">
@@ -110,6 +117,7 @@
           <div class="admin-guidance" id="admin-guidance">
             <span class="admin-guidance-step">1</span>
             <p><strong>Recommended workflow:</strong> Add a course, add its individual subjects, add a class session, then assign a teacher. Use the same sequence for every new program.</p>
+            <span class="admin-guidance-status">Course builder</span>
           </div>
 
           <div class="admin-view-tabs" id="view-tabs">
