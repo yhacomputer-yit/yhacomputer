@@ -13,6 +13,17 @@ export default function CourseDetail() {
   const { id } = useParams();
   const { loading, error, courses, subjects, sessions, teachers, courseTeachers } = useSiteData();
   const [imageFailed, setImageFailed] = useState(false);
+  const course = courses.find((item) => String(item.id) === String(id));
+  const previewImage = course ? resolveImage(course.image) : "";
+
+  // Keep this hook before every early return so the loading -> loaded transition
+  // never changes the hook order and crashes the detail route.
+  useSeo({
+    title: course?.title,
+    description: course?.description,
+    image: previewImage || undefined,
+    url: `/courses/${id}`,
+  });
 
   if (loading) {
     return (
@@ -36,8 +47,6 @@ export default function CourseDetail() {
       </div>
     );
   }
-
-  const course = courses.find((item) => String(item.id) === String(id));
 
   if (!course) {
     return (
@@ -64,9 +73,20 @@ export default function CourseDetail() {
   const courseTeachersList = teachers.filter((t) => courseTeacherIds.includes(String(t.id)));
 
   const siteUrl = "https://www.yha-edu.tech";
-  const numericPrice = course.price
-    ? parseFloat(course.price.replace(/[^0-9.]/g, ""))
+  const numericPrice = course.price !== null && course.price !== undefined && course.price !== ""
+    ? Number.parseFloat(String(course.price).replace(/[^0-9.]/g, ""))
     : null;
+  const highlights = (() => {
+    if (Array.isArray(course.highlights)) return course.highlights.filter(Boolean);
+    if (!course.highlights) return [];
+    try {
+      const parsed = JSON.parse(course.highlights);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch {
+      // Keep compatibility with legacy newline/comma-separated values.
+    }
+    return String(course.highlights).split(/[\\n,]+/).map((item) => item.trim()).filter(Boolean);
+  })();
   const courseUrl = `${siteUrl}/courses/${course.id}`;
 
   const courseJsonLd = {
@@ -104,13 +124,6 @@ export default function CourseDetail() {
       { "@type": "ListItem", position: 3, name: course.title, item: courseUrl },
     ],
   };
-
-  useSeo({
-    title: course.title,
-    description: course.description,
-    image: image || undefined,
-    url: `/courses/${course.id}`,
-  });
 
   return (
     <div className="detail-page container">
@@ -167,6 +180,19 @@ export default function CourseDetail() {
             </div>
           )}
           {course.description && <p className="detail-desc">{course.description}</p>}
+          {highlights.length > 0 && (
+            <div className="detail-section">
+              <h2>What you will learn</h2>
+              <ul>
+                {highlights.map((highlight) => (
+                  <li key={highlight}>
+                    <span>&#10003;</span>
+                    <strong>{highlight}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {courseSubjects.length > 0 && (
             <div className="detail-section">
               <h2>Subjects</h2>
