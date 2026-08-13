@@ -139,7 +139,8 @@ function toHttpUrl(url) {
 
 export function toArg(value) {
   if (value == null || value === "") return { type: "null" };
-  if (typeof value === "number" && Number.isInteger(value)) return { type: "integer", value };
+  // Turso's HTTP pipeline protocol represents integer values as decimal strings.
+  if (typeof value === "number" && Number.isInteger(value)) return { type: "integer", value: String(value) };
   if (typeof value === "number") return { type: "float", value };
   return { type: "text", value: String(value) };
 }
@@ -171,7 +172,10 @@ export async function execute(sql, args = []) {
       ],
     }),
   });
-  if (!response.ok) throw new Error("Turso request failed with status " + response.status);
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error("Turso request failed with status " + response.status + ": " + errorBody.slice(0, 800));
+  }
   const data = await response.json();
   const first = data.results && data.results[0];
   if (!first || first.type === "error") throw new Error(first?.error?.message || "Turso query failed.");
@@ -252,10 +256,22 @@ let schemaPromise = null;
 export function ensureSchema() {
   if (!schemaPromise) {
     schemaPromise = (async () => {
-      for (const statement of CREATE_STATEMENTS) await execute(statement);
+      for (const statement of CREATE_STATEMENTS) {
+        try {
+          await execute(statement);
+        } catch (error) {
+          throw new Error("Schema table setup failed: " + statement.replace(/\\s+/g, " ").slice(0, 180) + ". " + error.message);
+        }
+      }
       await addCompatibilityColumns();
       await repairStudentForeignKeyTypes();
-      for (const statement of INDEX_STATEMENTS) await execute(statement);
+      for (const statement of INDEX_STATEMENTS) {
+        try {
+          await execute(statement);
+        } catch (error) {
+          throw new Error("Schema index setup failed: " + statement + ". " + error.message);
+        }
+      }
     })().catch((error) => {
       schemaPromise = null;
       throw error;
