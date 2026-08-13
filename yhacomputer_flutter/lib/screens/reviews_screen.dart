@@ -30,8 +30,10 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
       error = '';
     });
     try {
-      reviews = await ApiService.fetchReviews();
+      final fetchedReviews = await ApiService.fetchReviews();
       setState(() {
+        reviews = fetchedReviews;
+        page = 1;
         loading = false;
       });
     } catch (e) {
@@ -44,6 +46,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
 
   List<Review> get visible {
     final start = (page - 1) * pageSize;
+    if (start >= reviews.length) return const <Review>[];
     return reviews.sublist(
       start,
       start + pageSize > reviews.length ? reviews.length : start + pageSize,
@@ -56,7 +59,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reviews'),
+        title: const Text('Student reviews'),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.onSurface,
       ),
@@ -93,7 +96,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Real feedback from the YHA community.',
+                                  'Feedback published by the YHA community.',
                                   style: AppTextStyles.bodyMedium,
                                 ),
                                 const SizedBox(height: 4),

@@ -29,8 +29,10 @@ class _CoursesScreenState extends State<CoursesScreen> {
       error = '';
     });
     try {
-      courses = await ApiService.fetchCourses();
+      final fetchedCourses = await ApiService.fetchCourses();
       setState(() {
+        courses = fetchedCourses;
+        if (!filters.contains(activeFilter)) activeFilter = 'All';
         loading = false;
       });
     } catch (e) {
@@ -41,17 +43,29 @@ class _CoursesScreenState extends State<CoursesScreen> {
     }
   }
 
+  List<String> get filters {
+    final subjects = courses
+        .map((course) => course.subject?.trim())
+        .whereType<String>()
+        .where((subject) => subject.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort((left, right) => left.toLowerCase().compareTo(right.toLowerCase()));
+    return ['All', ...subjects];
+  }
+
   List<Course> get filtered {
-    final allowed = ['Ict', 'Programming', 'Graphic design'];
-    if (activeFilter == 'All') {
-      return courses.where((c) => allowed.contains(c.subject)).toList();
-    }
-    return courses.where((c) => c.subject == activeFilter).toList();
+    if (activeFilter == 'All') return courses;
+    final normalizedFilter = activeFilter.toLowerCase().trim();
+    return courses
+        .where(
+          (course) => course.subject?.trim().toLowerCase() == normalizedFilter,
+        )
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final filters = ['All', 'Ict', 'Programming', 'Graphic design'];
     return Scaffold(
       appBar: AppBar(
         title: const Text('Courses'),
@@ -164,6 +178,14 @@ class _CourseCard extends StatelessWidget {
   final Course course;
   const _CourseCard({required this.course});
 
+  String _formatFee(String? value) {
+    final fee = value?.trim() ?? '';
+    if (fee.isEmpty || fee == '0' || fee.toLowerCase() == 'null') {
+      return 'Fee: pending';
+    }
+    return fee.toLowerCase().startsWith('fee') ? fee : 'Fee: $fee';
+  }
+
   String get imageUrl {
     if (course.image == null || course.image!.isEmpty) return '';
     final v = course.image!;
@@ -230,15 +252,14 @@ class _CourseCard extends StatelessWidget {
                         course.price != null &&
                         course.price!.isNotEmpty)
                       Text(' · ', style: AppTextStyles.bodySmall),
-                    if (course.price != null && course.price!.isNotEmpty)
-                      Text(
-                        course.price!,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.accent,
-                          fontSize: 14,
-                        ),
+                    Text(
+                      _formatFee(course.price),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.accent,
+                        fontSize: 14,
                       ),
+                    ),
                     const Spacer(),
                     AppCircularButton(
                       icon: Icons.arrow_forward,

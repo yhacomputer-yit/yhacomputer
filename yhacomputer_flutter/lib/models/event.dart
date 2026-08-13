@@ -22,16 +22,19 @@ class Event {
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
+    int? parseInt(dynamic value) => int.tryParse(value?.toString() ?? '');
+    String? asString(dynamic value) => value?.toString();
+
     return Event(
-      id: json['id'] is int ? json['id'] : null,
-      title: json['title'] ?? '',
-      description: json['description'],
-      date: json['date'],
-      venue: json['venue'],
-      category: json['category'],
-      eventType: json['event_type'],
-      duration: json['duration'],
-      image: json['image'],
+      id: parseInt(json['id']),
+      title: json['title']?.toString().trim() ?? '',
+      description: asString(json['description']),
+      date: asString(json['date']),
+      venue: asString(json['venue']),
+      category: asString(json['category']),
+      eventType: asString(json['event_type']),
+      duration: asString(json['duration']),
+      image: asString(json['image']),
     );
   }
 
@@ -51,7 +54,7 @@ class Event {
 
   List<String> get imageList {
     if (image == null || image!.isEmpty) return [];
-    return image!.split('|').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    return image!.split('|').map((item) => item.trim()).where((item) => item.isNotEmpty).toList();
   }
 
   List<Map<String, String>> get factList {
@@ -64,6 +67,6 @@ class Event {
   }
 
   List<String> get tagList {
-    return [category, eventType].where((v) => v != null && v.isNotEmpty).cast<String>().toList();
+    return [category, eventType].where((value) => value != null && value.isNotEmpty).cast<String>().toList();
   }
 }

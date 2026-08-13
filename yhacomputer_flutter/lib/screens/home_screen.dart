@@ -49,12 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final allowedSubjects = ['Ict', 'Programming', 'Graphic design'];
-    final filtered = courses
-        .where((c) => allowedSubjects.contains(c.subject))
-        .toList();
-    final display = filtered.take(6).toList();
-    final featured = display.take(3).toList();
+    final featured = courses.take(3).toList();
     final nextEvents = events.take(3).toList();
 
     return Scaffold(

@@ -30,8 +30,10 @@ class _EventsScreenState extends State<EventsScreen> {
       error = '';
     });
     try {
-      events = await ApiService.fetchEvents();
+      final fetchedEvents = await ApiService.fetchEvents();
       setState(() {
+        events = fetchedEvents;
+        page = 1;
         loading = false;
       });
     } catch (e) {
@@ -44,6 +46,7 @@ class _EventsScreenState extends State<EventsScreen> {
 
   List<Event> get visible {
     final start = (page - 1) * pageSize;
+    if (start >= events.length) return const <Event>[];
     return events.sublist(
       start,
       start + pageSize > events.length ? events.length : start + pageSize,
@@ -56,7 +59,7 @@ class _EventsScreenState extends State<EventsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Events'),
+        title: const Text('YHA events'),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.onSurface,
       ),
@@ -94,7 +97,7 @@ class _EventsScreenState extends State<EventsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Discover the latest YHA workshops and learning events.',
+                                  'Workshops, community sessions, and learning events from YHA.',
                                   style: AppTextStyles.bodyMedium,
                                 ),
                                 const SizedBox(height: 4),

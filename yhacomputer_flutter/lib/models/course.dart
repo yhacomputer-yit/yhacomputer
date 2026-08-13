@@ -20,8 +20,8 @@ class Course {
   });
 
   factory Course.fromJson(Map<String, dynamic> json) {
-    int? parseInt(dynamic value) => value is int ? value : int.tryParse('$value');
-    String? asString(dynamic value) => value == null ? null : value.toString();
+    int? parseInt(dynamic value) => int.tryParse(value?.toString() ?? '');
+    String? asString(dynamic value) => value?.toString();
 
     return Course(
       id: parseInt(json['id']),

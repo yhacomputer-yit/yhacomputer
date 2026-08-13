@@ -16,13 +16,28 @@ class NotificationModel {
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    int? parseInt(dynamic value) => int.tryParse(value?.toString() ?? '');
+
     return NotificationModel(
-      id: json['id'] is int ? json['id'] : null,
-      title: json['title'] ?? '',
-      message: json['message'] ?? '',
-      courseId: json['course_id'] is int ? json['course_id'] : null,
-      isRead: json['is_read'] == 1 || json['is_read'] == true,
-      createdAt: json['created_at'],
+      id: parseInt(json['id']),
+      title: json['title']?.toString().trim() ?? '',
+      message: json['message']?.toString().trim() ?? '',
+      courseId: parseInt(json['course_id']),
+      isRead: json['is_read'] == 1 || json['is_read'] == true || json['is_read'] == '1',
+      createdAt: json['created_at']?.toString(),
+    );
+  }
+
+  String get syncKey => id?.toString() ?? '${createdAt ?? ''}|$title|$message';
+
+  NotificationModel copyWith({bool? isRead}) {
+    return NotificationModel(
+      id: id,
+      title: title,
+      message: message,
+      courseId: courseId,
+      isRead: isRead ?? this.isRead,
+      createdAt: createdAt,
     );
   }
 

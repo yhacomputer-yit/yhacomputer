@@ -1,29 +1,57 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:yhacomputer_flutter/app.dart';
+import 'package:yhacomputer_flutter/models/course.dart';
+import 'package:yhacomputer_flutter/models/event.dart';
+import 'package:yhacomputer_flutter/models/notification_model.dart';
+import 'package:yhacomputer_flutter/models/review.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const YHAComputerApp());
+  group('Turso API model parsing', () {
+    test('converts course IDs returned as strings', () {
+      final course = Course.fromJson({
+        'id': '12',
+        'title': 'Web Design',
+        'subject': 'Web Development',
+      });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      expect(course.id, 12);
+      expect(course.subject, 'Web Development');
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    test('converts event IDs returned as strings', () {
+      final event = Event.fromJson({
+        'id': '8',
+        'title': 'Career workshop',
+        'event_type': 'Workshop',
+      });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+      expect(event.id, 8);
+      expect(event.eventType, 'Workshop');
+    });
+
+    test('converts review IDs returned as strings', () {
+      final review = Review.fromJson({
+        'id': '5',
+        'name': 'Aye Aye',
+        'message': 'Helpful practical lessons.',
+      });
+
+      expect(review.id, 5);
+      expect(review.name, 'Aye Aye');
+    });
+
+    test('converts notification and related course IDs returned as strings', () {
+      final notification = NotificationModel.fromJson({
+        'id': '21',
+        'course_id': '12',
+        'title': 'New class schedule',
+        'message': 'The updated schedule is available.',
+        'is_read': '1',
+      });
+
+      expect(notification.id, 21);
+      expect(notification.courseId, 12);
+      expect(notification.isRead, isTrue);
+      expect(notification.syncKey, '21');
+    });
   });
 }

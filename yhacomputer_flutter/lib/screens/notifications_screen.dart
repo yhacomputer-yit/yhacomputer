@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+
 import '../models/notification_model.dart';
+import '../services/notification_sync_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/nav_bar.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -11,9 +13,11 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  bool loading = true;
-  String error = '';
-  List<NotificationModel> notifications = [];
+  final NotificationSyncService _syncService = NotificationSyncService();
+  bool _loading = true;
+  String _error = '';
+  List<NotificationModel> _notifications = [];
+  Set<String> _readKeys = <String>{};
 
   @override
   void initState() {
@@ -23,97 +27,328 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _loadNotifications() async {
     setState(() {
-      loading = true;
-      error = '';
+      _loading = true;
+      _error = '';
     });
+
     try {
-      notifications = await ApiService.fetchNotifications();
+      final result = await _syncService.sync(showLocalAlerts: false);
+      final readKeys = await _syncService.readKeys();
+      if (!mounted) return;
       setState(() {
-        loading = false;
+        _notifications = result.notifications;
+        _readKeys = readKeys;
+        _loading = false;
       });
-    } catch (e) {
+    } catch (error) {
+      if (!mounted) return;
       setState(() {
-        error = e.toString();
-        loading = false;
+        _error = error.toString();
+        _loading = false;
       });
     }
   }
 
+  bool _isRead(NotificationModel notification) {
+    return notification.isRead || _readKeys.contains(notification.syncKey);
+  }
+
+  Future<void> _markRead(NotificationModel notification) async {
+    if (_isRead(notification)) return;
+    await _syncService.markRead(notification);
+    if (!mounted) return;
+    setState(() => _readKeys = {..._readKeys, notification.syncKey});
+  }
+
+  Future<void> _markAllRead() async {
+    await _syncService.markAllRead(_notifications);
+    if (!mounted) return;
+    setState(() {
+      _readKeys = {
+        ..._readKeys,
+        ..._notifications.map((notification) => notification.syncKey),
+      };
+    });
+  }
+
+  String _displayDate(String? rawValue) {
+    if (rawValue == null || rawValue.trim().isEmpty) return 'Recent update';
+    final date = DateTime.tryParse(rawValue)?.toLocal();
+    if (date == null) return rawValue;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final itemDay = DateTime(date.year, date.month, date.day);
+    final difference = today.difference(itemDay).inDays;
+    final minutes = now.difference(date).inMinutes;
+
+    if (minutes >= 0 && minutes < 60) return '${minutes == 0 ? 1 : minutes}m ago';
+    if (difference == 0) return 'Today';
+    if (difference == 1) return 'Yesterday';
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final unreadCount = _notifications.where((item) => !_isRead(item)).length;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notifications'),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.onSurface,
+        elevation: 0,
+        actions: [
+          if (unreadCount > 0)
+            TextButton(
+              onPressed: _markAllRead,
+              child: const Text('Mark all read'),
+            ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _loadNotifications,
-        child: loading
-            ? const Center(child: CircularProgressIndicator())
-            : error.isNotEmpty
-                ? Center(child: Text('Error: $error'))
-                : notifications.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No notifications yet.',
-                          style: TextStyle(color: Colors.grey),
-                        ),
+        child: _loading
+            ? const _NotificationSkeletonList()
+            : _error.isNotEmpty
+                ? ListView(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    children: [AppErrorState(_error)],
+                  )
+                : _notifications.isEmpty
+                    ? ListView(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        children: const [
+                          AppEmptyState(
+                            title: 'No notifications yet',
+                            subtitle: 'Updates published from the YHA admin dashboard will appear here.',
+                            icon: Icons.notifications_none_rounded,
+                          ),
+                        ],
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.all(AppSpacing.md),
-                        itemCount: notifications.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: AppSpacing.sm),
-                        itemBuilder: (context, i) {
-                          final notif = notifications[i];
-                          return AppCard(
-                            backgroundColor:
-                                notif.isRead ? AppColors.surface : AppColors.primaryContainer,
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        notif.title,
-                                        style: AppTextStyles.titleMedium.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                    if (!notif.isRead)
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.primary,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                Text(
-                                  notif.message,
-                                  style: AppTextStyles.bodyMedium,
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                if (notif.createdAt != null)
-                                  Text(
-                                    notif.createdAt!,
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      color: AppColors.onSurfaceVariant,
-                                    ),
-                                  ),
-                              ],
-                            ),
+                        itemCount: _notifications.length + 1,
+                        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+                        itemBuilder: (context, index) {
+                          if (index == 0) {
+                            return _InboxSummary(
+                              total: _notifications.length,
+                              unread: unreadCount,
+                            );
+                          }
+                          final notification = _notifications[index - 1];
+                          return _NotificationCard(
+                            notification: notification,
+                            isRead: _isRead(notification),
+                            dateLabel: _displayDate(notification.createdAt),
+                            onTap: () => _markRead(notification),
                           );
                         },
                       ),
       ),
+      bottomNavigationBar: const NavBar(),
+    );
+  }
+}
+
+class _InboxSummary extends StatelessWidget {
+  final int total;
+  final int unread;
+
+  const _InboxSummary({required this.total, required this.unread});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      backgroundColor: AppColors.primaryContainer,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.campaign_outlined, color: AppColors.primary),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  unread == 0 ? 'You are up to date' : '$unread unread update${unread == 1 ? '' : 's'}',
+                  style: AppTextStyles.titleMedium,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$total update${total == 1 ? '' : 's'} from YHA Computer',
+                  style: AppTextStyles.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NotificationCard extends StatelessWidget {
+  final NotificationModel notification;
+  final bool isRead;
+  final String dateLabel;
+  final VoidCallback onTap;
+
+  const _NotificationCard({
+    required this.notification,
+    required this.isRead,
+    required this.dateLabel,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      backgroundColor: isRead ? AppColors.surface : AppColors.primaryContainer,
+      padding: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: isRead
+                      ? AppColors.background
+                      : AppColors.primary.withValues(alpha: 0.14),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isRead ? Icons.notifications_none_rounded : Icons.notifications_active_outlined,
+                  color: isRead ? AppColors.onSurfaceVariant : AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            notification.title.isEmpty ? 'YHA Computer' : notification.title,
+                            style: AppTextStyles.titleMedium.copyWith(
+                              fontWeight: isRead ? FontWeight.w600 : FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        if (!isRead)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      notification.message.isEmpty
+                          ? 'You have a new update from YHA Computer.'
+                          : notification.message,
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      dateLabel,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationSkeletonList extends StatelessWidget {
+  const _NotificationSkeletonList();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      itemCount: 5,
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+      itemBuilder: (_, _) => AppCard(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: const Row(
+          children: [
+            _SkeletonCircle(),
+            SizedBox(width: AppSpacing.sm),
+            Expanded(child: _SkeletonText()),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SkeletonCircle extends StatelessWidget {
+  const _SkeletonCircle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: const BoxDecoration(color: AppColors.border, shape: BoxShape.circle),
+    );
+  }
+}
+
+class _SkeletonText extends StatelessWidget {
+  const _SkeletonText();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 160,
+          height: 14,
+          decoration: BoxDecoration(
+            color: AppColors.border,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 12,
+          decoration: BoxDecoration(
+            color: AppColors.border,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+      ],
     );
   }
 }

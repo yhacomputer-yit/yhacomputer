@@ -12,11 +12,14 @@ class Review {
   });
 
   factory Review.fromJson(Map<String, dynamic> json) {
+    int? parseInt(dynamic value) => int.tryParse(value?.toString() ?? '');
+    String? asString(dynamic value) => value?.toString();
+
     return Review(
-      id: json['id'] is int ? json['id'] : null,
-      name: json['name'] ?? '',
-      courseName: json['course_name'],
-      message: json['message'] ?? '',
+      id: parseInt(json['id']),
+      name: json['name']?.toString().trim() ?? '',
+      courseName: asString(json['course_name']),
+      message: json['message']?.toString().trim() ?? '',
     );
   }
 
