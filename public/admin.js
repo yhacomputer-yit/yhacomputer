@@ -155,8 +155,70 @@
   let listPage = 1;
   const LIST_PAGE_SIZE = 8;
   let pendingSelectValues = {};
+  let catalogData = { courses: [], subjects: [], sessions: [], teachers: [], course_teachers: [] };
+
+  const TABLE_HELP = {
+    courses: "Create the public course first. Add its subjects, sessions, and teacher assignments afterward.",
+    subjects: "Select the saved course, then add each topic learners will study as a separate subject.",
+    sessions: "Select the saved course and enter a clear session name, start time, and end time.",
+    teachers: "Add an instructor profile before assigning that teacher to a course.",
+    course_teachers: "Connect one saved course with one saved teacher.",
+    events: "Publish workshops, activities, and upcoming learning events.",
+    reviews: "Add verified learner feedback and optionally link it to a course.",
+    notifications: "Create a live app notification and optionally link it to a course.",
+    students: "Manage registration records, enrollment, and account status.",
+    contacts: "Review messages submitted through the public contact form.",
+  };
 
   const $ = (id) => document.getElementById(id);
+
+  function syncWorkspaceCopy() {
+    const schema = SCHEMA[currentTable];
+    const title = $("workspace-title");
+    const description = $("workspace-description");
+    const formHelp = $("form-help");
+    const listKicker = $("list-kicker");
+    if (title) title.textContent = "Manage " + schema.plural.toLowerCase() + ".";
+    if (description) description.textContent = TABLE_HELP[currentTable] || schema.description;
+    if (formHelp) formHelp.textContent = TABLE_HELP[currentTable] || schema.description;
+    if (listKicker) listKicker.textContent = "Live Turso " + schema.plural.toLowerCase();
+    const newRecord = $("new-record");
+    if (newRecord) {
+      newRecord.hidden = !schema.create;
+      newRecord.textContent = schema.create ? "+ Add " + schema.label.toLowerCase() : "";
+    }
+  }
+
+  async function refreshCatalogData() {
+    const tables = ["courses", "subjects", "sessions", "teachers", "course_teachers"];
+    const results = await Promise.all(tables.map((table) => api("GET", { table: table }).catch(() => ({ rows: [] }))));
+    tables.forEach((table, index) => {
+      catalogData[table] = results[index].rows || [];
+    });
+    const summary = {
+      courses: catalogData.courses.length,
+      subjects: catalogData.subjects.length,
+      sessions: catalogData.sessions.length,
+      teachers: catalogData.teachers.length,
+    };
+    Object.keys(summary).forEach((key) => {
+      const el = $("summary-" + key);
+      if (el) el.textContent = summary[key];
+    });
+  }
+
+  function lookupLabel(table, id, field) {
+    const row = (catalogData[table] || []).find((item) => String(item.id) === String(id));
+    return row ? String(row[field] || id) : String(id || "");
+  }
+
+  function courseMetrics(courseId) {
+    return {
+      subjects: catalogData.subjects.filter((item) => String(item.course_id) === String(courseId)).length,
+      sessions: catalogData.sessions.filter((item) => String(item.course_id) === String(courseId)).length,
+      teachers: catalogData.course_teachers.filter((item) => String(item.course_id) === String(courseId)).length,
+    };
+  }
 
   function getPassword() {
     return sessionStorage.getItem(PW_KEY) || "";
@@ -212,8 +274,9 @@
     $("manage-view").hidden = false;
     $("logout-link").hidden = false;
     switchView("list");
+    syncWorkspaceCopy();
     renderForm();
-    loadList();
+    refreshCatalogData().then(loadList);
   }
 
   function showLogin(message) {
@@ -232,10 +295,12 @@
   function renderForm() {
     const schema = SCHEMA[currentTable];
     const form = $("record-form");
+    syncWorkspaceCopy();
     $("list-title").textContent = schema.plural;
     $("form-title").textContent =
       (editingId ? "Edit " : "Add ") + schema.label;
     form.innerHTML =
+      '<div class="admin-form-grid">' +
       schema.fields
         .map(function (f) {
           const input =
@@ -287,6 +352,7 @@
           return '<label class="' + labelClass + '">' + f.label + input + "</label>";
         })
         .join("") +
+      "</div>" +
       '<div class="admin-form-actions">' +
       '<button type="submit" class="admin-button admin-button-primary">' +
       (editingId ? "Save changes" : "Add") +
@@ -361,6 +427,16 @@
     editingId = null;
     switchView("list");
     renderForm();
+  }
+
+  function startNewRecord() {
+    if (!SCHEMA[currentTable].create) return;
+    editingId = null;
+    pendingSelectValues = {};
+    renderForm();
+    switchView("form");
+    const firstField = $("record-form").querySelector("input, textarea, select");
+    if (firstField) firstField.focus();
   }
 
   function fillForm(row) {
@@ -556,43 +632,64 @@
     }
   }
 
+  function rowActions(row, isStudent) {
+    const schema = SCHEMA[currentTable];
+    return (
+      '<div class="admin-item-actions">' +
+      (schema.create ? '<button class="btn-mini" data-edit="' + row.id + '">Edit</button>' : "") +
+      (isStudent ? '<button class="btn-mini btn-password" data-generate="' + row.id + '">Generate Password</button>' : "") +
+      '<button class="btn-mini btn-danger" data-delete="' + row.id + '">Delete</button>' +
+      "</div>"
+    );
+  }
+
+  function renderCourseRow(row) {
+    const metrics = courseMetrics(row.id);
+    const price = Number(String(row.price || "").replace(/[^0-9.]/g, ""));
+    const fee = Number.isFinite(price) && price > 0 ? "MMK " + new Intl.NumberFormat("en-US").format(price) : "Fee pending";
+    const checks = [
+      [metrics.subjects, "subjects"],
+      [metrics.sessions, "sessions"],
+      [metrics.teachers, "teachers"],
+    ].map(function (item) {
+      return '<span class="admin-metric' + (item[0] ? " is-ready" : "") + '">' + item[0] + " " + item[1] + "</span>";
+    }).join("");
+    return (
+      '<article class="admin-item admin-course-item">' +
+      '<div class="admin-course-avatar">' + escapeHtml(String(row.title || "Y").charAt(0).toUpperCase()) + "</div>" +
+      '<div class="admin-item-body">' +
+      "<strong>" + escapeHtml(row.title) + "</strong>" +
+      '<span class="admin-item-sub">' + escapeHtml(row.subject || "Uncategorized") + " · " + escapeHtml(row.level || "Level pending") + "</span>" +
+      '<p>' + escapeHtml(row.description || "Add a description so visitors understand this course.") + "</p>" +
+      '<div class="admin-course-metrics">' + checks + "</div>" +
+      "</div>" +
+      '<div class="admin-course-side"><strong>' + escapeHtml(fee) + "</strong>" +
+      '<span>' + escapeHtml(row.duration || "Schedule pending") + "</span>" +
+      rowActions(row, false) + "</div>" +
+      "</article>"
+    );
+  }
+
   function renderRow(row) {
+    if (currentTable === "courses") return renderCourseRow(row);
     const schema = SCHEMA[currentTable];
     const primary = schema.fields[0].name;
-    const secondary = schema.fields[1] ? schema.fields[1].name : null;
-    const bodyField = schema.fields.find((f) => f.type === "textarea");
+    const bodyField = schema.fields.find((field) => field.type === "textarea");
     const isStudent = currentTable === "students";
+    let relation = "";
+    if (row.course_id) relation += "Course: " + lookupLabel("courses", row.course_id, "title");
+    if (row.teacher_id) relation += (relation ? " · " : "") + "Teacher: " + lookupLabel("teachers", row.teacher_id, "name");
+    if (isStudent && row.session_id) relation += (relation ? " · " : "") + "Session: " + lookupLabel("sessions", row.session_id, "name");
     return (
-      '<div class="admin-item">' +
+      '<article class="admin-item">' +
       '<div class="admin-item-body">' +
-      "<strong>" +
-      escapeHtml(row[primary]) +
-      "</strong>" +
-      (secondary && row[secondary]
-        ? '<span class="admin-item-sub">' + escapeHtml(row[secondary]) + "</span>"
-        : "") +
-      (isStudent && row.course_id
-        ? '<span class="admin-item-sub">Course: ' + escapeHtml(row.course_id) + "</span>"
-        : "") +
-      (bodyField && row[bodyField.name]
-        ? "<p>" + escapeHtml(row[bodyField.name]) + "</p>"
-        : "") +
-      (row.created_at
-        ? '<span class="admin-item-date">' + escapeHtml(row.created_at) + "</span>"
-        : "") +
+      "<strong>" + escapeHtml(row[primary]) + "</strong>" +
+      (relation ? '<span class="admin-item-sub">' + escapeHtml(relation) + "</span>" : "") +
+      (bodyField && row[bodyField.name] ? "<p>" + escapeHtml(row[bodyField.name]) + "</p>" : "") +
+      (row.created_at ? '<span class="admin-item-date">' + escapeHtml(row.created_at) + "</span>" : "") +
       "</div>" +
-      '<div class="admin-item-actions">' +
-      (schema.create
-        ? '<button class="btn-mini" data-edit="' + row.id + '">Edit</button>'
-        : "") +
-      (isStudent
-        ? '<button class="btn-mini btn-password" data-generate="' + row.id + '">Generate Password</button>'
-        : "") +
-      '<button class="btn-mini btn-danger" data-delete="' +
-      row.id +
-      '">Delete</button>' +
-      "</div>" +
-      "</div>"
+      rowActions(row, isStudent) +
+      "</article>"
     );
   }
 
@@ -720,6 +817,7 @@
           values,
         });
       }
+      await refreshCatalogData();
       resetForm();
       loadList();
     } catch (err) {
@@ -733,6 +831,7 @@
     try {
       await api("POST", { action: "delete", table: currentTable, id });
       if (String(editingId) === String(id)) resetForm();
+      await refreshCatalogData();
       loadList();
     } catch (err) {
       window.alert("Delete failed: " + err.message);
@@ -746,6 +845,7 @@
       t.classList.toggle("is-active", t.dataset.table === table);
     });
     switchView("list");
+    syncWorkspaceCopy();
     renderForm();
     loadList();
   }
@@ -773,6 +873,7 @@
       sessionStorage.removeItem(PW_KEY);
       showLogin();
     });
+    $("new-record").addEventListener("click", startNewRecord);
     document.querySelectorAll(".admin-tab").forEach(function (t) {
       t.addEventListener("click", function () {
         selectTable(t.dataset.table);

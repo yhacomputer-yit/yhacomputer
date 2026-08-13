@@ -12,7 +12,12 @@ export default function Courses() {
     url: "/courses",
   });
 
-  const categories = ["All", "Programming", "ICT", "Graphic Design"];
+  const categories = [
+    "All",
+    ...Array.from(
+      new Set(courses.map((course) => String(course.subject || "").trim()).filter(Boolean))
+    ),
+  ];
   const [active, setActive] = useState("All");
 
   const normalizedActive = active === "All" ? null : active.toLowerCase().trim();
@@ -25,7 +30,7 @@ export default function Courses() {
             .toLowerCase()
             .trim() === normalizedActive
         );
-  const display = filtered.slice(0, 6);
+  const display = filtered;
 
   return (
     <>
