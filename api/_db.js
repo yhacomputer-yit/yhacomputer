@@ -119,6 +119,9 @@ const CREATE_STATEMENTS = [
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
+];
+
+const INDEX_STATEMENTS = [
   "CREATE INDEX IF NOT EXISTS idx_subjects_course_id ON subjects(course_id)",
   "CREATE INDEX IF NOT EXISTS idx_sessions_course_id ON sessions(course_id)",
   "CREATE INDEX IF NOT EXISTS idx_course_teachers_course_id ON course_teachers(course_id)",
@@ -252,6 +255,7 @@ export function ensureSchema() {
       for (const statement of CREATE_STATEMENTS) await execute(statement);
       await addCompatibilityColumns();
       await repairStudentForeignKeyTypes();
+      for (const statement of INDEX_STATEMENTS) await execute(statement);
     })().catch((error) => {
       schemaPromise = null;
       throw error;
