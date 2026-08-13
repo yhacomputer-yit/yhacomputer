@@ -76,17 +76,6 @@ export default function CourseDetail() {
   const numericPrice = course.price !== null && course.price !== undefined && course.price !== ""
     ? Number.parseFloat(String(course.price).replace(/[^0-9.]/g, ""))
     : null;
-  const highlights = (() => {
-    if (Array.isArray(course.highlights)) return course.highlights.filter(Boolean);
-    if (!course.highlights) return [];
-    try {
-      const parsed = JSON.parse(course.highlights);
-      if (Array.isArray(parsed)) return parsed.filter(Boolean);
-    } catch {
-      // Keep compatibility with legacy newline/comma-separated values.
-    }
-    return String(course.highlights).split(/[\\n,]+/).map((item) => item.trim()).filter(Boolean);
-  })();
   const courseUrl = `${siteUrl}/courses/${course.id}`;
 
   const courseJsonLd = {
@@ -164,15 +153,6 @@ export default function CourseDetail() {
               ))}
             </div>
           )}
-          {courseSubjects.length > 0 && (
-            <div className="detail-badges" style={{ marginTop: 10 }}>
-              {courseSubjects.map((subject) => (
-                <span key={subject.id} className="detail-badge">
-                  {subject.name}
-                </span>
-              ))}
-            </div>
-          )}
           {course.price && (
             <div className="detail-price">
               <small>Course fee</small>
@@ -180,19 +160,6 @@ export default function CourseDetail() {
             </div>
           )}
           {course.description && <p className="detail-desc">{course.description}</p>}
-          {highlights.length > 0 && (
-            <div className="detail-section">
-              <h2>What you will learn</h2>
-              <ul>
-                {highlights.map((highlight) => (
-                  <li key={highlight}>
-                    <span>&#10003;</span>
-                    <strong>{highlight}</strong>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
           {courseSubjects.length > 0 && (
             <div className="detail-section">
               <h2>Subjects</h2>

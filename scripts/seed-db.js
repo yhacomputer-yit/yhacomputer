@@ -56,7 +56,6 @@ async function seed() {
       subject: "Programming",
       level: "Beginner to Intermediate",
       duration: "12 weeks",
-      highlights: ["HTML, CSS & responsive layout", "JavaScript fundamentals", "Portfolio website project"],
     },
     {
       key: "python",
@@ -67,7 +66,6 @@ async function seed() {
       subject: "Programming",
       level: "Beginner",
       duration: "10 weeks",
-      highlights: ["Python syntax and functions", "Files, APIs and automation", "Capstone command-line project"],
     },
     {
       key: "flutter",
@@ -78,7 +76,6 @@ async function seed() {
       subject: "Programming",
       level: "Intermediate",
       duration: "14 weeks",
-      highlights: ["Dart language essentials", "Flutter UI and navigation", "Mobile app prototype"],
     },
     {
       key: "graphic",
@@ -89,7 +86,6 @@ async function seed() {
       subject: "Graphic Design",
       level: "Beginner to Advanced",
       duration: "10 weeks",
-      highlights: ["Design principles and composition", "Photoshop and Illustrator workflow", "Brand identity mini project"],
     },
   ];
 
@@ -98,12 +94,16 @@ async function seed() {
       "SELECT * FROM courses WHERE title = ? LIMIT 1",
       [course.title],
       `INSERT INTO courses
-        (title, description, price, image, subject, level, duration, highlights, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [course.title, course.description, course.price, course.image, course.subject, course.level, course.duration, JSON.stringify(course.highlights), now, now]
+        (title, description, price, image, subject, level, duration, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [course.title, course.description, course.price, course.image, course.subject, course.level, course.duration, now, now]
     );
     courses[course.key] = Number(row.id);
   }
+
+  // The subjects table is the single source of curriculum content.
+  // Clear legacy highlights so course records cannot duplicate that content.
+  await execute("UPDATE courses SET highlights = NULL WHERE highlights IS NOT NULL");
 
   const subjectRows = [
     [courses.web, "HTML & CSS", "Responsive page structure and styling foundations."],

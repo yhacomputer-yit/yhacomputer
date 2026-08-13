@@ -19,7 +19,6 @@
         { name: "image", label: "Course image", type: "image" },
         { name: "subject", label: "Subject", type: "text" },
         { name: "description", label: "Description", type: "textarea" },
-        { name: "highlights", label: "Highlights (one per line)", type: "textarea" },
       ],
     },
     subjects: {
