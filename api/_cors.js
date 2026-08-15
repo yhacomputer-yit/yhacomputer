@@ -27,6 +27,11 @@ function appendVary(res, value) {
 }
 
 export function applyCors(req, res, methods) {
+  // Always vary the response, including same-origin requests without an Origin
+  // header. This prevents a CDN cache entry without CORS headers from being
+  // reused for a Flutter web request that does include an Origin header.
+  appendVary(res, "Origin");
+
   const origin = req.headers?.origin;
   if (!isAllowedOrigin(origin)) return false;
 
@@ -34,7 +39,6 @@ export function applyCors(req, res, methods) {
   res.setHeader("Access-Control-Allow-Methods", methods.join(", "));
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Admin-Password");
   res.setHeader("Access-Control-Max-Age", "86400");
-  appendVary(res, "Origin");
   return true;
 }
 
