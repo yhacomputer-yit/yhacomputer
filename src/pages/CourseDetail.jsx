@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useSiteData } from "../data.jsx";
 import { useSeo } from "../seo.js";
+import { formatFee, hasConfirmedFee, parseFee } from "../utils/formatters.js";
 
 function resolveImage(value) {
   if (!value) return "";
@@ -73,9 +74,9 @@ export default function CourseDetail() {
   const courseTeachersList = teachers.filter((t) => courseTeacherIds.includes(String(t.id)));
 
   const siteUrl = "https://www.yha-edu.tech";
-  const numericPrice = course.price !== null && course.price !== undefined && course.price !== ""
-    ? Number.parseFloat(String(course.price).replace(/[^0-9.]/g, ""))
-    : null;
+  const numericPrice = parseFee(course.price);
+  const hasFee = hasConfirmedFee(course.price);
+  const feeLabel = formatFee(course.price);
   const courseUrl = `${siteUrl}/courses/${course.id}`;
 
   const courseJsonLd = {
@@ -91,7 +92,7 @@ export default function CourseDetail() {
     url: courseUrl,
     ...(image ? { image: image.startsWith("http") ? image : `${siteUrl}${image}` } : {}),
     ...(badges.length ? { educationalLevel: badges.join(", ") } : {}),
-    ...(numericPrice && !Number.isNaN(numericPrice)
+    ...(numericPrice !== null
       ? {
           offers: {
             "@type": "Offer",
@@ -138,7 +139,7 @@ export default function CourseDetail() {
           )}
           <div className="detail-hero-overlay">
             <span className="detail-hero-tag">YHA Learning Path</span>
-            {course.price && <span className="detail-hero-price">{course.price}</span>}
+            {hasFee && <span className="detail-hero-price">{feeLabel}</span>}
           </div>
         </div>
         <div className="detail-body">
@@ -153,12 +154,10 @@ export default function CourseDetail() {
               ))}
             </div>
           )}
-          {course.price && (
-            <div className="detail-price">
-              <small>Course fee</small>
-              <strong>{course.price}</strong>
-            </div>
-          )}
+          <div className="detail-price">
+            <small>Course fee</small>
+            <strong className={hasFee ? "" : "course-fee-pending"}>{feeLabel}</strong>
+          </div>
           {course.description && <p className="detail-desc">{course.description}</p>}
           {courseSubjects.length > 0 && (
             <div className="detail-section">

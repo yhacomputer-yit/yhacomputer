@@ -1,92 +1,77 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_theme.dart';
 
+/// Keeps the primary learning flow focused. Events, reviews, support and
+/// institute information remain available from the More hub rather than
+/// competing for space in the bottom navigation.
 class NavBar extends StatelessWidget {
   const NavBar({super.key});
+
+  static const _routes = <String>['/', '/courses', '/notifications', '/more'];
 
   @override
   Widget build(BuildContext context) {
     final currentRoute = ModalRoute.of(context)?.settings.name ?? '/';
-    final routes = [
-      '/',
-      '/courses',
-      '/events',
-      '/notifications',
-      '/reviews',
-      '/about-us',
-      '/contact',
-    ];
+
     return NavigationBar(
       selectedIndex: _currentIndex(currentRoute),
       onDestinationSelected: (index) {
-        if (index < routes.length) {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            routes[index],
-            (route) => route.isFirst,
-          );
-        }
+        final destination = _routes[index];
+        if (destination == currentRoute) return;
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          destination,
+          (route) => route.isFirst,
+        );
       },
+      height: 68,
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       backgroundColor: AppColors.surface,
       indicatorColor: AppColors.primaryContainer,
       elevation: 8,
       shadowColor: AppColors.shadow,
-      destinations: [
+      destinations: const [
         NavigationDestination(
           icon: Icon(Icons.home_outlined),
-          selectedIcon: Icon(Icons.home, color: AppColors.primary),
+          selectedIcon: Icon(Icons.home_rounded, color: AppColors.primary),
           label: 'Home',
         ),
         NavigationDestination(
-          icon: Icon(Icons.school_outlined),
-          selectedIcon: Icon(Icons.school, color: AppColors.primary),
-          label: 'Courses',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.event_outlined),
-          selectedIcon: Icon(Icons.event, color: AppColors.primary),
-          label: 'Events',
+          icon: Icon(Icons.auto_stories_outlined),
+          selectedIcon: Icon(
+            Icons.auto_stories_rounded,
+            color: AppColors.primary,
+          ),
+          label: 'Learn',
         ),
         NavigationDestination(
           icon: Icon(Icons.notifications_outlined),
-          selectedIcon: Icon(Icons.notifications, color: AppColors.primary),
-          label: 'Notifications',
+          selectedIcon: Icon(
+            Icons.notifications_rounded,
+            color: AppColors.primary,
+          ),
+          label: 'Updates',
         ),
         NavigationDestination(
-          icon: Icon(Icons.star_outline),
-          selectedIcon: Icon(Icons.star, color: AppColors.primary),
-          label: 'Reviews',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.info_outline),
-          selectedIcon: Icon(Icons.info, color: AppColors.primary),
-          label: 'About',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.contact_mail_outlined),
-          selectedIcon: Icon(Icons.contact_mail, color: AppColors.primary),
-          label: 'Contact',
+          icon: Icon(Icons.grid_view_rounded),
+          selectedIcon: Icon(Icons.grid_view_rounded, color: AppColors.primary),
+          label: 'More',
         ),
       ],
     );
   }
 
   int _currentIndex(String route) {
-    switch (route) {
-      case '/courses':
-        return 1;
-      case '/events':
-        return 2;
-      case '/notifications':
-        return 3;
-      case '/reviews':
-        return 4;
-      case '/about-us':
-        return 5;
-      case '/contact':
-        return 6;
-      default:
-        return 0;
+    if (route == '/courses') return 1;
+    if (route == '/notifications') return 2;
+    if (route == '/more' ||
+        route == '/events' ||
+        route == '/reviews' ||
+        route == '/about-us' ||
+        route == '/contact') {
+      return 3;
     }
+    return 0;
   }
 }

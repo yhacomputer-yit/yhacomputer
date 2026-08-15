@@ -59,10 +59,18 @@ class Event {
 
   List<Map<String, String>> get factList {
     final facts = <Map<String, String>>[];
-    if (date != null && date!.isNotEmpty) facts.add({'label': 'Date', 'value': date!});
-    if (venue != null && venue!.isNotEmpty) facts.add({'label': 'Venue', 'value': venue!});
-    if (duration != null && duration!.isNotEmpty) facts.add({'label': 'Duration', 'value': duration!});
-    if (imageList.isNotEmpty) facts.add({'label': 'Photos', 'value': imageList.length.toString()});
+    if (date != null && date!.isNotEmpty) {
+      facts.add({'label': 'Date', 'value': date!});
+    }
+    if (venue != null && venue!.isNotEmpty) {
+      facts.add({'label': 'Venue', 'value': venue!});
+    }
+    if (duration != null && duration!.isNotEmpty) {
+      facts.add({'label': 'Duration', 'value': duration!});
+    }
+    if (imageList.isNotEmpty) {
+      facts.add({'label': 'Photos', 'value': imageList.length.toString()});
+    }
     return facts;
   }
 

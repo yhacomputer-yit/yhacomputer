@@ -18,6 +18,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   String _error = '';
   List<NotificationModel> _notifications = [];
   Set<String> _readKeys = <String>{};
+  bool _showUnreadOnly = false;
 
   @override
   void initState() {
@@ -82,7 +83,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final difference = today.difference(itemDay).inDays;
     final minutes = now.difference(date).inMinutes;
 
-    if (minutes >= 0 && minutes < 60) return '${minutes == 0 ? 1 : minutes}m ago';
+    if (minutes >= 0 && minutes < 60) {
+      return '${minutes == 0 ? 1 : minutes}m ago';
+    }
     if (difference == 0) return 'Today';
     if (difference == 1) return 'Yesterday';
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
@@ -91,10 +94,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final unreadCount = _notifications.where((item) => !_isRead(item)).length;
+    final visibleNotifications = _showUnreadOnly
+        ? _notifications.where((item) => !_isRead(item)).toList()
+        : _notifications;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: const Text('Updates'),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.onSurface,
         elevation: 0,
@@ -111,41 +117,70 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: _loading
             ? const _NotificationSkeletonList()
             : _error.isNotEmpty
-                ? ListView(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    children: [AppErrorState(_error)],
-                  )
-                : _notifications.isEmpty
-                    ? ListView(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        children: const [
-                          AppEmptyState(
-                            title: 'No notifications yet',
-                            subtitle: 'Updates published from the YHA admin dashboard will appear here.',
-                            icon: Icons.notifications_none_rounded,
-                          ),
-                        ],
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        itemCount: _notifications.length + 1,
-                        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
-                        itemBuilder: (context, index) {
-                          if (index == 0) {
-                            return _InboxSummary(
-                              total: _notifications.length,
-                              unread: unreadCount,
+            ? ListView(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                children: [AppErrorState(_error)],
+              )
+            : _notifications.isEmpty
+            ? ListView(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                children: const [
+                  AppEmptyState(
+                    title: 'No notifications yet',
+                    subtitle:
+                        'Updates published from the YHA admin dashboard will appear here.',
+                    icon: Icons.notifications_none_rounded,
+                  ),
+                ],
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                itemCount: visibleNotifications.length + 2,
+                separatorBuilder: (_, _) =>
+                    const SizedBox(height: AppSpacing.sm),
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return _InboxSummary(
+                      total: _notifications.length,
+                      unread: unreadCount,
+                    );
+                  }
+                  if (index == 1) {
+                    return _InboxFilters(
+                      showUnreadOnly: _showUnreadOnly,
+                      unread: unreadCount,
+                      onChanged: (value) =>
+                          setState(() => _showUnreadOnly = value),
+                    );
+                  }
+                  if (visibleNotifications.isEmpty) {
+                    return const AppEmptyState(
+                      title: 'No unread updates',
+                      subtitle:
+                          'You have caught up. Switch to All to read earlier updates.',
+                      icon: Icons.done_all_rounded,
+                    );
+                  }
+                  final notification = visibleNotifications[index - 2];
+                  return _NotificationCard(
+                    notification: notification,
+                    isRead: _isRead(notification),
+                    dateLabel: _displayDate(notification.createdAt),
+                    onTap: () => _markRead(notification),
+                    onOpenCourse: notification.courseId == null
+                        ? null
+                        : () async {
+                            await _markRead(notification);
+                            if (!context.mounted) return;
+                            Navigator.pushNamed(
+                              context,
+                              '/courses/:id',
+                              arguments: {'id': notification.courseId},
                             );
-                          }
-                          final notification = _notifications[index - 1];
-                          return _NotificationCard(
-                            notification: notification,
-                            isRead: _isRead(notification),
-                            dateLabel: _displayDate(notification.createdAt),
-                            onTap: () => _markRead(notification),
-                          );
-                        },
-                      ),
+                          },
+                  );
+                },
+              ),
       ),
       bottomNavigationBar: const NavBar(),
     );
@@ -172,7 +207,10 @@ class _InboxSummary extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: 0.14),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.campaign_outlined, color: AppColors.primary),
+            child: const Icon(
+              Icons.campaign_outlined,
+              color: AppColors.primary,
+            ),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
@@ -180,7 +218,9 @@ class _InboxSummary extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  unread == 0 ? 'You are up to date' : '$unread unread update${unread == 1 ? '' : 's'}',
+                  unread == 0
+                      ? 'You are up to date'
+                      : '$unread unread update${unread == 1 ? '' : 's'}',
                   style: AppTextStyles.titleMedium,
                 ),
                 const SizedBox(height: 2),
@@ -197,17 +237,50 @@ class _InboxSummary extends StatelessWidget {
   }
 }
 
+class _InboxFilters extends StatelessWidget {
+  final bool showUnreadOnly;
+  final int unread;
+  final ValueChanged<bool> onChanged;
+
+  const _InboxFilters({
+    required this.showUnreadOnly,
+    required this.unread,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        ChoiceChip(
+          label: const Text('All updates'),
+          selected: !showUnreadOnly,
+          onSelected: (_) => onChanged(false),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        ChoiceChip(
+          label: Text(unread == 0 ? 'Unread' : 'Unread ($unread)'),
+          selected: showUnreadOnly,
+          onSelected: (_) => onChanged(true),
+        ),
+      ],
+    );
+  }
+}
+
 class _NotificationCard extends StatelessWidget {
   final NotificationModel notification;
   final bool isRead;
   final String dateLabel;
   final VoidCallback onTap;
+  final VoidCallback? onOpenCourse;
 
   const _NotificationCard({
     required this.notification,
     required this.isRead,
     required this.dateLabel,
     required this.onTap,
+    this.onOpenCourse,
   });
 
   @override
@@ -233,8 +306,12 @@ class _NotificationCard extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  isRead ? Icons.notifications_none_rounded : Icons.notifications_active_outlined,
-                  color: isRead ? AppColors.onSurfaceVariant : AppColors.primary,
+                  isRead
+                      ? Icons.notifications_none_rounded
+                      : Icons.notifications_active_outlined,
+                  color: isRead
+                      ? AppColors.onSurfaceVariant
+                      : AppColors.primary,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -246,9 +323,13 @@ class _NotificationCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            notification.title.isEmpty ? 'YHA Computer' : notification.title,
+                            notification.title.isEmpty
+                                ? 'YHA Computer'
+                                : notification.title,
                             style: AppTextStyles.titleMedium.copyWith(
-                              fontWeight: isRead ? FontWeight.w600 : FontWeight.w800,
+                              fontWeight: isRead
+                                  ? FontWeight.w600
+                                  : FontWeight.w800,
                             ),
                           ),
                         ),
@@ -271,11 +352,33 @@ class _NotificationCard extends StatelessWidget {
                       style: AppTextStyles.bodyMedium,
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      dateLabel,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          dateLabel,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                        if (onOpenCourse != null) ...[
+                          const Spacer(),
+                          TextButton.icon(
+                            onPressed: onOpenCourse,
+                            icon: const Icon(
+                              Icons.auto_stories_outlined,
+                              size: 16,
+                            ),
+                            label: const Text('Course'),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              minimumSize: const Size(0, 34),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -319,7 +422,10 @@ class _SkeletonCircle extends StatelessWidget {
     return Container(
       width: 42,
       height: 42,
-      decoration: const BoxDecoration(color: AppColors.border, shape: BoxShape.circle),
+      decoration: const BoxDecoration(
+        color: AppColors.border,
+        shape: BoxShape.circle,
+      ),
     );
   }
 }

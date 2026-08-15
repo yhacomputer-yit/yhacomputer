@@ -11,6 +11,7 @@
 
 // Editable columns per table. Only these columns are ever written, which also
 // prevents arbitrary column names from reaching the SQL.
+import { applyCors, handleCorsPreflight } from "./_cors.js";
 import { ensureSchema, execute, generatePassword, hashPassword, query } from "./_db.js";
 
 const TABLES = {
@@ -112,6 +113,16 @@ function readBody(req) {
 }
 
 export default async function handler(req, res) {
+  const methods = ["GET", "POST", "OPTIONS"];
+  if (handleCorsPreflight(req, res, methods)) return;
+  applyCors(req, res, methods);
+
+  if (req.method !== "GET" && req.method !== "POST") {
+    res.setHeader("Allow", "GET, POST, OPTIONS");
+    res.status(405).json({ error: "Method not allowed." });
+    return;
+  }
+
   const expected = process.env.ADMIN_PASSWORD;
   if (!expected) {
     res.status(500).json({ error: "ADMIN_PASSWORD env var is not set." });

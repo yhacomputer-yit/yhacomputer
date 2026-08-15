@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useSiteData } from "../data.jsx";
 import Pager from "../components/Pager.jsx";
 import { useSeo } from "../seo.js";
+import { formatEventDate } from "../utils/formatters.js";
 
 function resolveImage(value) {
   if (!value) return "";
@@ -57,7 +58,7 @@ function EventItem({ event, index }) {
         {event.date && (
           <div>
             <small>Date</small>
-            <strong>{event.date}</strong>
+            <strong>{formatEventDate(event.date)}</strong>
           </div>
         )}
         {event.venue && (

@@ -1,3 +1,4 @@
+import { applyCors, handleCorsPreflight } from "./_cors.js";
 import { query } from "./_db.js";
 
 const CACHE_TTL_MS = 60 * 1000;
@@ -21,8 +22,12 @@ async function fetchPublicData() {
 }
 
 export default async function handler(req, res) {
+  const methods = ["GET", "OPTIONS"];
+  if (handleCorsPreflight(req, res, methods)) return;
+  applyCors(req, res, methods);
+
   if (req.method !== "GET") {
-    res.setHeader("Allow", "GET");
+    res.setHeader("Allow", "GET, OPTIONS");
     res.status(405).json({ error: "Method not allowed." });
     return;
   }

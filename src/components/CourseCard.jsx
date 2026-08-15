@@ -1,11 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-
-function formatFee(value) {
-  const numeric = Number(String(value ?? "").replace(/[^0-9.]/g, ""));
-  if (!Number.isFinite(numeric) || numeric <= 0) return "Fee to be confirmed";
-  return "MMK " + new Intl.NumberFormat("en-US").format(numeric);
-}
+import { formatFee, hasConfirmedFee } from "../utils/formatters.js";
 
 export default function CourseCard({ course, subjects = [] }) {
   const [imageFailed, setImageFailed] = useState(false);
@@ -15,7 +10,7 @@ export default function CourseCard({ course, subjects = [] }) {
       : "/" + course.image.replace(/^\/+/, "")
     : "";
   const category = course.subject ? [course.subject] : [];
-  const hasFee = Number(String(course.price ?? "").replace(/[^0-9.]/g, "")) > 0;
+  const hasFee = hasConfirmedFee(course.price);
   const hasSubjects = subjects.length > 0;
 
   return (

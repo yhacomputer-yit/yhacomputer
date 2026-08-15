@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/course.dart';
 import '../models/subject.dart';
-import '../widgets/nav_bar.dart';
 import '../theme/app_theme.dart';
+import '../utils/course_formatters.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final int? courseId;
@@ -125,10 +125,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 color: AppColors.onSurface.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
-              Text(
-                'Course not found.',
-                style: AppTextStyles.bodyLarge,
-              ),
+              Text('Course not found.', style: AppTextStyles.bodyLarge),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => Navigator.pop(context),
@@ -197,7 +194,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                         ),
                         child: IconButton(
                           onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.arrow_back, color: AppColors.onSurface),
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: AppColors.onSurface,
+                          ),
                         ),
                       ),
                     ),
@@ -218,7 +218,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -230,10 +232,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        course!.title,
-                        style: AppTextStyles.displayMedium,
-                      ),
+                      Text(course!.title, style: AppTextStyles.displayMedium),
                       if (badges.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Wrap(
@@ -244,10 +243,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                               .toList(),
                         ),
                       ],
-                      if (course!.price != null && course!.price!.isNotEmpty) ...[
-                        const SizedBox(height: 20),
-                        AppPriceCard(price: course!.price!),
-                      ],
+                      const SizedBox(height: 20),
+                      AppPriceCard(price: course!.price),
                       if (course!.description != null &&
                           course!.description!.isNotEmpty) ...[
                         const SizedBox(height: 24),
@@ -258,10 +255,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       ],
                       if (courseSubjects.isNotEmpty) ...[
                         const SizedBox(height: 28),
-                        Text(
-                          'Subjects',
-                          style: AppTextStyles.titleLarge,
-                        ),
+                        Text('Subjects', style: AppTextStyles.titleLarge),
                         const SizedBox(height: 14),
                         ...courseSubjects.map(
                           (subject) => Padding(
@@ -277,19 +271,23 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         subject.name,
-                                        style: AppTextStyles.bodyMedium.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                        ),
+                                        style: AppTextStyles.bodyMedium
+                                            .copyWith(
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                       ),
-                                      if (subject.description != null && subject.description!.isNotEmpty) ...[
+                                      if (subject.description != null &&
+                                          subject.description!.isNotEmpty) ...[
                                         const SizedBox(height: 3),
                                         Text(
                                           subject.description!,
-                                          style: AppTextStyles.bodyMedium.copyWith(height: 1.5),
+                                          style: AppTextStyles.bodyMedium
+                                              .copyWith(height: 1.5),
                                         ),
                                       ],
                                     ],
@@ -310,9 +308,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppDimens.buttonRadius),
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimens.buttonRadius,
+                                  ),
                                 ),
                               ),
                               child: const Row(
@@ -333,9 +335,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.onSurface,
                                 side: const BorderSide(color: AppColors.border),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppDimens.buttonRadius),
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimens.buttonRadius,
+                                  ),
                                 ),
                               ),
                               child: const Text('Browse more courses'),
@@ -352,13 +358,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           );
         },
       ),
-      bottomNavigationBar: const NavBar(),
     );
   }
 }
 
 class AppPriceCard extends StatelessWidget {
-  final String price;
+  final String? price;
   const AppPriceCard({super.key, required this.price});
 
   @override
@@ -370,15 +375,17 @@ class AppPriceCard extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            price,
+            formatCourseFee(price),
             style: AppTextStyles.titleLarge.copyWith(
-              color: AppColors.primary,
+              color: hasConfirmedFee(price)
+                  ? AppColors.primary
+                  : AppColors.onSurfaceVariant,
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(width: 8),
           Text(
-            '/ course',
+            hasConfirmedFee(price) ? '/ course' : '/ course details',
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.onSurfaceVariant,
             ),

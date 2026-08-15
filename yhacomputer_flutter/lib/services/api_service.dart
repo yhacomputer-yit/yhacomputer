@@ -7,7 +7,10 @@ import '../models/review.dart';
 import '../models/notification_model.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://www.yha-edu.tech';
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://www.yha-edu.tech',
+  );
   static const Duration _timeout = Duration(seconds: 15);
 
   static Future<Map<String, dynamic>> fetchData() async {
@@ -17,13 +20,21 @@ class ApiService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
-      throw _ApiException('Server returned status ${response.statusCode}. Please try again later.');
+      throw _ApiException(
+        'Server returned status ${response.statusCode}. Please try again later.',
+      );
     } on http.ClientException {
-      throw _ApiException('Unable to reach the server. Please check your internet connection and try again.');
+      throw _ApiException(
+        'Unable to reach the server. Please check your internet connection and try again.',
+      );
     } on FormatException {
       throw _ApiException('Received invalid data from the server.');
+    } on _ApiException {
+      rethrow;
     } catch (e) {
-      throw _ApiException('Something went wrong while loading data. Please try again later.');
+      throw _ApiException(
+        'Something went wrong while loading data. Please try again later.',
+      );
     }
   }
 
@@ -91,22 +102,26 @@ class ApiService {
     if (id != null) body['id'] = id;
     if (values != null) body['values'] = values;
 
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final headers = <String, String>{'Content-Type': 'application/json'};
     if (password != null && password.isNotEmpty) {
       headers['x-admin-password'] = password;
     }
 
     try {
-      final response = await http.post(url, headers: headers, body: json.encode(body)).timeout(_timeout);
+      final response = await http
+          .post(url, headers: headers, body: json.encode(body))
+          .timeout(_timeout);
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
       final errorBody = json.decode(response.body);
       throw _ApiException(errorBody['error'] ?? 'Request failed');
+    } on _ApiException {
+      rethrow;
     } on http.ClientException {
-      throw _ApiException('Unable to reach the server. Please check your internet connection.');
+      throw _ApiException(
+        'Unable to reach the server. Please check your internet connection.',
+      );
     } catch (e) {
       throw _ApiException('Something went wrong. Please try again later.');
     }
@@ -119,16 +134,32 @@ class ApiService {
   }) async {
     final url = Uri.parse('$baseUrl/api/contact');
     try {
-      final response = await http.post(url, headers: {'Content-Type': 'application/json'}, body: json.encode({'name': name, 'email': email, 'message': message})).timeout(_timeout);
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'name': name,
+              'email': email,
+              'message': message,
+            }),
+          )
+          .timeout(_timeout);
       if (response.statusCode == 201) {
         return {'ok': true};
       }
       final errorBody = json.decode(response.body);
       throw _ApiException(errorBody['error'] ?? 'Failed to send message');
+    } on _ApiException {
+      rethrow;
     } on http.ClientException {
-      throw _ApiException('Unable to reach the server. Please check your internet connection and try again.');
+      throw _ApiException(
+        'Unable to reach the server. Please check your internet connection and try again.',
+      );
     } catch (e) {
-      throw _ApiException('Something went wrong while sending your message. Please try again later.');
+      throw _ApiException(
+        'Something went wrong while sending your message. Please try again later.',
+      );
     }
   }
 
@@ -150,22 +181,26 @@ class ApiService {
       },
     };
 
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final headers = <String, String>{'Content-Type': 'application/json'};
     if (password != null && password.isNotEmpty) {
       headers['x-admin-password'] = password;
     }
 
     try {
-      final response = await http.post(url, headers: headers, body: json.encode(body)).timeout(_timeout);
+      final response = await http
+          .post(url, headers: headers, body: json.encode(body))
+          .timeout(_timeout);
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
       final errorBody = json.decode(response.body);
       throw _ApiException(errorBody['error'] ?? 'Request failed');
+    } on _ApiException {
+      rethrow;
     } on http.ClientException {
-      throw _ApiException('Unable to reach the server. Please check your internet connection.');
+      throw _ApiException(
+        'Unable to reach the server. Please check your internet connection.',
+      );
     } catch (e) {
       throw _ApiException('Something went wrong. Please try again later.');
     }

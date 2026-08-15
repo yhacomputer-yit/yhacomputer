@@ -1,3 +1,4 @@
+import { applyCors, handleCorsPreflight } from "./_cors.js";
 import { ensureSchema, generatePassword, hashPassword, query, execute } from "./_db.js";
 
 function readBody(req) {
@@ -49,8 +50,12 @@ async function validateEnrollment(courseId, sessionId) {
 }
 
 export default async function handler(req, res) {
+  const methods = ["POST", "OPTIONS"];
+  if (handleCorsPreflight(req, res, methods)) return;
+  applyCors(req, res, methods);
+
   if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
+    res.setHeader("Allow", "POST, OPTIONS");
     res.status(405).json({ error: "Method not allowed." });
     return;
   }

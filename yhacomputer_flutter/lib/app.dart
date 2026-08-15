@@ -7,6 +7,7 @@ import 'screens/courses_screen.dart';
 import 'screens/event_detail_screen.dart';
 import 'screens/events_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/more_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/reviews_screen.dart';
 import 'services/notification_sync_service.dart';
@@ -75,6 +76,7 @@ class _YHAComputerAppState extends State<YHAComputerApp>
         '/about-us': (context) => const AboutUsScreen(),
         '/contact': (context) => const ContactScreen(),
         '/notifications': (context) => const NotificationsScreen(),
+        '/more': (context) => const MoreScreen(),
       },
     );
   }

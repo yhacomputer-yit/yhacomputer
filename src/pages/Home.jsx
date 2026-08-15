@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useSiteData } from "../data.jsx";
 import CourseCard from "../components/CourseCard.jsx";
 import { useSeo } from "../seo.js";
+import { formatEventDate } from "../utils/formatters.js";
 
 export default function Home() {
   const { loading, error, courses, subjects, events, reviews } = useSiteData();
@@ -12,12 +13,8 @@ export default function Home() {
     url: "/",
   });
 
-  const allowedSubjects = ["ict", "programming", "graphic design"];
-  const filtered = courses.filter((course) =>
-    allowedSubjects.includes(String(course.subject || "").toLowerCase().trim())
-  );
-  const display = filtered.slice(0, 6);
-  const featured = display.slice(0, 3);
+  const display = courses;
+  const featured = courses.slice(0, 3);
   const nextEvents = events.slice(0, 2);
   const marqueeReviews = reviews.length ? [...reviews, ...reviews] : [];
   const getCourseSubjects = (courseId) =>
@@ -223,7 +220,7 @@ export default function Home() {
                 !error &&
                 nextEvents.map((event) => (
                   <Link to="/events" className="home-event" key={event.id}>
-                    {event.date && <span>{event.date}</span>}
+                    {event.date && <span>{formatEventDate(event.date)}</span>}
                     <h3>{event.title}</h3>
                     <p>{[event.venue, event.duration].filter(Boolean).join(" · ")}</p>
                   </Link>

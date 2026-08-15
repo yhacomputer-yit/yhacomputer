@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/event.dart';
-import '../widgets/nav_bar.dart';
 import '../theme/app_theme.dart';
 
 class EventDetailScreen extends StatefulWidget {
@@ -88,10 +87,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 color: AppColors.onSurface.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
-              Text(
-                'Event not found.',
-                style: AppTextStyles.bodyLarge,
-              ),
+              Text('Event not found.', style: AppTextStyles.bodyLarge),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => Navigator.pop(context),
@@ -130,7 +126,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 ),
                 child: IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back, color: AppColors.onSurface),
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: AppColors.onSurface,
+                  ),
                 ),
               ),
             ),
@@ -162,23 +161,16 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
-                      children: tags
-                          .map((t) => AppBadge(text: t))
-                          .toList(),
+                      children: tags.map((t) => AppBadge(text: t)).toList(),
                     ),
                   if (tags.isNotEmpty) const SizedBox(height: 12),
-                  Text(
-                    event!.title,
-                    style: AppTextStyles.displayMedium,
-                  ),
+                  Text(event!.title, style: AppTextStyles.displayMedium),
                   if (facts.isNotEmpty) ...[
                     const SizedBox(height: 20),
                     Wrap(
                       spacing: 24,
                       runSpacing: 16,
-                      children: facts
-                          .map((f) => _FactColumn(f))
-                          .toList(),
+                      children: facts.map((f) => _FactColumn(f)).toList(),
                     ),
                   ],
                   if (event!.description != null &&
@@ -191,10 +183,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   ],
                   if (gallery.length > 1) ...[
                     const SizedBox(height: 24),
-                    Text(
-                      'Gallery',
-                      style: AppTextStyles.titleLarge,
-                    ),
+                    Text('Gallery', style: AppTextStyles.titleLarge),
                     const SizedBox(height: 12),
                     SizedBox(
                       height: 100,
@@ -238,7 +227,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
-                                  AppDimens.buttonRadius),
+                                AppDimens.buttonRadius,
+                              ),
                             ),
                           ),
                           child: const Row(
@@ -259,11 +249,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.onSurface,
                             side: const BorderSide(color: AppColors.border),
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
-                                  AppDimens.buttonRadius),
+                                AppDimens.buttonRadius,
+                              ),
                             ),
                           ),
                           child: const Text('Browse more events'),
@@ -278,7 +268,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const NavBar(),
     );
   }
 }
@@ -294,8 +283,9 @@ class _FactColumn extends StatelessWidget {
       children: [
         Text(
           fact['label'] ?? '',
-          style: AppTextStyles.labelSmall
-              .copyWith(color: AppColors.onSurfaceVariant),
+          style: AppTextStyles.labelSmall.copyWith(
+            color: AppColors.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 2),
         Text(

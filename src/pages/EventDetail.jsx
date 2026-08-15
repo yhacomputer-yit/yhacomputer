@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useSiteData } from "../data.jsx";
 import { useSeo } from "../seo.js";
+import { formatEventDate, toIsoEventDate } from "../utils/formatters.js";
 
 function resolveImage(value) {
   if (!value) return "";
@@ -63,8 +64,9 @@ export default function EventDetail() {
 
   const gallery = parseImages(event.image);
   const tags = [event.category, event.event_type].filter(Boolean);
+  const eventStartDate = toIsoEventDate(event.date);
   const facts = [
-    event.date && { label: "Date", value: event.date },
+    event.date && { label: "Date", value: formatEventDate(event.date) },
     event.venue && { label: "Venue", value: event.venue },
     event.duration && { label: "Duration", value: event.duration },
   ].filter(Boolean);
@@ -82,7 +84,7 @@ export default function EventDetail() {
     ...(heroImage
       ? { image: heroImage.startsWith("http") ? heroImage : `${siteUrl}${heroImage}` }
       : {}),
-    ...(event.date ? { startDate: event.date } : {}),
+    ...(eventStartDate ? { startDate: eventStartDate } : {}),
     ...(tags.length ? { eventType: tags.join(", ") } : {}),
     organizer: {
       "@type": "EducationalOrganization",

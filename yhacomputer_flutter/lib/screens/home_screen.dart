@@ -5,6 +5,7 @@ import '../models/event.dart';
 import '../models/review.dart';
 import '../widgets/nav_bar.dart';
 import '../theme/app_theme.dart';
+import '../utils/course_formatters.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -71,8 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(AppSpacing.md),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  if (loading && error.isEmpty)
-                    ..._buildSkeletonSections(),
+                  if (loading && error.isEmpty) ..._buildSkeletonSections(),
                   if (error.isNotEmpty) AppErrorState(error),
                   if (!loading && error.isEmpty) ...[
                     _FeaturedCourses(featured: featured),
@@ -133,7 +133,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: double.infinity,
                           decoration: BoxDecoration(
                             color: AppColors.border,
-                            borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+                            borderRadius: BorderRadius.circular(
+                              AppDimens.cardRadius,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -188,7 +190,12 @@ class _HomeHero extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.md, 40, AppSpacing.md, 24),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          40,
+          AppSpacing.md,
+          24,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -202,12 +209,17 @@ class _HomeHero extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'Build skills that move\nyour future forward.',
-              style: AppTextStyles.displayLarge.copyWith(color: AppColors.onSurface, fontSize: 32),
+              style: AppTextStyles.displayLarge.copyWith(
+                color: AppColors.onSurface,
+                fontSize: 32,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               'Learn current technology through guided lessons, real projects, and a community that helps you keep growing.',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.onSurfaceVariant),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 24),
             Wrap(
@@ -217,9 +229,14 @@ class _HomeHero extends StatelessWidget {
                   onPressed: () => Navigator.pushNamed(context, '/courses'),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 14,
+                    ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimens.buttonRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppDimens.buttonRadius,
+                      ),
                     ),
                   ),
                   child: const Row(
@@ -232,16 +249,22 @@ class _HomeHero extends StatelessWidget {
                   ),
                 ),
                 OutlinedButton(
-                  onPressed: () => Navigator.pushNamed(context, '/contact'),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, '/notifications'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.onSurface,
                     side: const BorderSide(color: AppColors.border),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 14,
+                    ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimens.buttonRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppDimens.buttonRadius,
+                      ),
                     ),
                   ),
-                  child: const Text('Get course guidance'),
+                  child: const Text('Check updates'),
                 ),
               ],
             ),
@@ -349,8 +372,9 @@ class _CourseCardLarge extends StatelessWidget {
         children: [
           AppNetworkImage(
             imageUrl: courseImageUrl(course.image),
-            fallbackText:
-                course.title.isNotEmpty ? course.title[0].toUpperCase() : 'Y',
+            fallbackText: course.title.isNotEmpty
+                ? course.title[0].toUpperCase()
+                : 'Y',
             height: 140,
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(AppDimens.cardRadius),
@@ -377,13 +401,13 @@ class _CourseCardLarge extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
-                if (course.duration != null || course.price != null)
-                  Text(
-                    [course.duration, course.price]
-                        .where((v) => v != null && v.isNotEmpty)
-                        .join(' · '),
-                    style: AppTextStyles.bodySmall,
-                  ),
+                Text(
+                  [course.duration, formatCourseFee(course.price)]
+                      .whereType<String>()
+                      .where((value) => value.isNotEmpty)
+                      .join(' · '),
+                  style: AppTextStyles.bodySmall,
+                ),
               ],
             ),
           ),
@@ -419,18 +443,22 @@ class _UpcomingEvents extends StatelessWidget {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: events.asMap().map((i, event) {
-              return MapEntry(
-                i,
-                Container(
-                  width: 260,
-                  margin: EdgeInsets.only(
-                    right: i < events.length - 1 ? AppSpacing.md : 0,
-                  ),
-                  child: _EventCard(event: event),
-                ),
-              );
-            }).values.toList(),
+            children: events
+                .asMap()
+                .map((i, event) {
+                  return MapEntry(
+                    i,
+                    Container(
+                      width: 260,
+                      margin: EdgeInsets.only(
+                        right: i < events.length - 1 ? AppSpacing.md : 0,
+                      ),
+                      child: _EventCard(event: event),
+                    ),
+                  );
+                })
+                .values
+                .toList(),
           ),
         ),
       ],
@@ -453,8 +481,9 @@ class _EventCard extends StatelessWidget {
         children: [
           AppNetworkImage(
             imageUrl: images.isNotEmpty ? images[0] : '',
-            fallbackText:
-                event.title.isNotEmpty ? event.title[0].toUpperCase() : 'E',
+            fallbackText: event.title.isNotEmpty
+                ? event.title[0].toUpperCase()
+                : 'E',
             height: 140,
             fit: BoxFit.cover,
             borderRadius: const BorderRadius.vertical(
@@ -472,7 +501,13 @@ class _EventCard extends StatelessWidget {
                     runSpacing: 4,
                     children: event.tagList
                         .take(2)
-                        .map((t) => AppBadge(text: t, backgroundColor: AppColors.accentContainer, textColor: const Color(0xFF92400E)))
+                        .map(
+                          (t) => AppBadge(
+                            text: t,
+                            backgroundColor: AppColors.accentContainer,
+                            textColor: const Color(0xFF92400E),
+                          ),
+                        )
                         .toList(),
                   ),
                 Text(
@@ -483,15 +518,16 @@ class _EventCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  [event.venue, event.date]
-                      .where((v) => v != null && v.isNotEmpty)
-                      .join(' · '),
+                  [
+                    event.venue,
+                    event.date,
+                  ].where((v) => v != null && v.isNotEmpty).join(' · '),
                   style: AppTextStyles.bodySmall,
                 ),
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.center,
-                    child: TextButton(
+                  child: TextButton(
                     onPressed: () {
                       if (event.id != null) {
                         Navigator.pushNamed(
@@ -540,18 +576,22 @@ class _StudentReviews extends StatelessWidget {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: items.asMap().map((i, review) {
-              return MapEntry(
-                i,
-                Container(
-                  width: 280,
-                  margin: EdgeInsets.only(
-                    right: i < items.length - 1 ? AppSpacing.md : 0,
-                  ),
-                  child: _ReviewCard(review: review),
-                ),
-              );
-            }).values.toList(),
+            children: items
+                .asMap()
+                .map((i, review) {
+                  return MapEntry(
+                    i,
+                    Container(
+                      width: 280,
+                      margin: EdgeInsets.only(
+                        right: i < items.length - 1 ? AppSpacing.md : 0,
+                      ),
+                      child: _ReviewCard(review: review),
+                    ),
+                  );
+                })
+                .values
+                .toList(),
           ),
         ),
       ],
@@ -601,9 +641,7 @@ class _ReviewCard extends StatelessWidget {
                 radius: 18,
                 backgroundColor: AppColors.primary,
                 child: Text(
-                  review.name.isNotEmpty
-                      ? review.name[0].toUpperCase()
-                      : '?',
+                  review.name.isNotEmpty ? review.name[0].toUpperCase() : '?',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
@@ -615,10 +653,7 @@ class _ReviewCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      review.name,
-                      style: AppTextStyles.titleSmall,
-                    ),
+                    Text(review.name, style: AppTextStyles.titleSmall),
                     if (review.courseName != null)
                       Text(
                         'via ${review.courseName!}',
@@ -649,12 +684,18 @@ class _CTASection extends StatelessWidget {
         children: [
           Text(
             'Ready when you are',
-            style: AppTextStyles.labelMedium.copyWith(color: AppColors.primaryContainer, fontSize: 13),
+            style: AppTextStyles.labelMedium.copyWith(
+              color: AppColors.primaryContainer,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Choose a course with confidence.',
-            style: AppTextStyles.displayMedium.copyWith(color: Colors.white, fontSize: 24),
+            style: AppTextStyles.displayMedium.copyWith(
+              color: Colors.white,
+              fontSize: 24,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
