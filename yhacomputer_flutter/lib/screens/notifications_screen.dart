@@ -285,6 +285,21 @@ class _NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isUrgent = notification.priority == 'urgent';
+    final isHigh = notification.priority == 'high';
+    final accent = isUrgent
+        ? AppColors.error
+        : isHigh
+        ? AppColors.accent
+        : AppColors.primary;
+    final icon = isUrgent
+        ? Icons.priority_high_rounded
+        : isHigh
+        ? Icons.campaign_outlined
+        : isRead
+        ? Icons.notifications_none_rounded
+        : Icons.notifications_active_outlined;
+
     return AppCard(
       backgroundColor: isRead ? AppColors.surface : AppColors.primaryContainer,
       padding: EdgeInsets.zero,
@@ -302,16 +317,12 @@ class _NotificationCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isRead
                       ? AppColors.background
-                      : AppColors.primary.withValues(alpha: 0.14),
+                      : accent.withValues(alpha: 0.14),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  isRead
-                      ? Icons.notifications_none_rounded
-                      : Icons.notifications_active_outlined,
-                  color: isRead
-                      ? AppColors.onSurfaceVariant
-                      : AppColors.primary,
+                  icon,
+                  color: isRead ? AppColors.onSurfaceVariant : accent,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -333,7 +344,25 @@ class _NotificationCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (!isRead)
+                        if (isHigh || isUrgent)
+                          Container(
+                            margin: const EdgeInsets.only(left: AppSpacing.xs),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: accent.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              isUrgent ? 'URGENT' : 'HIGH',
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: accent,
+                              ),
+                            ),
+                          )
+                        else if (!isRead)
                           Container(
                             width: 8,
                             height: 8,

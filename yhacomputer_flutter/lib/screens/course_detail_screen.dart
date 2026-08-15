@@ -32,15 +32,21 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       error = '';
     });
     try {
-      final data = await ApiService.fetchAll();
-      final courses = data['courses'] as List<Course>;
-      final subjects = data['subjects'] as List<Subject>;
-      final loadedCourse = courses.firstWhere(
-        (c) => c.id == widget.courseId,
-        orElse: () => Course(title: ''),
-      );
-      final loadedSubjects = subjects
-          .where((subject) => subject.courseId == loadedCourse.id)
+      if (widget.courseId == null) {
+        throw Exception('Course id is missing.');
+      }
+      final data = await ApiService.fetchCourseDetail(widget.courseId!);
+      final courseData = data?['data'];
+      final related = data?['related'] as Map? ?? const {};
+      final subjectData = related['subjects'] as List? ?? const [];
+      final loadedCourse = courseData is Map<String, dynamic>
+          ? Course.fromJson(courseData)
+          : Course(title: '');
+      final loadedSubjects = subjectData
+          .map(
+            (subject) =>
+                Subject.fromJson(Map<String, dynamic>.from(subject as Map)),
+          )
           .toList();
       if (!mounted) return;
       setState(() {
@@ -245,6 +251,27 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       ],
                       const SizedBox(height: 20),
                       AppPriceCard(price: course!.price),
+                      if (!course!.enrollmentOpen) ...[
+                        const SizedBox(height: 12),
+                        AppCard(
+                          backgroundColor: AppColors.accentContainer,
+                          padding: const EdgeInsets.all(AppSpacing.sm),
+                          child: const Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline_rounded,
+                                color: AppColors.accent,
+                              ),
+                              SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: Text(
+                                  'Enrollment is currently closed. Check Updates or contact YHA for the next intake.',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       if (course!.description != null &&
                           course!.description!.isNotEmpty) ...[
                         const SizedBox(height: 24),

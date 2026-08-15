@@ -23,6 +23,10 @@ const TABLES = {
     "subject",
     "level",
     "duration",
+    "is_published",
+    "featured",
+    "sort_order",
+    "enrollment_open",
   ],
   subjects: [
     "course_id",
@@ -59,7 +63,7 @@ const TABLES = {
   ],
   reviews: ["name", "course_id", "message"],
   contacts: ["name", "email", "message"],
-  notifications: ["title", "message", "course_id", "is_read"],
+  notifications: ["title", "message", "course_id", "priority", "action_url", "publish_at", "expires_at"],
   students: [
     "student_id",
     "name",
@@ -94,6 +98,123 @@ const TABLES = {
 
 
 
+
+const NOTIFICATION_PRIORITIES = new Set(["normal", "high", "urgent"]);
+
+function optionalText(value, field, maxLength) {
+  if (value == null) return null;
+  const normalized = String(value).trim();
+  if (normalized.length > maxLength) {
+    throw new Error(`${field} is too long.`);
+  }
+  return normalized || null;
+}
+
+function requiredText(value, field, maxLength) {
+  const normalized = optionalText(value, field, maxLength);
+  if (!normalized) throw new Error(`${field} is required.`);
+  return normalized;
+}
+
+function booleanFlag(value, field) {
+  if (value === true || value === 1 || value === "1" || value === "true") return 1;
+  if (value === false || value === 0 || value === "0" || value === "false") return 0;
+  throw new Error(`${field} must be 0 or 1.`);
+}
+
+function nonNegativeInteger(value, field) {
+  const parsed = Number.parseInt(String(value), 10);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new Error(`${field} must be a non-negative whole number.`);
+  }
+  return parsed;
+}
+
+function nullableId(value, field) {
+  if (value == null || value === "") return null;
+  const parsed = Number.parseInt(String(value), 10);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(`${field} must be a valid record id.`);
+  }
+  return parsed;
+}
+
+function normalizedIsoDate(value, field) {
+  if (value == null || value === "") return null;
+  const parsed = Date.parse(String(value));
+  if (Number.isNaN(parsed)) throw new Error(`${field} must be a valid date and time.`);
+  return new Date(parsed).toISOString();
+}
+
+function safeActionUrl(value) {
+  const url = optionalText(value, "Action URL", 1000);
+  if (!url) return null;
+  if (url.startsWith("/") && !url.startsWith("//")) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "https:") return parsed.toString();
+  } catch (_) {
+    // The common error below is clearer than the URL parser message.
+  }
+  throw new Error("Action URL must be a relative path or an HTTPS URL.");
+}
+
+async function ensureCourseExists(courseId) {
+  if (courseId == null) return;
+  const rows = await query("SELECT id FROM courses WHERE id = ? LIMIT 1", [courseId]);
+  if (!rows.length) throw new Error("Selected course does not exist.");
+}
+
+async function normalizeManagedValues(table, values, { creating = false } = {}) {
+  const normalized = { ...values };
+
+  if (table === "courses") {
+    if (creating || normalized.title !== undefined) {
+      normalized.title = requiredText(normalized.title, "Course title", 160);
+    }
+    for (const field of ["description", "image", "subject", "level", "duration"]) {
+      if (normalized[field] !== undefined) {
+        normalized[field] = optionalText(normalized[field], field, field === "description" ? 8000 : 1000);
+      }
+    }
+    if (normalized.price !== undefined) normalized.price = nonNegativeInteger(normalized.price, "Price");
+    for (const field of ["is_published", "featured", "enrollment_open"]) {
+      if (normalized[field] !== undefined) normalized[field] = booleanFlag(normalized[field], field);
+    }
+    if (normalized.sort_order !== undefined) {
+      normalized.sort_order = nonNegativeInteger(normalized.sort_order, "Sort order");
+    }
+  }
+
+  if (table === "notifications") {
+    if (creating || normalized.title !== undefined) {
+      normalized.title = requiredText(normalized.title, "Notification title", 140);
+    }
+    if (creating || normalized.message !== undefined) {
+      normalized.message = requiredText(normalized.message, "Notification message", 2000);
+    }
+    if (normalized.course_id !== undefined) {
+      normalized.course_id = nullableId(normalized.course_id, "Course");
+      await ensureCourseExists(normalized.course_id);
+    }
+    if (normalized.priority !== undefined) {
+      normalized.priority = String(normalized.priority).trim().toLowerCase() || "normal";
+      if (!NOTIFICATION_PRIORITIES.has(normalized.priority)) {
+        throw new Error("Notification priority must be normal, high, or urgent.");
+      }
+    } else if (creating) {
+      normalized.priority = "normal";
+    }
+    if (normalized.action_url !== undefined) normalized.action_url = safeActionUrl(normalized.action_url);
+    if (normalized.publish_at !== undefined) normalized.publish_at = normalizedIsoDate(normalized.publish_at, "Publish time");
+    if (normalized.expires_at !== undefined) normalized.expires_at = normalizedIsoDate(normalized.expires_at, "Expiry time");
+    if (normalized.publish_at && normalized.expires_at && normalized.expires_at <= normalized.publish_at) {
+      throw new Error("Expiry time must be later than publish time.");
+    }
+  }
+
+  return normalized;
+}
 
 function readBody(req) {
   if (req.body && typeof req.body === "object") return Promise.resolve(req.body);
@@ -162,7 +283,7 @@ export default async function handler(req, res) {
     }
 
     if (action === "create") {
-      const values = body.values || {};
+      const values = await normalizeManagedValues(table, body.values || {}, { creating: true });
       const used = columns.filter((c) => values[c] !== undefined);
       if (!used.length) {
         res.status(400).json({ error: "No valid fields provided." });
@@ -184,7 +305,7 @@ export default async function handler(req, res) {
 
     if (action === "update") {
       const id = body.id;
-      const values = body.values || {};
+      const values = await normalizeManagedValues(table, body.values || {});
       if (!id) {
         res.status(400).json({ error: "Missing id." });
         return;
@@ -194,13 +315,14 @@ export default async function handler(req, res) {
         res.status(400).json({ error: "No valid fields provided." });
         return;
       }
-      const sql =
-        "UPDATE " +
-        table +
-        " SET " +
-        used.map((c) => c + " = ?").join(", ") +
-        " WHERE id = ?";
-      await execute(sql, used.map((c) => values[c]).concat([id]));
+      const assignments = used.map((c) => c + " = ?");
+      const argumentsList = used.map((c) => values[c]);
+      if (table === "courses") {
+        assignments.push("updated_at = ?");
+        argumentsList.push(new Date().toISOString());
+      }
+      const sql = "UPDATE " + table + " SET " + assignments.join(", ") + " WHERE id = ?";
+      await execute(sql, argumentsList.concat([id]));
       res.status(200).json({ ok: true });
       return;
     }

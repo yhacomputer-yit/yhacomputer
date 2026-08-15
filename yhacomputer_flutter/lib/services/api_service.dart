@@ -13,12 +13,13 @@ class ApiService {
   );
   static const Duration _timeout = Duration(seconds: 15);
 
-  static Future<Map<String, dynamic>> fetchData() async {
-    final url = Uri.parse('$baseUrl/api/data');
+  static Future<Map<String, dynamic>> _fetchJson(Uri url) async {
     try {
       final response = await http.get(url).timeout(_timeout);
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic>) return decoded;
+        throw _ApiException('Received invalid data from the server.');
       }
       throw _ApiException(
         'Server returned status ${response.statusCode}. Please try again later.',
@@ -38,10 +39,80 @@ class ApiService {
     }
   }
 
-  static Future<List<Course>> fetchCourses() async {
-    final data = await fetchData();
-    final courses = data['courses'] as List? ?? [];
-    return courses.map((json) => Course.fromJson(json)).toList();
+  static Future<Map<String, dynamic>> fetchData() {
+    return _fetchJson(Uri.parse('$baseUrl/api/data'));
+  }
+
+  static Future<Map<String, dynamic>> fetchCollection(
+    String collection, {
+    Map<String, String>? queryParameters,
+  }) {
+    return _fetchJson(
+      Uri.parse('$baseUrl/api/data').replace(
+        queryParameters: {'collection': collection, ...?queryParameters},
+      ),
+    );
+  }
+
+  static List<dynamic> _collectionRows(
+    Map<String, dynamic> payload,
+    String legacyKey,
+  ) {
+    final rows = payload['data'] ?? payload[legacyKey] ?? const [];
+    return rows is List ? rows : const [];
+  }
+
+  static Future<List<Course>> fetchCourses({
+    String? search,
+    String? subject,
+    String? level,
+    int limit = 100,
+  }) async {
+    final data = await fetchCollection(
+      'courses',
+      queryParameters: {
+        'limit': '$limit',
+        if (search != null && search.trim().isNotEmpty) 'q': search.trim(),
+        if (subject != null && subject.trim().isNotEmpty)
+          'subject': subject.trim(),
+        if (level != null && level.trim().isNotEmpty) 'level': level.trim(),
+      },
+    );
+    return _collectionRows(
+      data,
+      'courses',
+    ).map((json) => Course.fromJson(json as Map<String, dynamic>)).toList();
+  }
+
+  static Future<Map<String, dynamic>?> fetchCourseDetail(int courseId) async {
+    final payload = await fetchCollection(
+      'course',
+      queryParameters: {'id': '$courseId'},
+    );
+    final courseData = payload['data'];
+    if (courseData is Map<String, dynamic>) return payload;
+
+    // A short-lived fallback keeps older deployed API versions compatible while
+    // a client update is rolling out.
+    final legacyCourses = payload['courses'] as List? ?? const [];
+    final legacyCourse = legacyCourses.cast<Map>().where(
+      (course) => int.tryParse('${course['id']}') == courseId,
+    );
+    if (legacyCourse.isEmpty) return null;
+    final id = '$courseId';
+    final legacySubjects = (payload['subjects'] as List? ?? const [])
+        .cast<Map>()
+        .where((subject) => '${subject['course_id']}' == id)
+        .toList();
+    return {
+      'data': Map<String, dynamic>.from(legacyCourse.first),
+      'related': {
+        'subjects': legacySubjects,
+        'sessions': const [],
+        'teachers': const [],
+      },
+      'meta': {'found': true},
+    };
   }
 
   static Future<List<Event>> fetchEvents() async {
@@ -82,12 +153,20 @@ class ApiService {
     };
   }
 
-  static Future<List<NotificationModel>> fetchNotifications() async {
-    final data = await fetchData();
-    final notifications = (data['notifications'] as List? ?? [])
-        .map((json) => NotificationModel.fromJson(json))
+  static Future<List<NotificationModel>> fetchNotifications({
+    int? sinceId,
+    int limit = 100,
+  }) async {
+    final data = await fetchCollection(
+      'notifications',
+      queryParameters: {
+        'limit': '$limit',
+        if (sinceId != null && sinceId > 0) 'since_id': '$sinceId',
+      },
+    );
+    return _collectionRows(data, 'notifications')
+        .map((json) => NotificationModel.fromJson(json as Map<String, dynamic>))
         .toList();
-    return notifications;
   }
 
   static Future<Map<String, dynamic>> adminRequest(
@@ -167,6 +246,10 @@ class ApiService {
     required String title,
     required String message,
     int? courseId,
+    String priority = 'normal',
+    String? actionUrl,
+    DateTime? publishAt,
+    DateTime? expiresAt,
     String? password,
   }) async {
     final url = Uri.parse('$baseUrl/api/admin');
@@ -177,7 +260,10 @@ class ApiService {
         'title': title,
         'message': message,
         'course_id': courseId,
-        'is_read': 0,
+        'priority': priority,
+        'action_url': actionUrl,
+        'publish_at': publishAt?.toUtc().toIso8601String(),
+        'expires_at': expiresAt?.toUtc().toIso8601String(),
       },
     };
 

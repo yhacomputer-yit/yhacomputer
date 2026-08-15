@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 const TABLE_COLUMNS = {
-  courses: ["title", "description", "price", "image", "subject", "level", "duration", "created_at", "updated_at"],
+  courses: ["title", "description", "price", "image", "subject", "level", "duration", "is_published", "featured", "sort_order", "enrollment_open", "created_at", "updated_at"],
   subjects: ["course_id", "name", "description", "created_at"],
   sessions: ["course_id", "name", "start_time", "end_time", "created_at"],
   teachers: ["name", "email", "phone", "specialization", "image", "bio", "created_at"],
@@ -9,7 +9,7 @@ const TABLE_COLUMNS = {
   events: ["title", "description", "date", "venue", "category", "event_type", "duration", "image", "created_at", "updated_at"],
   reviews: ["name", "course_id", "message", "created_at"],
   contacts: ["name", "email", "message", "created_at"],
-  notifications: ["title", "message", "course_id", "is_read", "created_at"],
+  notifications: ["title", "message", "course_id", "priority", "action_url", "publish_at", "expires_at", "is_read", "created_at"],
   students: ["student_id", "name", "email", "phone", "father_name", "mother_name", "nrc_number", "register_date", "enroll_date", "viber_phone", "city", "township", "birthday", "gender", "image", "education", "status", "course_id", "session_id", "password_hash", "created_at", "updated_at"],
 };
 
@@ -23,6 +23,10 @@ const CREATE_STATEMENTS = [
     subject TEXT,
     level TEXT,
     duration TEXT,
+    is_published INTEGER NOT NULL DEFAULT 1 CHECK (is_published IN (0, 1)),
+    featured INTEGER NOT NULL DEFAULT 0 CHECK (featured IN (0, 1)),
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    enrollment_open INTEGER NOT NULL DEFAULT 1 CHECK (enrollment_open IN (0, 1)),
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
@@ -90,6 +94,10 @@ const CREATE_STATEMENTS = [
     title TEXT NOT NULL,
     message TEXT,
     course_id INTEGER REFERENCES courses(id) ON DELETE SET NULL,
+    priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('normal', 'high', 'urgent')),
+    action_url TEXT,
+    publish_at TEXT,
+    expires_at TEXT,
     is_read INTEGER NOT NULL DEFAULT 0 CHECK (is_read IN (0, 1)),
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
@@ -126,6 +134,8 @@ const INDEX_STATEMENTS = [
   "CREATE INDEX IF NOT EXISTS idx_course_teachers_course_id ON course_teachers(course_id)",
   "CREATE INDEX IF NOT EXISTS idx_course_teachers_teacher_id ON course_teachers(teacher_id)",
   "CREATE INDEX IF NOT EXISTS idx_reviews_course_id ON reviews(course_id)",
+  "CREATE INDEX IF NOT EXISTS idx_courses_public_list ON courses(is_published, featured, sort_order, id)",
+  "CREATE INDEX IF NOT EXISTS idx_notifications_public_feed ON notifications(publish_at, expires_at, id)",
   "CREATE INDEX IF NOT EXISTS idx_students_course_id ON students(course_id)",
   "CREATE INDEX IF NOT EXISTS idx_students_session_id ON students(session_id)",
   "CREATE INDEX IF NOT EXISTS idx_students_status ON students(status)",
@@ -186,7 +196,7 @@ export async function query(sql, args = []) {
 }
 
 function columnType(column) {
-  const numeric = new Set(["id", "course_id", "session_id", "teacher_id", "price", "is_read"]);
+  const numeric = new Set(["id", "course_id", "session_id", "teacher_id", "price", "is_read", "is_published", "featured", "sort_order", "enrollment_open"]);
   return numeric.has(column) ? "INTEGER" : "TEXT";
 }
 
@@ -196,7 +206,15 @@ async function addCompatibilityColumns() {
     const names = new Set(existing.map((column) => column.name));
     for (const column of columns) {
       if (!names.has(column)) {
-        const defaultValue = column === "status" ? " DEFAULT 'pending'" : column === "is_read" ? " DEFAULT 0" : "";
+        const defaultValue = {
+          status: " DEFAULT 'pending'",
+          is_read: " DEFAULT 0",
+          is_published: " DEFAULT 1",
+          featured: " DEFAULT 0",
+          sort_order: " DEFAULT 0",
+          enrollment_open: " DEFAULT 1",
+          priority: " DEFAULT 'normal'",
+        }[column] || "";
         await execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${columnType(column)}${defaultValue}`);
       }
     }

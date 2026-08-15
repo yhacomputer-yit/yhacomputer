@@ -17,7 +17,11 @@
         { name: "duration", label: "Duration", type: "text" },
         { name: "price", label: "Price", type: "text" },
         { name: "image", label: "Course image", type: "image" },
-        { name: "subject", label: "Subject", type: "text" },
+        { name: "subject", label: "Catalog category", type: "text" },
+        { name: "is_published", label: "Visible to learners", type: "select", options: ["1", "0"] },
+        { name: "featured", label: "Show first in catalog", type: "select", options: ["0", "1"] },
+        { name: "sort_order", label: "Catalog order (lower first)", type: "number" },
+        { name: "enrollment_open", label: "Enrollment open", type: "select", options: ["1", "0"] },
         { name: "description", label: "Description", type: "textarea" },
       ],
     },
@@ -114,8 +118,11 @@
       fields: [
         { name: "title", label: "Title", type: "text", required: true },
         { name: "message", label: "Message", type: "textarea", required: true },
-        { name: "course_id", label: "Course", type: "select-dynamic", optionsTable: "courses", optionsLabel: "title", optionsValue: "id" },
-        { name: "is_read", label: "Is Read", type: "select", options: ["0", "1"] },
+        { name: "course_id", label: "Linked course", type: "select-dynamic", optionsTable: "courses", optionsLabel: "title", optionsValue: "id" },
+        { name: "priority", label: "Priority", type: "select", options: ["normal", "high", "urgent"] },
+        { name: "action_url", label: "Action URL", type: "url" },
+        { name: "publish_at", label: "Publish at (optional)", type: "datetime-local" },
+        { name: "expires_at", label: "Expires at (optional)", type: "datetime-local" },
       ],
     },
     students: {
@@ -439,6 +446,14 @@
     if (firstField) firstField.focus();
   }
 
+  function toDateTimeLocal(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  }
+
   function fillForm(row) {
     editingId = row.id;
     pendingSelectValues = {};
@@ -458,7 +473,8 @@
           el.value = pendingSelectValues[f.name];
         }
       } else {
-        el.value = row[f.name] == null ? "" : row[f.name];
+        const value = row[f.name] == null ? "" : row[f.name];
+        el.value = f.type === "datetime-local" ? toDateTimeLocal(value) : value;
       }
       if (f.type === "image" && el) updateImagePreview(el);
       if (f.type === "images" && el) updateImagesPreview(el);
@@ -790,7 +806,10 @@
     const form = $("record-form");
     const values = {};
     schema.fields.forEach(function (f) {
-      values[f.name] = form.elements[f.name].value.trim();
+      const rawValue = form.elements[f.name].value.trim();
+      values[f.name] = f.type === "datetime-local" && rawValue
+        ? new Date(rawValue).toISOString()
+        : rawValue;
     });
     const missing = schema.fields.find(
       (f) => f.required && !values[f.name]

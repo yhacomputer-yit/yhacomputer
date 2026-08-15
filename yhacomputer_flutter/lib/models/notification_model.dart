@@ -5,6 +5,10 @@ class NotificationModel {
   final int? courseId;
   final bool isRead;
   final String? createdAt;
+  final String priority;
+  final String? actionUrl;
+  final String? publishAt;
+  final String? expiresAt;
 
   NotificationModel({
     this.id,
@@ -13,6 +17,10 @@ class NotificationModel {
     this.courseId,
     this.isRead = false,
     this.createdAt,
+    this.priority = 'normal',
+    this.actionUrl,
+    this.publishAt,
+    this.expiresAt,
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
@@ -23,9 +31,23 @@ class NotificationModel {
       title: json['title']?.toString().trim() ?? '',
       message: json['message']?.toString().trim() ?? '',
       courseId: parseInt(json['course_id']),
-      isRead: json['is_read'] == 1 || json['is_read'] == true || json['is_read'] == '1',
+      isRead:
+          json['is_read'] == 1 ||
+          json['is_read'] == true ||
+          json['is_read'] == '1',
       createdAt: json['created_at']?.toString(),
+      priority: _parsePriority(json['priority']),
+      actionUrl: json['action_url']?.toString().trim(),
+      publishAt: json['publish_at']?.toString(),
+      expiresAt: json['expires_at']?.toString(),
     );
+  }
+
+  static String _parsePriority(dynamic value) {
+    final priority = value?.toString().trim().toLowerCase();
+    return {'normal', 'high', 'urgent'}.contains(priority)
+        ? priority!
+        : 'normal';
   }
 
   String get syncKey => id?.toString() ?? '${createdAt ?? ''}|$title|$message';
@@ -38,6 +60,10 @@ class NotificationModel {
       courseId: courseId,
       isRead: isRead ?? this.isRead,
       createdAt: createdAt,
+      priority: priority,
+      actionUrl: actionUrl,
+      publishAt: publishAt,
+      expiresAt: expiresAt,
     );
   }
 
@@ -49,6 +75,10 @@ class NotificationModel {
       'course_id': courseId,
       'is_read': isRead,
       'created_at': createdAt,
+      'priority': priority,
+      'action_url': actionUrl,
+      'publish_at': publishAt,
+      'expires_at': expiresAt,
     };
   }
 }

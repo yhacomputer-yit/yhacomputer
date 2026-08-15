@@ -12,10 +12,16 @@ void main() {
         'id': '12',
         'title': 'Web Design',
         'subject': 'Web Development',
+        'featured': '1',
+        'sort_order': '3',
+        'enrollment_open': '0',
       });
 
       expect(course.id, 12);
       expect(course.subject, 'Web Development');
+      expect(course.featured, isTrue);
+      expect(course.sortOrder, 3);
+      expect(course.enrollmentOpen, isFalse);
     });
 
     test('converts event IDs returned as strings', () {
@@ -49,12 +55,17 @@ void main() {
           'title': 'New class schedule',
           'message': 'The updated schedule is available.',
           'is_read': '1',
+          'priority': 'urgent',
+          'action_url': '/courses/12',
+          'publish_at': '2026-08-15T00:00:00.000Z',
         });
 
         expect(notification.id, 21);
         expect(notification.courseId, 12);
         expect(notification.isRead, isTrue);
         expect(notification.syncKey, '21');
+        expect(notification.priority, 'urgent');
+        expect(notification.actionUrl, '/courses/12');
       },
     );
   });
