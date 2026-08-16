@@ -6,6 +6,7 @@ import 'package:workmanager/workmanager.dart';
 import 'app.dart';
 import 'services/notification_service.dart';
 import 'services/notification_sync_service.dart';
+import 'services/student_auth_service.dart';
 
 const _notificationSyncTaskName = 'yha.turso.notification_sync';
 const _notificationSyncWorkId = 'yha_turso_notification_sync_periodic';
@@ -43,6 +44,7 @@ Future<void> _registerBackgroundNotificationSync() async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService().initialize(requestPermission: true);
+  await StudentAuthService.instance.restoreSession();
   await _registerBackgroundNotificationSync();
 
   // Establish the device-local baseline without surfacing historical

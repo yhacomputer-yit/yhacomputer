@@ -1,5 +1,5 @@
 import { applyCors, handleCorsPreflight } from "./_cors.js";
-import { ensureSchema, generatePassword, hashPassword, query, execute } from "./_db.js";
+import { ensureSchema, generatePassword, hashPassword, passwordNeedsUpgrade, query, execute, verifyPassword } from "./_db.js";
 
 function readBody(req) {
   if (req.body && typeof req.body === "object") return Promise.resolve(req.body);
@@ -133,11 +133,14 @@ export default async function handler(req, res) {
       }
 
       const students = await query("SELECT * FROM students WHERE student_id = ? LIMIT 1", [studentId]);
-      if (!students.length || !students[0].password_hash || students[0].password_hash !== hashPassword(password)) {
+      if (!students.length || !students[0].password_hash || !verifyPassword(password, students[0].password_hash)) {
         res.status(401).json({ error: "Invalid student ID or password." });
         return;
       }
       const student = students[0];
+      if (passwordNeedsUpgrade(student.password_hash)) {
+        await execute("UPDATE students SET password_hash = ?, updated_at = ? WHERE id = ?", [hashPassword(password), new Date().toISOString(), student.id]);
+      }
       if (student.status !== "active") {
         res.status(403).json({ error: "Your account is pending approval. Please contact the admin." });
         return;

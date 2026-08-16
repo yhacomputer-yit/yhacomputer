@@ -88,6 +88,8 @@ const TABLES = {
     "created_at",
     "updated_at",
   ],
+  enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note"],
+  student_password_resets: ["status", "resolved_at", "resolved_by"],
 };
 
 
@@ -100,6 +102,8 @@ const TABLES = {
 
 
 const NOTIFICATION_PRIORITIES = new Set(["normal", "high", "urgent"]);
+const ENROLLMENT_STATUSES = new Set(["pending", "approved", "rejected", "cancelled", "completed"]);
+const PASSWORD_RESET_STATUSES = new Set(["pending", "resolved", "cancelled"]);
 
 function optionalText(value, field, maxLength) {
   if (value == null) return null;
@@ -165,6 +169,21 @@ async function ensureCourseExists(courseId) {
   if (!rows.length) throw new Error("Selected course does not exist.");
 }
 
+async function ensureStudentExists(studentId) {
+  if (studentId == null) return;
+  const rows = await query("SELECT id FROM students WHERE id = ? LIMIT 1", [studentId]);
+  if (!rows.length) throw new Error("Selected student does not exist.");
+}
+
+async function ensureSessionMatchesCourse(sessionId, courseId) {
+  if (sessionId == null) return;
+  const rows = await query("SELECT id, course_id FROM sessions WHERE id = ? LIMIT 1", [sessionId]);
+  if (!rows.length) throw new Error("Selected session does not exist.");
+  if (courseId != null && Number(rows[0].course_id) !== Number(courseId)) {
+    throw new Error("Selected session does not belong to the selected course.");
+  }
+}
+
 async function normalizeManagedValues(table, values, { creating = false } = {}) {
   const normalized = { ...values };
 
@@ -184,6 +203,41 @@ async function normalizeManagedValues(table, values, { creating = false } = {}) 
     if (normalized.sort_order !== undefined) {
       normalized.sort_order = nonNegativeInteger(normalized.sort_order, "Sort order");
     }
+  }
+
+  if (table === "enrollments") {
+    if (creating || normalized.student_id !== undefined) {
+      normalized.student_id = nullableId(normalized.student_id, "Student");
+      if (normalized.student_id == null) throw new Error("Student is required.");
+      await ensureStudentExists(normalized.student_id);
+    }
+    if (creating || normalized.course_id !== undefined) {
+      normalized.course_id = nullableId(normalized.course_id, "Course");
+      if (normalized.course_id == null) throw new Error("Course is required.");
+      await ensureCourseExists(normalized.course_id);
+    }
+    if (normalized.session_id !== undefined) {
+      normalized.session_id = nullableId(normalized.session_id, "Session");
+      await ensureSessionMatchesCourse(normalized.session_id, normalized.course_id);
+    }
+    if (normalized.status !== undefined) {
+      normalized.status = String(normalized.status).trim().toLowerCase();
+      if (!ENROLLMENT_STATUSES.has(normalized.status)) throw new Error("Invalid enrollment status.");
+    } else if (creating) {
+      normalized.status = "pending";
+    }
+    for (const field of ["student_note", "admin_note"]) {
+      if (normalized[field] !== undefined) normalized[field] = optionalText(normalized[field], field, 1000);
+    }
+  }
+
+  if (table === "student_password_resets") {
+    if (normalized.status !== undefined) {
+      normalized.status = String(normalized.status).trim().toLowerCase();
+      if (!PASSWORD_RESET_STATUSES.has(normalized.status)) throw new Error("Invalid password-help request status.");
+    }
+    if (normalized.resolved_by !== undefined) normalized.resolved_by = optionalText(normalized.resolved_by, "Resolved by", 120);
+    if (normalized.resolved_at !== undefined) normalized.resolved_at = normalizedIsoDate(normalized.resolved_at, "Resolved time");
   }
 
   if (table === "notifications") {
@@ -274,7 +328,25 @@ export default async function handler(req, res) {
     const columns = TABLES[table];
 
     if (action === "list") {
-      const rows = await query("SELECT * FROM " + table + " ORDER BY id DESC");
+      let rows;
+      if (table === "enrollments") {
+        rows = await query(`SELECT e.*, s.student_id AS student_code, s.name AS student_name, s.email AS student_email,
+          s.phone AS student_phone, c.title AS course_title, se.name AS session_name
+          FROM enrollments e
+          JOIN students s ON s.id = e.student_id
+          JOIN courses c ON c.id = e.course_id
+          LEFT JOIN sessions se ON se.id = e.session_id
+          ORDER BY CASE e.status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 WHEN 'completed' THEN 2 ELSE 3 END,
+            e.updated_at DESC, e.id DESC`);
+      } else if (table === "student_password_resets") {
+        rows = await query(`SELECT r.*, s.student_id AS student_code, s.name AS student_name, s.email AS student_email,
+          s.phone AS student_phone
+          FROM student_password_resets r
+          JOIN students s ON s.id = r.student_id
+          ORDER BY CASE r.status WHEN 'pending' THEN 0 ELSE 1 END, r.requested_at DESC, r.id DESC`);
+      } else {
+        rows = await query("SELECT * FROM " + table + " ORDER BY id DESC");
+      }
       const safeRows = table === "students"
         ? rows.map(({ password_hash, ...row }) => ({ ...row, password_set: Boolean(password_hash) }))
         : rows;
@@ -317,12 +389,33 @@ export default async function handler(req, res) {
       }
       const assignments = used.map((c) => c + " = ?");
       const argumentsList = used.map((c) => values[c]);
-      if (table === "courses") {
+      const now = new Date().toISOString();
+      if (table === "courses" || table === "enrollments" || table === "student_password_resets" || table === "students") {
         assignments.push("updated_at = ?");
-        argumentsList.push(new Date().toISOString());
+        argumentsList.push(now);
+      }
+      if (table === "enrollments" && values.status !== undefined && values.status !== "pending") {
+        assignments.push("reviewed_at = ?");
+        argumentsList.push(now);
+        assignments.push("reviewed_by = ?");
+        argumentsList.push("admin");
+      }
+      if (table === "student_password_resets" && values.status === "resolved") {
+        assignments.push("resolved_at = ?");
+        argumentsList.push(now);
+        assignments.push("resolved_by = ?");
+        argumentsList.push("admin");
       }
       const sql = "UPDATE " + table + " SET " + assignments.join(", ") + " WHERE id = ?";
       await execute(sql, argumentsList.concat([id]));
+      if (table === "enrollments" && values.status === "approved") {
+        // Approval is the deliberate admin decision that grants both course
+        // access and the ability to sign in for a newly registered learner.
+        await execute(
+          "UPDATE students SET status = 'active', updated_at = ? WHERE id = (SELECT student_id FROM enrollments WHERE id = ?) AND status = 'pending'",
+          [now, id]
+        );
+      }
       res.status(200).json({ ok: true });
       return;
     }
@@ -354,6 +447,10 @@ export default async function handler(req, res) {
       await execute(
         "UPDATE students SET password_hash = ?, updated_at = ? WHERE id = ?",
         [passwordHash, now, id]
+      );
+      await execute(
+        "UPDATE student_password_resets SET status = 'resolved', resolved_at = ?, resolved_by = ?, updated_at = ? WHERE student_id = ? AND status = 'pending'",
+        [now, "admin", now, id]
       );
       res.status(200).json({
         ok: true,

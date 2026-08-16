@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/student_auth_service.dart';
 import '../models/course.dart';
 import '../models/subject.dart';
 import '../theme/app_theme.dart';
@@ -19,6 +20,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   String error = '';
   Course? course;
   List<Subject> courseSubjects = [];
+  bool enrollmentSubmitting = false;
 
   @override
   void initState() {
@@ -59,6 +61,84 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         error = e.toString();
         loading = false;
       });
+    }
+  }
+
+  Future<void> _requestEnrollment() async {
+    final selectedCourse = course;
+    if (selectedCourse?.id == null) return;
+    if (!selectedCourse!.enrollmentOpen) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enrollment is currently closed for this course.')),
+      );
+      return;
+    }
+    if (!StudentAuthService.instance.isSignedIn) {
+      await Navigator.pushNamed(
+        context,
+        '/student-login',
+        arguments: {'course_id': selectedCourse.id},
+      );
+      return;
+    }
+
+    final note = TextEditingController();
+    try {
+      final confirmed = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.md,
+            MediaQuery.of(context).viewInsets.bottom + AppSpacing.md,
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Request enrollment', style: AppTextStyles.titleLarge),
+                const SizedBox(height: 6),
+                Text('Send a request for ${selectedCourse.title}. YHA will review it in the Admin Dashboard.', style: AppTextStyles.bodyMedium),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: note,
+                  minLines: 2,
+                  maxLines: 4,
+                  maxLength: 1000,
+                  decoration: const InputDecoration(
+                    labelText: 'Note for admissions (optional)',
+                    hintText: 'Preferred class time or a question',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                FilledButton.icon(
+                  onPressed: () => Navigator.pop(context, true),
+                  icon: const Icon(Icons.send_rounded),
+                  label: const Text('Send request'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+      setState(() => enrollmentSubmitting = true);
+      await StudentAuthService.instance.enroll(courseId: selectedCourse.id!, note: note.text);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enrollment request sent. You can track it in My Learning.')),
+      );
+      Navigator.pushNamed(context, '/my-learning');
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      note.dispose();
+      if (mounted) setState(() => enrollmentSubmitting = false);
     }
   }
 
@@ -330,8 +410,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                         children: [
                           Expanded(
                             child: FilledButton(
-                              onPressed: () =>
-                                  Navigator.pushNamed(context, '/contact'),
+                              onPressed: course!.enrollmentOpen && !enrollmentSubmitting
+                                  ? _requestEnrollment
+                                  : null,
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
@@ -344,12 +425,18 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                                   ),
                                 ),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text('Ask about enrollment'),
-                                  SizedBox(width: 6),
-                                  Icon(Icons.arrow_forward, size: 18),
+                                  if (enrollmentSubmitting)
+                                    const SizedBox.square(
+                                      dimension: 18,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  else
+                                    const Icon(Icons.how_to_reg_rounded, size: 18),
+                                  const SizedBox(width: 6),
+                                  Text(enrollmentSubmitting ? 'Sending…' : course!.enrollmentOpen ? 'Enroll now' : 'Enrollment closed'),
                                 ],
                               ),
                             ),

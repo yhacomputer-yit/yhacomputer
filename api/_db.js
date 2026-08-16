@@ -11,6 +11,8 @@ const TABLE_COLUMNS = {
   contacts: ["name", "email", "message", "created_at"],
   notifications: ["title", "message", "course_id", "priority", "action_url", "publish_at", "expires_at", "is_read", "created_at"],
   students: ["student_id", "name", "email", "phone", "father_name", "mother_name", "nrc_number", "register_date", "enroll_date", "viber_phone", "city", "township", "birthday", "gender", "image", "education", "status", "course_id", "session_id", "password_hash", "created_at", "updated_at"],
+  enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "requested_at", "reviewed_at", "reviewed_by", "created_at", "updated_at"],
+  student_password_resets: ["student_id", "status", "requested_at", "resolved_at", "resolved_by", "created_at", "updated_at"],
 };
 
 const CREATE_STATEMENTS = [
@@ -126,6 +128,30 @@ const CREATE_STATEMENTS = [
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
+  `CREATE TABLE IF NOT EXISTS enrollments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE RESTRICT,
+    session_id INTEGER REFERENCES sessions(id) ON DELETE SET NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled', 'completed')),
+    student_note TEXT,
+    admin_note TEXT,
+    requested_at TEXT NOT NULL DEFAULT (datetime('now')),
+    reviewed_at TEXT,
+    reviewed_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS student_password_resets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'resolved', 'cancelled')),
+    requested_at TEXT NOT NULL DEFAULT (datetime('now')),
+    resolved_at TEXT,
+    resolved_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
 ];
 
 const INDEX_STATEMENTS = [
@@ -140,6 +166,12 @@ const INDEX_STATEMENTS = [
   "CREATE INDEX IF NOT EXISTS idx_students_session_id ON students(session_id)",
   "CREATE INDEX IF NOT EXISTS idx_students_status ON students(status)",
   "CREATE INDEX IF NOT EXISTS idx_contacts_created_at ON contacts(created_at)",
+  "CREATE INDEX IF NOT EXISTS idx_enrollments_student_id ON enrollments(student_id, status, updated_at DESC)",
+  "CREATE INDEX IF NOT EXISTS idx_enrollments_course_id ON enrollments(course_id, status, updated_at DESC)",
+  "CREATE INDEX IF NOT EXISTS idx_enrollments_session_id ON enrollments(session_id)",
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_enrollments_one_open_request ON enrollments(student_id, course_id) WHERE status IN ('pending', 'approved')",
+  "CREATE INDEX IF NOT EXISTS idx_password_resets_student_status ON student_password_resets(student_id, status, requested_at DESC)",
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_password_resets_one_pending ON student_password_resets(student_id) WHERE status = 'pending'",
 ];
 
 function toHttpUrl(url) {
@@ -221,6 +253,36 @@ async function addCompatibilityColumns() {
   }
 }
 
+async function backfillLegacyStudentEnrollments() {
+  await execute(`INSERT INTO enrollments
+    (student_id, course_id, session_id, status, requested_at, reviewed_at, reviewed_by, created_at, updated_at)
+    SELECT s.id,
+      s.course_id,
+      CASE
+        WHEN s.session_id IS NOT NULL AND EXISTS (
+          SELECT 1 FROM sessions ss WHERE ss.id = s.session_id AND ss.course_id = s.course_id
+        ) THEN s.session_id
+        ELSE NULL
+      END,
+      CASE s.status
+        WHEN 'active' THEN 'approved'
+        WHEN 'completed' THEN 'completed'
+        WHEN 'inactive' THEN 'cancelled'
+        ELSE 'pending'
+      END,
+      COALESCE(s.register_date, s.created_at, datetime('now')),
+      CASE WHEN s.status IN ('active', 'completed', 'inactive') THEN COALESCE(s.updated_at, datetime('now')) ELSE NULL END,
+      CASE WHEN s.status IN ('active', 'completed', 'inactive') THEN 'legacy-migration' ELSE NULL END,
+      COALESCE(s.created_at, datetime('now')),
+      COALESCE(s.updated_at, datetime('now'))
+    FROM students s
+    WHERE s.course_id IS NOT NULL
+      AND EXISTS (SELECT 1 FROM courses c WHERE c.id = s.course_id)
+      AND NOT EXISTS (
+        SELECT 1 FROM enrollments e WHERE e.student_id = s.id AND e.course_id = s.course_id
+      )`);
+}
+
 async function repairStudentForeignKeyTypes() {
   const info = await query("PRAGMA table_info(students)");
   const courseColumn = info.find((column) => column.name === "course_id");
@@ -282,6 +344,7 @@ export function ensureSchema() {
       }
       await addCompatibilityColumns();
       await repairStudentForeignKeyTypes();
+      await backfillLegacyStudentEnrollments();
       for (const statement of INDEX_STATEMENTS) {
         try {
           await execute(statement);
@@ -298,7 +361,29 @@ export function ensureSchema() {
 }
 
 export function hashPassword(password) {
-  return crypto.createHash("sha256").update(String(password)).digest("hex");
+  const salt = crypto.randomBytes(16).toString("base64url");
+  const digest = crypto.scryptSync(String(password), salt, 32).toString("base64url");
+  return `scrypt$${salt}$${digest}`;
+}
+
+export function verifyPassword(password, storedHash) {
+  const stored = String(storedHash || "");
+  if (stored.startsWith("scrypt$")) {
+    const [, salt, expected] = stored.split("$");
+    if (!salt || !expected) return false;
+    const actual = crypto.scryptSync(String(password), salt, 32).toString("base64url");
+    const expectedBuffer = Buffer.from(expected);
+    const actualBuffer = Buffer.from(actual);
+    return expectedBuffer.length === actualBuffer.length && crypto.timingSafeEqual(expectedBuffer, actualBuffer);
+  }
+  const legacy = crypto.createHash("sha256").update(String(password)).digest("hex");
+  const storedBuffer = Buffer.from(stored);
+  const legacyBuffer = Buffer.from(legacy);
+  return storedBuffer.length === legacyBuffer.length && crypto.timingSafeEqual(storedBuffer, legacyBuffer);
+}
+
+export function passwordNeedsUpgrade(storedHash) {
+  return !String(storedHash || "").startsWith("scrypt$");
 }
 
 export function generatePassword() {

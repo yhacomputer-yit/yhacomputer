@@ -13,9 +13,12 @@ class ApiService {
   );
   static const Duration _timeout = Duration(seconds: 15);
 
-  static Future<Map<String, dynamic>> _fetchJson(Uri url) async {
+  static Future<Map<String, dynamic>> _fetchJson(
+    Uri url, {
+    Map<String, String>? headers,
+  }) async {
     try {
-      final response = await http.get(url).timeout(_timeout);
+      final response = await http.get(url, headers: headers).timeout(_timeout);
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
         if (decoded is Map<String, dynamic>) return decoded;
@@ -36,6 +39,42 @@ class ApiService {
       throw _ApiException(
         'Something went wrong while loading data. Please try again later.',
       );
+    }
+  }
+
+  static Future<Map<String, dynamic>> _postJson(
+    Uri url,
+    Map<String, dynamic> body, {
+    String? token,
+  }) async {
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    try {
+      final response = await http
+          .post(url, headers: headers, body: json.encode(body))
+          .timeout(_timeout);
+      final decoded = json.decode(response.body);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (decoded is Map<String, dynamic>) return decoded;
+        throw _ApiException('Received invalid data from the server.');
+      }
+      throw _ApiException(
+        decoded is Map
+            ? (decoded['error']?.toString() ?? 'Request failed.')
+            : 'Request failed.',
+      );
+    } on _ApiException {
+      rethrow;
+    } on http.ClientException {
+      throw _ApiException(
+        'Unable to reach the server. Please check your internet connection and try again.',
+      );
+    } on FormatException {
+      throw _ApiException('Received invalid data from the server.');
+    } catch (_) {
+      throw _ApiException('Something went wrong. Please try again later.');
     }
   }
 
@@ -167,6 +206,25 @@ class ApiService {
     return _collectionRows(data, 'notifications')
         .map((json) => NotificationModel.fromJson(json as Map<String, dynamic>))
         .toList();
+  }
+
+  static Future<Map<String, dynamic>> studentRequest(
+    String action, {
+    Map<String, dynamic>? values,
+    String? token,
+  }) {
+    return _postJson(
+      Uri.parse('$baseUrl/api/student'),
+      <String, dynamic>{'action': action, ...?values},
+      token: token,
+    );
+  }
+
+  static Future<Map<String, dynamic>> fetchStudentLearning(String token) {
+    return _fetchJson(
+      Uri.parse('$baseUrl/api/student').replace(queryParameters: {'action': 'me'}),
+      headers: {'Authorization': 'Bearer $token'},
+    );
   }
 
   static Future<Map<String, dynamic>> adminRequest(

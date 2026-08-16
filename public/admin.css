@@ -1230,3 +1230,63 @@ button {
 .admin-sidebar-title { color: #e2e8f0; font-size: 0.78rem; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
 .admin-sidebar-header { min-height: 52px; padding: 12px 16px; }
 .admin-sidebar-nav .admin-tab { gap: 0; }
+
+/* Enrollment and password-help queue */
+.admin-enrollment-item {
+  align-items: center;
+}
+
+.admin-enrollment-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.admin-status-chip.is-pending {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.admin-status-chip.is-approved,
+.admin-status-chip.is-resolved,
+.admin-status-chip.is-completed {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.admin-status-chip.is-rejected,
+.admin-status-chip.is-cancelled {
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.btn-mini.btn-approve {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.btn-mini.btn-approve:hover {
+  border-color: #34d399;
+  background: #d1fae5;
+}
+
+@media (max-width: 620px) {
+  .admin-enrollment-item .admin-item-actions {
+    justify-content: stretch;
+  }
+}
