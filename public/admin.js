@@ -1186,6 +1186,7 @@
     $("export-students").addEventListener("click", exportStudentsCsv);
     document.querySelectorAll(".admin-tab").forEach(function (t) {
       t.addEventListener("click", function (event) {
+        if (t.tagName === "A") return;
         event.preventDefault();
         selectTable(t.dataset.table);
       });
@@ -1194,7 +1195,7 @@
     // or a stale browser listener survives a deployment update.
     document.addEventListener("click", function (event) {
       const tab = event.target.closest && event.target.closest(".admin-tab");
-      if (tab) {
+      if (tab && tab.tagName !== "A") {
         event.preventDefault();
         selectTable(tab.dataset.table);
       }
@@ -1242,6 +1243,8 @@
 
     if (getPassword()) {
       showManage();
+      const requestedTable = new URLSearchParams(window.location.search).get("table");
+      if (requestedTable && SCHEMA[requestedTable]) selectTable(requestedTable);
     } else {
       showLogin();
     }
