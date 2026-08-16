@@ -229,13 +229,13 @@ async function normalizeManagedValues(table, values, { creating = false } = {}) 
     if (normalized.resource_type !== undefined) {
       normalized.resource_type = String(normalized.resource_type).trim().toLowerCase();
       if (!["file", "pdf", "zip", "youtube", "note"].includes(normalized.resource_type)) {
-        throw new Error("Resource type must be file, pdf, zip, or youtube.");
+        throw new Error("Resource type must be file, pdf, zip, youtube, or note.");
       }
     } else if (creating) {
       normalized.resource_type = "file";
     }
     for (const field of ["url", "note"]) {
-      if (normalized[field] !== undefined) normalized[field] = optionalText(normalized[field], field, field === "note" ? 8000 : 2000);
+      if (normalized[field] !== undefined) normalized[field] = optionalText(normalized[field], field, field === "note" ? 8000 : 2200000);
     }
     if (normalized.sort_order !== undefined) normalized.sort_order = nonNegativeInteger(normalized.sort_order, "Display order");
     if (normalized.is_published !== undefined) normalized.is_published = booleanFlag(normalized.is_published, "Visible to students");

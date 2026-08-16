@@ -45,7 +45,7 @@
         { name: "course_id", label: "Course", type: "select-dynamic", required: true, optionsTable: "courses", optionsLabel: "title", optionsValue: "id" },
         { name: "title", label: "Resource title", type: "text", required: true },
         { name: "resource_type", label: "Resource type", type: "select", options: ["file", "pdf", "zip", "youtube", "note"] },
-        { name: "url", label: "File or YouTube URL", type: "url" },
+        { name: "url", label: "File URL or upload", type: "resource-url" },
         { name: "note", label: "Note / description", type: "textarea" },
         { name: "sort_order", label: "Display order", type: "number" },
         { name: "is_published", label: "Visible to students", type: "select", options: ["1", "0"] },
@@ -387,14 +387,17 @@
                         (f.required ? " required" : "") +
                         " />" +
                         '<div class="admin-image-thumbs" hidden></div>'
-                      : '<input type="' +
-                        f.type +
-                        '" name="' +
-                        f.name +
-                        '"' +
-                        (f.required ? " required" : "") +
-                        (f.readonly ? " readonly" : "") +
-                        " />";
+                      : f.type === "resource-url"
+                        ? '<input type="file" class="admin-resource-file-input" accept="application/pdf,application/zip,.pdf,.zip,.txt,.doc,.docx,.ppt,.pptx" />' +
+                          '<input type="url" name="' + f.name + '" placeholder="Paste a public URL or choose a file (max 1.5 MB)" />'
+                        : '<input type="' +
+                          f.type +
+                          '" name="' +
+                          f.name +
+                          '"' +
+                          (f.required ? " required" : "") +
+                          (f.readonly ? " readonly" : "") +
+                          " />";
           const labelClass =
             f.type === "image" || f.type === "images" ? "admin-field-image" : "";
           return '<label class="' + labelClass + '">' + f.label + input + "</label>";
@@ -1040,17 +1043,43 @@
     }
   }
 
+  function readFileAsDataUrl(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result || "")); };
+      reader.onerror = function () { reject(new Error("Could not read the selected resource file.")); };
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
     const schema = SCHEMA[currentTable];
     const form = $("record-form");
     const values = {};
-    schema.fields.forEach(function (f) {
-      const rawValue = form.elements[f.name].value.trim();
-      values[f.name] = f.type === "datetime-local" && rawValue
-        ? new Date(rawValue).toISOString()
-        : rawValue;
-    });
+    for (const f of schema.fields) {
+      const field = form.elements[f.name];
+      const rawValue = field ? String(field.value || "").trim() : "";
+      if (f.type === "resource-url") {
+        const fileInput = form.querySelector(".admin-resource-file-input");
+        const file = fileInput && fileInput.files && fileInput.files[0];
+        if (file) {
+          if (file.size > 1.5 * 1024 * 1024) {
+            const errEl = $("form-error");
+            errEl.textContent = "Resource files must be 1.5 MB or smaller. For larger files, paste a public URL instead.";
+            errEl.hidden = false;
+            return;
+          }
+          values[f.name] = await readFileAsDataUrl(file);
+        } else {
+          values[f.name] = rawValue;
+        }
+      } else {
+        values[f.name] = f.type === "datetime-local" && rawValue
+          ? new Date(rawValue).toISOString()
+          : rawValue;
+      }
+    }
     const missing = schema.fields.find(
       (f) => f.required && !values[f.name]
     );
