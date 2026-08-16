@@ -214,6 +214,8 @@
       newRecord.hidden = !schema.create;
       newRecord.textContent = schema.create ? "+ Add " + schema.label : "";
     }
+    const exportStudents = $("export-students");
+    if (exportStudents) exportStudents.hidden = currentTable !== "students";
   }
 
   async function refreshCatalogData() {
@@ -644,6 +646,44 @@
         updateImagesPreview(textInput);
       });
     });
+  }
+
+  function csvCell(value) {
+    const text = value == null ? "" : String(value);
+    return '"' + text.replace(/"/g, '""') + '"';
+  }
+
+  function exportStudentsCsv() {
+    if (currentTable !== "students") return;
+    const columns = [
+      ["Student ID", "student_id"], ["Full Name", "name"], ["Email", "email"], ["Phone", "phone"],
+      ["Father Name", "father_name"], ["Mother Name", "mother_name"], ["NRC Number", "nrc_number"],
+      ["Viber Phone", "viber_phone"], ["City", "city"], ["Township", "township"], ["Birthday", "birthday"],
+      ["Gender", "gender"], ["Education", "education"], ["Register Date", "register_date"],
+      ["Enroll Date", "enroll_date"], ["Status", "status"], ["Password Set", "password_set"],
+      ["Course", "course_id"], ["Session", "session_id"], ["Created At", "created_at"], ["Updated At", "updated_at"],
+    ];
+    const header = columns.map((column) => csvCell(column[0])).join(",");
+    const rows = listRows.map(function (row) {
+      return columns.map(function (column) {
+        let value = row[column[1]];
+        if (column[1] === "password_set") value = row.password_set ? "Yes" : "No";
+        if (column[1] === "course_id") value = row.course_id ? lookupLabel("courses", row.course_id, "title") : "Not assigned";
+        if (column[1] === "session_id") value = row.session_id ? lookupLabel("sessions", row.session_id, "name") : "Not assigned";
+        return csvCell(value);
+      }).join(",");
+    });
+    const lineBreak = String.fromCharCode(13, 10);
+    const csv = String.fromCharCode(0xFEFF) + [header].concat(rows).join(lineBreak) + lineBreak;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "yha-students-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   }
 
   async function loadList() {
@@ -1084,6 +1124,7 @@
       showLogin();
     });
     $("new-record").addEventListener("click", startNewRecord);
+    $("export-students").addEventListener("click", exportStudentsCsv);
     document.querySelectorAll(".admin-tab").forEach(function (t) {
       t.addEventListener("click", function () {
         selectTable(t.dataset.table);
