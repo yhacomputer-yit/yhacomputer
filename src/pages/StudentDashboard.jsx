@@ -243,6 +243,8 @@ export default function StudentDashboard() {
                     <div><h4>{enrollment.course_title}</h4><span className={`dashboard-status dashboard-status-${enrollment.status}`}>{statusLabel(enrollment.status)}</span></div>
                     {enrollment.session_name && <p>{enrollment.session_name}{enrollment.session_start_time ? ` · ${enrollment.session_start_time}–${enrollment.session_end_time}` : ""}</p>}
                     <p>{enrollment.course_duration || ""}{enrollment.course_price ? ` · ${enrollment.course_price}` : ""}</p>
+                    <p className={`dashboard-payment dashboard-payment-${enrollment.payment_status || "unpaid"}`}>Payment: {(enrollment.payment_status || "unpaid").toUpperCase()}{enrollment.payment_due ? ` · Due ${enrollment.payment_due}` : ""}{enrollment.payment_paid ? ` · Paid ${enrollment.payment_paid}` : ""}</p>
+                    {(enrollment.payment_method || enrollment.payment_reference) && <small>{enrollment.payment_method || ""}{enrollment.payment_reference ? ` · ${enrollment.payment_reference}` : ""}</small>}
                     {(enrollment.admin_note || enrollment.student_note) && <small>{enrollment.admin_note || enrollment.student_note}</small>}
                     {enrollment.status === "pending" && <button className="button button-ghost-dark" disabled={busy === `cancel-${enrollment.id}`} onClick={() => cancelEnrollment(enrollment.id)}>{busy === `cancel-${enrollment.id}` ? "Cancelling…" : "Cancel request"}</button>}
                   </article>

@@ -12,7 +12,7 @@ const TABLE_COLUMNS = {
   contacts: ["name", "email", "message", "created_at"],
   notifications: ["title", "message", "student_id", "course_id", "priority", "action_url", "publish_at", "expires_at", "is_read", "created_at"],
   students: ["student_id", "name", "email", "phone", "father_name", "mother_name", "nrc_number", "register_date", "enroll_date", "viber_phone", "city", "township", "birthday", "gender", "image", "education", "status", "course_id", "session_id", "password_hash", "created_at", "updated_at"],
-  enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "requested_at", "reviewed_at", "reviewed_by", "created_at", "updated_at"],
+  enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "payment_status", "payment_due", "payment_paid", "payment_method", "payment_reference", "payment_date", "payment_note", "requested_at", "reviewed_at", "reviewed_by", "created_at", "updated_at"],
   student_password_resets: ["student_id", "status", "requested_at", "resolved_at", "resolved_by", "created_at", "updated_at"],
 };
 
@@ -150,6 +150,13 @@ const CREATE_STATEMENTS = [
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled', 'completed')),
     student_note TEXT,
     admin_note TEXT,
+    payment_status TEXT NOT NULL DEFAULT 'unpaid',
+    payment_due INTEGER NOT NULL DEFAULT 0,
+    payment_paid INTEGER NOT NULL DEFAULT 0,
+    payment_method TEXT,
+    payment_reference TEXT,
+    payment_date TEXT,
+    payment_note TEXT,
     requested_at TEXT NOT NULL DEFAULT (datetime('now')),
     reviewed_at TEXT,
     reviewed_by TEXT,
@@ -244,7 +251,7 @@ export async function query(sql, args = []) {
 }
 
 function columnType(column) {
-  const numeric = new Set(["id", "student_id", "course_id", "session_id", "teacher_id", "price", "is_read", "is_published", "featured", "sort_order", "enrollment_open"]);
+  const numeric = new Set(["id", "student_id", "course_id", "session_id", "teacher_id", "price", "payment_due", "payment_paid", "is_read", "is_published", "featured", "sort_order", "enrollment_open"]);
   return numeric.has(column) ? "INTEGER" : "TEXT";
 }
 
@@ -262,6 +269,9 @@ async function addCompatibilityColumns() {
           sort_order: " DEFAULT 0",
           enrollment_open: " DEFAULT 1",
           priority: " DEFAULT 'normal'",
+          payment_status: " DEFAULT 'unpaid'",
+          payment_due: " DEFAULT 0",
+          payment_paid: " DEFAULT 0",
         }[column] || "";
         await execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${columnType(column)}${defaultValue}`);
       }

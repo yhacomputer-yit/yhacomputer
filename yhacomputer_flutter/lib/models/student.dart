@@ -76,6 +76,13 @@ class Enrollment {
   final String requestedAt;
   final String reviewedAt;
   final String updatedAt;
+  final String paymentStatus;
+  final int paymentDue;
+  final int paymentPaid;
+  final String paymentMethod;
+  final String paymentReference;
+  final String paymentDate;
+  final String paymentNote;
   final Course course;
   final int? sessionId;
   final String sessionName;
@@ -90,6 +97,13 @@ class Enrollment {
     required this.requestedAt,
     required this.reviewedAt,
     required this.updatedAt,
+    this.paymentStatus = 'unpaid',
+    this.paymentDue = 0,
+    this.paymentPaid = 0,
+    this.paymentMethod = '',
+    this.paymentReference = '',
+    this.paymentDate = '',
+    this.paymentNote = '',
     required this.course,
     this.sessionId,
     this.sessionName = '',
@@ -108,6 +122,13 @@ class Enrollment {
       requestedAt: parseText(json['requested_at']),
       reviewedAt: parseText(json['reviewed_at']),
       updatedAt: parseText(json['updated_at']),
+      paymentStatus: parseText(json['payment_status']).isEmpty ? 'unpaid' : parseText(json['payment_status']).toLowerCase(),
+      paymentDue: int.tryParse('${json['payment_due'] ?? 0}') ?? 0,
+      paymentPaid: int.tryParse('${json['payment_paid'] ?? 0}') ?? 0,
+      paymentMethod: parseText(json['payment_method']),
+      paymentReference: parseText(json['payment_reference']),
+      paymentDate: parseText(json['payment_date']),
+      paymentNote: parseText(json['payment_note']),
       course: Course.fromJson({
         'id': json['course_id'],
         'title': json['course_title'],
@@ -132,6 +153,13 @@ class Enrollment {
     'requested_at': requestedAt,
     'reviewed_at': reviewedAt,
     'updated_at': updatedAt,
+    'payment_status': paymentStatus,
+    'payment_due': paymentDue,
+    'payment_paid': paymentPaid,
+    'payment_method': paymentMethod,
+    'payment_reference': paymentReference,
+    'payment_date': paymentDate,
+    'payment_note': paymentNote,
     'course_id': course.id,
     'course_title': course.title,
     'course_image': course.image,

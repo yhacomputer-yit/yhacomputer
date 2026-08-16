@@ -100,7 +100,7 @@ const TABLES = {
     "created_at",
     "updated_at",
   ],
-  enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note"],
+  enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "payment_status", "payment_due", "payment_paid", "payment_method", "payment_reference", "payment_date", "payment_note"],
   student_password_resets: ["status", "resolved_at", "resolved_by"],
 };
 
@@ -262,9 +262,19 @@ async function normalizeManagedValues(table, values, { creating = false } = {}) 
     } else if (creating) {
       normalized.status = "pending";
     }
-    for (const field of ["student_note", "admin_note"]) {
+    for (const field of ["student_note", "admin_note", "payment_method", "payment_reference", "payment_note"]) {
       if (normalized[field] !== undefined) normalized[field] = optionalText(normalized[field], field, 1000);
     }
+    if (normalized.payment_status !== undefined) {
+      normalized.payment_status = String(normalized.payment_status).trim().toLowerCase();
+      if (!["unpaid", "partial", "paid", "waived", "refunded"].includes(normalized.payment_status)) throw new Error("Invalid payment status.");
+    } else if (creating) {
+      normalized.payment_status = "unpaid";
+    }
+    for (const field of ["payment_due", "payment_paid"]) {
+      if (normalized[field] !== undefined) normalized[field] = nonNegativeInteger(normalized[field], field === "payment_due" ? "Payment due" : "Payment paid");
+    }
+    if (normalized.payment_date !== undefined) normalized.payment_date = normalized.payment_date ? normalizedIsoDate(normalized.payment_date, "Payment date") : null;
   }
 
   if (table === "student_password_resets") {
