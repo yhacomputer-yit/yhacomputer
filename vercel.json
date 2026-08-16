@@ -1,5 +1,7 @@
 {
   "rewrites": [
+    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/admin/(.*)", "destination": "/index.html" },
     { "source": "/((?!api/|assets/|images/|admin.html|admin.js|admin.css).*)", "destination": "/index.html" }
   ],
   "headers": [
