@@ -229,17 +229,21 @@ async function register(body) {
   const now = new Date().toISOString();
   await execute(
     `INSERT INTO students
-      (student_id, name, email, phone, viber_phone, city, township, birthday, gender, education,
+      (student_id, name, email, phone, father_name, mother_name, nrc_number, viber_phone, city, township, birthday, gender, education, image,
        register_date, status, course_id, session_id, password_hash, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
     [
       studentId, name, email, phone,
+      optionalText(body.father_name, "Father name", 120),
+      optionalText(body.mother_name, "Mother name", 120),
+      optionalText(body.nrc_number, "NRC number", 80),
       optionalText(body.viber_phone, "Viber phone", 40),
       optionalText(body.city, "City", 100),
       optionalText(body.township, "Township", 100),
       optionalText(body.birthday, "Birthday", 30),
       optionalText(body.gender, "Gender", 30),
       optionalText(body.education, "Education", 160),
+      optionalText(body.image, "Profile image", 1000),
       now, courseId, sessionId, hashPassword(password), now, now,
     ]
   );
@@ -329,12 +333,16 @@ async function updateProfile(req, body) {
   const fields = {
     name: optionalText(body.name, "Name", 120),
     phone: optionalText(body.phone, "Phone", 40),
+    father_name: optionalText(body.father_name, "Father name", 120),
+    mother_name: optionalText(body.mother_name, "Mother name", 120),
+    nrc_number: optionalText(body.nrc_number, "NRC number", 80),
     viber_phone: optionalText(body.viber_phone, "Viber phone", 40),
     city: optionalText(body.city, "City", 100),
     township: optionalText(body.township, "Township", 100),
     birthday: optionalText(body.birthday, "Birthday", 30),
     gender: optionalText(body.gender, "Gender", 30),
     education: optionalText(body.education, "Education", 160),
+    image: optionalText(body.image, "Profile image", 1000),
   };
   if (!fields.name || !fields.phone) throw new Error("Name and phone are required.");
   const columns = Object.keys(fields);

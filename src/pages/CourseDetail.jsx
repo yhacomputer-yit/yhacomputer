@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useSiteData } from "../data.jsx";
 import { useSeo } from "../seo.js";
+import { useAuth } from "../contexts/AuthContext.jsx";
 import { formatFee, hasConfirmedFee, parseFee } from "../utils/formatters.js";
 
 function resolveImage(value) {
@@ -13,7 +14,9 @@ function resolveImage(value) {
 export default function CourseDetail() {
   const { id } = useParams();
   const { loading, error, courses, subjects, sessions, teachers, courseTeachers } = useSiteData();
+  const { user } = useAuth();
   const [imageFailed, setImageFailed] = useState(false);
+  const [enrollmentStatus, setEnrollmentStatus] = useState({ type: "idle", message: "" });
   const course = courses.find((item) => String(item.id) === String(id));
   const previewImage = course ? resolveImage(course.image) : "";
 
@@ -68,6 +71,22 @@ export default function CourseDetail() {
 
   const courseSubjects = subjects.filter((s) => String(s.course_id) === String(course.id));
   const courseSessions = sessions.filter((s) => String(s.course_id) === String(course.id));
+  const requestEnrollment = async () => {
+    if (!user?.token) return;
+    setEnrollmentStatus({ type: "loading", message: "Sending enrollment request…" });
+    try {
+      const response = await fetch("/api/student", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${user.token}` },
+        body: JSON.stringify({ action: "enroll", course_id: course.id, session_id: courseSessions[0]?.id || null }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to send enrollment request.");
+      setEnrollmentStatus({ type: "success", message: "Enrollment request sent. Track it from My Learning." });
+    } catch (requestError) {
+      setEnrollmentStatus({ type: "error", message: requestError.message });
+    }
+  };
   const courseTeacherIds = courseTeachers
     .filter((ct) => String(ct.course_id) === String(course.id))
     .map((ct) => String(ct.teacher_id));
@@ -203,13 +222,23 @@ export default function CourseDetail() {
             </div>
           )}
           <div className="detail-actions">
-            <Link to="/contact" className="button button-primary">
+            {user?.token ? (
+              <button type="button" className="button button-primary" onClick={requestEnrollment} disabled={enrollmentStatus.type === "loading"}>
+                {enrollmentStatus.type === "loading" ? "Requesting…" : "Request enrollment"} <span>&rarr;</span>
+              </button>
+            ) : (
+              <Link to="/login" className="button button-primary">
+                Sign in to enroll <span>&rarr;</span>
+              </Link>
+            )}
+            <Link to="/contact" className="button button-ghost-dark">
               Ask about enrollment <span>&rarr;</span>
             </Link>
             <Link to="/courses" className="button button-ghost-dark">
               Browse more courses
             </Link>
           </div>
+          {enrollmentStatus.type !== "idle" && <p className={`form-status form-status-${enrollmentStatus.type}`} role="status">{enrollmentStatus.message}</p>}
         </div>
       </article>
     </div>

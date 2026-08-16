@@ -18,6 +18,7 @@ import Exam from "./pages/Exam.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import StudentDashboard from "./pages/StudentDashboard.jsx";
+import Notifications from "./pages/Notifications.jsx";
 import NotFound from "./pages/NotFound.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -40,6 +41,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/student/dashboard" element={<StudentDashboard />} />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

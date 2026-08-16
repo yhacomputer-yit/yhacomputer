@@ -111,6 +111,7 @@ export default function Navbar() {
                   <div className="notif-panel">
                     <div className="notif-panel-header">
                       <h4>Notifications</h4>
+                      <NavLink to="/notifications" className="notif-view-all" onClick={() => setNotifOpen(false)}>View all</NavLink>
                       <button
                         type="button"
                         className="notif-close"

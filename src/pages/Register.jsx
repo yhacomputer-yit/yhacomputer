@@ -10,6 +10,8 @@ export default function Register() {
     name: "",
     email: "",
     phone: "",
+    password: "",
+    confirm_password: "",
     father_name: "",
     mother_name: "",
     nrc_number: "",
@@ -48,6 +50,14 @@ export default function Register() {
 
   const onSubmit = async (event) => {
     event.preventDefault();
+    if (form.password.length < 8) {
+      setStatus({ type: "error", message: "Password must be at least 8 characters." });
+      return;
+    }
+    if (form.password !== form.confirm_password) {
+      setStatus({ type: "error", message: "Passwords do not match." });
+      return;
+    }
     setStatus({ type: "loading", message: "Submitting registration…" });
     try {
       const response = await fetch("/api/auth", {
@@ -119,6 +129,16 @@ export default function Register() {
                 <label>
                   Phone *
                   <input type="text" name="phone" value={form.phone} onChange={onChange} required placeholder="09xxxxxxxxx" />
+                </label>
+                <label>
+                  Password *
+                  <input type="password" name="password" value={form.password} onChange={onChange} minLength={8} required placeholder="At least 8 characters" />
+                </label>
+              </div>
+              <div className="register-row">
+                <label>
+                  Confirm Password *
+                  <input type="password" name="confirm_password" value={form.confirm_password} onChange={onChange} minLength={8} required placeholder="Repeat your password" />
                 </label>
                 <label>
                   Father Name
@@ -229,6 +249,10 @@ export default function Register() {
                     <strong>{form.phone || "—"}</strong>
                   </div>
                   <div>
+                    <span>Password</span>
+                    <strong>{form.password ? "Provided" : "—"}</strong>
+                  </div>
+                  <div>
                     <span>Father</span>
                     <strong>{form.father_name || "—"}</strong>
                   </div>
@@ -282,7 +306,7 @@ export default function Register() {
                 <span className="register-notice-icon">&#9888;</span>
                 <div>
                   <strong>Account Activation</strong>
-                  <p>After registration, your account will be reviewed by the admin. Once approved, the admin will generate your password and you can login with your Student ID and the generated password.</p>
+                  <p>After registration, your account will be reviewed by the admin. Once approved, you can sign in with your Student ID and the password you created.</p>
                 </div>
               </div>
             </div>

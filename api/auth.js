@@ -88,11 +88,12 @@ export default async function handler(req, res) {
       const name = text(body.name);
       const email = text(body.email).toLowerCase();
       const phone = text(body.phone);
-      if (!name || !email || !phone) {
-        res.status(400).json({ error: "Name, email, and phone are required." });
+      const password = text(body.password);
+      if (!name || !email || !phone || !password) {
+        res.status(400).json({ error: "Name, email, phone, and password are required." });
         return;
       }
-      if (name.length > 120 || email.length > 254 || phone.length > 40) {
+      if (name.length > 120 || email.length > 254 || phone.length > 40 || password.length < 8 || password.length > 128) {
         res.status(400).json({ error: "One or more fields are too long." });
         return;
       }
@@ -111,7 +112,7 @@ export default async function handler(req, res) {
           (student_id, name, email, phone, father_name, mother_name, nrc_number,
            register_date, enroll_date, viber_phone, city, township, birthday, gender,
            image, education, status, course_id, session_id, password_hash, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, NULL, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
         [
           studentId,
           name,
@@ -131,6 +132,7 @@ export default async function handler(req, res) {
           text(body.education),
           courseId,
           sessionId,
+          hashPassword(password),
           now,
           now,
         ]
