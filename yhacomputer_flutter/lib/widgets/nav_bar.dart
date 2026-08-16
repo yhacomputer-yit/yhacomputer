@@ -95,6 +95,8 @@ class _NavBarState extends State<NavBar> {
     if (route == '/courses') return 1;
     if (route == '/notifications') return 2;
     if (route == '/more' ||
+        route == '/my-learning' ||
+        route == '/student-login' ||
         route == '/events' ||
         route == '/reviews' ||
         route == '/about-us' ||

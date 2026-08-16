@@ -152,6 +152,23 @@
         { name: "session_id", label: "Session", type: "select-dynamic", optionsTable: "sessions", optionsLabel: "name", optionsValue: "id" },
        ],
      },
+    enrollments: {
+      label: "Enrollment request",
+      plural: "Enrollment requests",
+      description: "Review student course requests. Approving a request makes it appear in the learner's My Learning area.",
+      create: false,
+      fields: [
+        { name: "status", label: "Status", type: "select", options: ["pending", "approved", "rejected", "cancelled", "completed"] },
+        { name: "admin_note", label: "Admin note", type: "textarea" },
+      ],
+    },
+    student_password_resets: {
+      label: "Password-help request",
+      plural: "Password-help requests",
+      description: "Generate a replacement password after confirming the student identity through your normal support process.",
+      create: false,
+      fields: [],
+    },
    };
 
   const PW_KEY = "yha_admin_pw";
@@ -173,7 +190,9 @@
     events: "Publish workshops, activities, and upcoming learning events.",
     reviews: "Add verified learner feedback and optionally link it to a course.",
     notifications: "Create a live app notification and optionally link it to a course.",
-    students: "Manage registration records, enrollment, and account status.",
+    students: "Activate verified student accounts, manage profile records, and issue replacement passwords.",
+    enrollments: "Approve, reject, complete, or cancel incoming student course requests.",
+    student_password_resets: "Verify the learner identity, then generate a replacement password to resolve a request.",
     contacts: "Review messages submitted through the public contact form.",
   };
 
@@ -659,6 +678,59 @@
     );
   }
 
+  function enrollmentActions(row) {
+    const status = String(row.status || "").toLowerCase();
+    const buttons = [];
+    const availableSessions = (catalogData.sessions || []).filter(function (session) {
+      return String(session.course_id) === String(row.course_id);
+    });
+    if (availableSessions.length) {
+      buttons.push('<button class="btn-mini" data-assign-session="' + row.id + '">Assign session</button>');
+    }
+    if (status === "pending") {
+      buttons.push('<button class="btn-mini btn-approve" data-enrollment-status="approved" data-id="' + row.id + '">Approve</button>');
+      buttons.push('<button class="btn-mini btn-danger" data-enrollment-status="rejected" data-id="' + row.id + '">Reject</button>');
+      buttons.push('<button class="btn-mini" data-enrollment-status="cancelled" data-id="' + row.id + '">Cancel</button>');
+    } else if (status === "approved") {
+      buttons.push('<button class="btn-mini btn-approve" data-enrollment-status="completed" data-id="' + row.id + '">Complete</button>');
+      buttons.push('<button class="btn-mini btn-danger" data-enrollment-status="cancelled" data-id="' + row.id + '">Cancel</button>');
+    }
+    return '<div class="admin-item-actions">' + buttons.join("") + '</div>';
+  }
+
+  function renderEnrollmentRow(row) {
+    const status = String(row.status || "pending").toLowerCase();
+    const course = row.course_title || lookupLabel("courses", row.course_id, "title");
+    const session = row.session_name ? " · " + row.session_name : "";
+    const note = row.admin_note || row.student_note || "No note added.";
+    return (
+      '<article class="admin-item admin-enrollment-item">' +
+      '<div class="admin-item-body">' +
+      '<div class="admin-enrollment-title"><strong>' + escapeHtml(row.student_name || row.student_code || "Student") + '</strong>' +
+      '<span class="admin-status-chip is-' + escapeHtml(status) + '">' + escapeHtml(status) + '</span></div>' +
+      '<span class="admin-item-sub">' + escapeHtml(String(row.student_code || "")) + " · " + escapeHtml(course) + escapeHtml(session) + '</span>' +
+      '<p>' + escapeHtml(note) + '</p>' +
+      '<span class="admin-item-date">Requested ' + escapeHtml(row.requested_at || row.created_at || "") + '</span>' +
+      '</div>' + enrollmentActions(row) + '</article>'
+    );
+  }
+
+  function renderPasswordHelpRow(row) {
+    const status = String(row.status || "pending").toLowerCase();
+    const action = status === "pending"
+      ? '<button class="btn-mini btn-password" data-generate="' + row.student_id + '">Generate & resolve</button>'
+      : "";
+    return (
+      '<article class="admin-item admin-enrollment-item">' +
+      '<div class="admin-item-body">' +
+      '<div class="admin-enrollment-title"><strong>' + escapeHtml(row.student_name || row.student_code || "Student") + '</strong>' +
+      '<span class="admin-status-chip is-' + escapeHtml(status) + '">' + escapeHtml(status) + '</span></div>' +
+      '<span class="admin-item-sub">' + escapeHtml(String(row.student_code || "")) + " · " + escapeHtml(row.student_email || "") + '</span>' +
+      '<span class="admin-item-date">Requested ' + escapeHtml(row.requested_at || row.created_at || "") + '</span>' +
+      '</div><div class="admin-item-actions">' + action + '</div></article>'
+    );
+  }
+
   function renderCourseRow(row) {
     const metrics = courseMetrics(row.id);
     const price = Number(String(row.price || "").replace(/[^0-9.]/g, ""));
@@ -688,6 +760,8 @@
 
   function renderRow(row) {
     if (currentTable === "courses") return renderCourseRow(row);
+    if (currentTable === "enrollments") return renderEnrollmentRow(row);
+    if (currentTable === "student_password_resets") return renderPasswordHelpRow(row);
     const schema = SCHEMA[currentTable];
     const primary = schema.fields[0].name;
     const bodyField = schema.fields.find((field) => field.type === "textarea");
@@ -734,6 +808,17 @@
     listEl.querySelectorAll("[data-generate]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         onGeneratePassword(btn.dataset.generate);
+      });
+    });
+    listEl.querySelectorAll("[data-enrollment-status]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        onEnrollmentStatus(btn.dataset.id, btn.dataset.enrollmentStatus);
+      });
+    });
+    listEl.querySelectorAll("[data-assign-session]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const row = listRows.find((item) => String(item.id) === String(btn.dataset.assignSession));
+        if (row) onAssignEnrollmentSession(row);
       });
     });
     renderPager(totalPages);
@@ -783,6 +868,59 @@
         }
       });
     });
+  }
+
+  async function onAssignEnrollmentSession(row) {
+    const options = (catalogData.sessions || []).filter(function (session) {
+      return String(session.course_id) === String(row.course_id);
+    });
+    if (!options.length) {
+      window.alert("No class sessions are available for this course yet.");
+      return;
+    }
+    const promptText = "Choose a session number:\n" + options.map(function (session, index) {
+      const time = session.start_time || session.end_time
+        ? " · " + [session.start_time, session.end_time].filter(Boolean).join("–")
+        : "";
+      return (index + 1) + ". " + session.name + time;
+    }).join("\n");
+    const answer = window.prompt(promptText, "1");
+    if (answer === null) return;
+    const selected = options[Number(answer) - 1];
+    if (!selected) {
+      window.alert("Enter a session number from the displayed list.");
+      return;
+    }
+    try {
+      await api("POST", {
+        action: "update",
+        table: "enrollments",
+        id: Number(row.id),
+        values: { course_id: Number(row.course_id), session_id: Number(selected.id) },
+      });
+      loadList();
+    } catch (err) {
+      window.alert("Could not assign session: " + err.message);
+    }
+  }
+
+  async function onEnrollmentStatus(id, status) {
+    const note = window.prompt(
+      status === "rejected" ? "Optional reason or next step for the learner:" : "Optional admin note for the learner:",
+      ""
+    );
+    if (note === null) return;
+    try {
+      await api("POST", {
+        action: "update",
+        table: "enrollments",
+        id: Number(id),
+        values: { status: status, admin_note: note.trim() },
+      });
+      loadList();
+    } catch (err) {
+      window.alert("Could not update enrollment: " + err.message);
+    }
   }
 
   async function onGeneratePassword(id) {

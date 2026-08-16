@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/student_auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/nav_bar.dart';
 
@@ -24,6 +25,27 @@ class MoreScreen extends StatelessWidget {
         ),
         children: [
           const _LearningHubCard(),
+          const SizedBox(height: AppSpacing.lg),
+          Text('Your account', style: AppTextStyles.titleLarge),
+          const SizedBox(height: AppSpacing.sm),
+          ValueListenableBuilder(
+            valueListenable: StudentAuthService.instance.session,
+            builder: (context, session, _) => _MenuCard(
+              children: [
+                _MenuItem(
+                  icon: session == null ? Icons.login_rounded : Icons.auto_stories_rounded,
+                  title: session == null ? 'Student login' : 'My Learning',
+                  subtitle: session == null
+                      ? 'Sign in to track course requests and class information.'
+                      : 'Open your courses, enrollment status, and learner profile.',
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    session == null ? '/student-login' : '/my-learning',
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: AppSpacing.lg),
           Text('Discover', style: AppTextStyles.titleLarge),
           const SizedBox(height: AppSpacing.sm),

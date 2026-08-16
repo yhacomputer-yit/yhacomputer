@@ -126,6 +126,32 @@ CREATE TABLE IF NOT EXISTS students (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS enrollments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE RESTRICT,
+  session_id INTEGER REFERENCES sessions(id) ON DELETE SET NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled', 'completed')),
+  student_note TEXT,
+  admin_note TEXT,
+  requested_at TEXT NOT NULL DEFAULT (datetime('now')),
+  reviewed_at TEXT,
+  reviewed_by TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS student_password_resets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'resolved', 'cancelled')),
+  requested_at TEXT NOT NULL DEFAULT (datetime('now')),
+  resolved_at TEXT,
+  resolved_by TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_subjects_course_id ON subjects(course_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_course_id ON sessions(course_id);
 CREATE INDEX IF NOT EXISTS idx_course_teachers_course_id ON course_teachers(course_id);
@@ -137,7 +163,20 @@ CREATE INDEX IF NOT EXISTS idx_students_course_id ON students(course_id);
 CREATE INDEX IF NOT EXISTS idx_students_session_id ON students(session_id);
 CREATE INDEX IF NOT EXISTS idx_students_status ON students(status);
 CREATE INDEX IF NOT EXISTS idx_contacts_created_at ON contacts(created_at);
+CREATE INDEX IF NOT EXISTS idx_enrollments_student_id ON enrollments(student_id, status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_enrollments_course_id ON enrollments(course_id, status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_enrollments_session_id ON enrollments(session_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_enrollments_one_open_request
+  ON enrollments(student_id, course_id)
+  WHERE status IN ('pending', 'approved');
+CREATE INDEX IF NOT EXISTS idx_password_resets_student_status
+  ON student_password_resets(student_id, status, requested_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_password_resets_one_pending
+  ON student_password_resets(student_id)
+  WHERE status = 'pending';
 
 -- Existing deployments with students.course_id/session_id as TEXT are repaired by
--- api/_db.js into integer foreign keys while preserving valid references.
+-- api/_db.js into integer foreign keys while preserving valid references. Existing
+-- valid student course assignments are backfilled into the enrollments table by
+-- api/_db.js without overwriting enrollment history.
 -- Course curriculum content belongs in the subjects table; the legacy highlights field is not used.

@@ -3,6 +3,7 @@ import 'package:yhacomputer_flutter/models/course.dart';
 import 'package:yhacomputer_flutter/models/event.dart';
 import 'package:yhacomputer_flutter/models/notification_model.dart';
 import 'package:yhacomputer_flutter/models/review.dart';
+import 'package:yhacomputer_flutter/models/student.dart';
 import 'package:yhacomputer_flutter/utils/course_formatters.dart';
 
 void main() {
@@ -44,6 +45,39 @@ void main() {
 
       expect(review.id, 5);
       expect(review.name, 'Aye Aye');
+    });
+
+    test('parses a student learning bundle with course and session details', () {
+      final learning = StudentLearningBundle.fromJson({
+        'student': {
+          'id': '9',
+          'student_id': 'YHA0009',
+          'name': 'Ko Min',
+          'email': 'min@example.com',
+          'phone': '0912345678',
+          'status': 'active',
+        },
+        'enrollments': [
+          {
+            'id': '31',
+            'status': 'approved',
+            'course_id': '12',
+            'course_title': 'Python Programming',
+            'course_price': '300000',
+            'session_id': '4',
+            'session_name': 'Weekend group',
+            'session_start_time': '10:00',
+            'session_end_time': '12:00',
+          },
+        ],
+      });
+
+      expect(learning.student.id, 9);
+      expect(learning.student.studentId, 'YHA0009');
+      expect(learning.enrollments.single.id, 31);
+      expect(learning.enrollments.single.status, 'approved');
+      expect(learning.enrollments.single.course.id, 12);
+      expect(learning.enrollments.single.sessionName, 'Weekend group');
     });
 
     test(
