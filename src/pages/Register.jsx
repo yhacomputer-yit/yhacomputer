@@ -19,6 +19,7 @@ export default function Register() {
     birthday: "",
     gender: "",
     education: "",
+    image: "",
     course_id: "",
     session_id: "",
   });
@@ -175,6 +176,10 @@ export default function Register() {
                   Education
                   <input type="text" name="education" value={form.education} onChange={onChange} placeholder="e.g. BSc Computer Science" />
                 </label>
+                <label>
+                  Profile Image URL
+                  <input type="url" name="image" value={form.image} onChange={onChange} placeholder="https://… (optional)" />
+                </label>
               </div>
               <div className="register-row">
                 <label>
@@ -258,6 +263,10 @@ export default function Register() {
                   <div>
                     <span>Education</span>
                     <strong>{form.education || "—"}</strong>
+                  </div>
+                  <div>
+                    <span>Profile image</span>
+                    <strong>{form.image ? "Provided" : "—"}</strong>
                   </div>
                   <div>
                     <span>Course</span>
