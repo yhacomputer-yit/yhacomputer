@@ -123,18 +123,27 @@ function filterNotifications(notifications, params) {
     });
 }
 
+async function optionalQuery(sql, label) {
+  try {
+    return await query(sql);
+  } catch (error) {
+    console.error(`[public-data] ${label} query failed:`, error?.message || error);
+    return [];
+  }
+}
+
 async function fetchPublicData() {
   // Schema creation and migrations are performed by authenticated admin writes
   // or scripts/seed-db.js. A public GET remains read-only and fast.
   const [courses, subjects, sessions, teachers, courseTeachers, events, reviews, notifications] = await Promise.all([
     query("SELECT * FROM courses ORDER BY id"),
-    query("SELECT * FROM subjects ORDER BY id"),
-    query("SELECT * FROM sessions ORDER BY id"),
-    query("SELECT * FROM teachers ORDER BY id"),
-    query("SELECT * FROM course_teachers ORDER BY id"),
-    query("SELECT * FROM events ORDER BY COALESCE(date, created_at) DESC, id DESC"),
-    query("SELECT id, name, course_id, message, created_at FROM reviews ORDER BY id DESC"),
-    query("SELECT id, title, message, course_id, priority, action_url, publish_at, expires_at, is_read, created_at FROM notifications WHERE student_id IS NULL ORDER BY id DESC"),
+    optionalQuery("SELECT * FROM subjects ORDER BY id", "subjects"),
+    optionalQuery("SELECT * FROM sessions ORDER BY id", "sessions"),
+    optionalQuery("SELECT * FROM teachers ORDER BY id", "teachers"),
+    optionalQuery("SELECT * FROM course_teachers ORDER BY id", "course_teachers"),
+    optionalQuery("SELECT * FROM events ORDER BY COALESCE(date, created_at) DESC, id DESC", "events"),
+    optionalQuery("SELECT id, name, course_id, message, created_at FROM reviews ORDER BY id DESC", "reviews"),
+    optionalQuery("SELECT id, title, message, course_id, priority, action_url, publish_at, expires_at, is_read, created_at FROM notifications WHERE student_id IS NULL ORDER BY id DESC", "notifications"),
   ]);
 
   return { courses, subjects, sessions, teachers, courseTeachers, events, reviews, notifications };
@@ -228,6 +237,7 @@ export default async function handler(req, res) {
     res.setHeader("Cache-Control", cacheControlFor(requestedCollection));
     res.status(200).json(result);
   } catch (error) {
+    console.error("[public-data] live fetch failed:", error?.message || error);
     if (cached?.value) {
       const result = requestedCollection
         ? collectionResponse(cached.value, requestedCollection, params)
