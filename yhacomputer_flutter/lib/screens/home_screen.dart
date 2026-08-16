@@ -73,7 +73,8 @@ class _HomeScreenState extends State<HomeScreen> {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   if (loading && error.isEmpty) ..._buildSkeletonSections(),
-                  if (error.isNotEmpty) AppErrorState(error),
+                  if (error.isNotEmpty)
+                    AppErrorState(error, onRetry: _loadData),
                   if (!loading && error.isEmpty) ...[
                     _FeaturedCourses(featured: featured),
                     const SizedBox(height: AppSpacing.xl),
@@ -200,7 +201,7 @@ class _HomeHero extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Practical IT training in Myanmar',
+              'YHA COMPUTER • PRACTICAL LEARNING',
               style: AppTextStyles.labelMedium.copyWith(
                 color: AppColors.primary,
                 fontSize: 13,
@@ -208,7 +209,7 @@ class _HomeHero extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Build skills that move\nyour future forward.',
+              'A clearer path to\nyour next IT skill.',
               style: AppTextStyles.displayLarge.copyWith(
                 color: AppColors.onSurface,
                 fontSize: 32,
@@ -216,7 +217,7 @@ class _HomeHero extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Learn current technology through guided lessons, real projects, and a community that helps you keep growing.',
+              'Choose a course, build practical confidence, and stay connected to the learning opportunities that matter to you.',
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),
@@ -264,7 +265,7 @@ class _HomeHero extends StatelessWidget {
                       ),
                     ),
                   ),
-                  child: const Text('Check updates'),
+                  child: const Text('View updates'),
                 ),
               ],
             ),
@@ -327,7 +328,7 @@ class _FeaturedCourses extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SectionHeader(
-          label: 'Turso-powered catalog',
+          label: 'START LEARNING',
           title: 'Find your next skill',
           actionLabel: 'View all',
           onAction: () => Navigator.pushNamed(context, '/courses'),
@@ -367,51 +368,67 @@ class _CourseCardLarge extends StatelessWidget {
     return AppCard(
       padding: EdgeInsets.zero,
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppNetworkImage(
-            imageUrl: courseImageUrl(course.image),
-            fallbackText: course.title.isNotEmpty
-                ? course.title[0].toUpperCase()
-                : 'Y',
-            height: 140,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppDimens.cardRadius),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (course.badgeList.isNotEmpty)
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: course.badgeList
-                        .take(3)
-                        .map((b) => AppBadge(text: b))
-                        .toList(),
-                  ),
-                Text(
-                  course.title,
-                  style: AppTextStyles.titleMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+      child: Semantics(
+        button: course.id != null,
+        label: 'Open ${course.title}',
+        child: InkWell(
+          onTap: course.id == null
+              ? null
+              : () => Navigator.pushNamed(
+                  context,
+                  '/courses/:id',
+                  arguments: {'id': course.id},
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  [course.duration, formatCourseFee(course.price)]
-                      .whereType<String>()
-                      .where((value) => value.isNotEmpty)
-                      .join(' · '),
-                  style: AppTextStyles.bodySmall,
+          borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppNetworkImage(
+                imageUrl: courseImageUrl(course.image),
+                fallbackText: course.title.isNotEmpty
+                    ? course.title[0].toUpperCase()
+                    : 'Y',
+                height: 140,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppDimens.cardRadius),
                 ),
-              ],
-            ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (course.badgeList.isNotEmpty) ...[
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: course.badgeList
+                            .take(3)
+                            .map((badge) => AppBadge(text: badge))
+                            .toList(),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                    ],
+                    Text(
+                      course.title,
+                      style: AppTextStyles.titleMedium,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      [course.duration, formatCourseFee(course.price)]
+                          .whereType<String>()
+                          .where((value) => value.isNotEmpty)
+                          .join(' · '),
+                      style: AppTextStyles.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -435,7 +452,7 @@ class _UpcomingEvents extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SectionHeader(
-          label: 'Learn together',
+          label: 'LEARN TOGETHER',
           title: 'Upcoming events',
           actionLabel: 'See all',
           onAction: () => Navigator.pushNamed(context, '/events'),
@@ -563,7 +580,7 @@ class _StudentReviews extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SectionHeader(
-          label: 'Student voices',
+          label: 'STUDENT VOICES',
           title: 'What our students say',
           actionLabel: 'Read all',
           onAction: () => Navigator.pushNamed(context, '/reviews'),

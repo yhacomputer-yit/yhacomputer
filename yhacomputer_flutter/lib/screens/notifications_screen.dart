@@ -119,17 +119,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             : _error.isNotEmpty
             ? ListView(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                children: [AppErrorState(_error)],
+                children: [AppErrorState(_error, onRetry: _loadNotifications)],
               )
             : _notifications.isEmpty
             ? ListView(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                children: const [
+                children: [
                   AppEmptyState(
                     title: 'No notifications yet',
                     subtitle:
                         'Updates published from the YHA admin dashboard will appear here.',
                     icon: Icons.notifications_none_rounded,
+                    actionLabel: 'Browse courses',
+                    onAction: () => Navigator.pushNamed(context, '/courses'),
                   ),
                 ],
               )
@@ -154,11 +156,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     );
                   }
                   if (visibleNotifications.isEmpty) {
-                    return const AppEmptyState(
+                    return AppEmptyState(
                       title: 'No unread updates',
                       subtitle:
                           'You have caught up. Switch to All to read earlier updates.',
                       icon: Icons.done_all_rounded,
+                      actionLabel: 'Show all updates',
+                      onAction: () => setState(() => _showUnreadOnly = false),
                     );
                   }
                   final notification = visibleNotifications[index - 2];

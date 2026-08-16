@@ -72,62 +72,69 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                 itemBuilder: (context, _) => const _ReviewCardSkeleton(),
               )
             : error.isNotEmpty
-                ? ListView(
+            ? ListView(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                children: [
+                  AppErrorState(
+                    error,
+                    title: 'We could not load student reviews.',
+                    onRetry: _loadData,
+                  ),
+                ],
+              )
+            : reviews.isEmpty
+            ? ListView(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                children: [
+                  AppEmptyState(
+                    title: 'No reviews yet.',
+                    subtitle: 'Published Turso reviews will appear here.',
+                    icon: Icons.rate_review_outlined,
+                    actionLabel: 'Explore courses',
+                    onAction: () => Navigator.pushNamed(context, '/courses'),
+                  ),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),
-                    children: [AppErrorState(error, title: 'We could not load student reviews.')],
-                  )
-                : reviews.isEmpty
-                    ? ListView(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        children: const [
-                          AppEmptyState(
-                            title: 'No reviews yet.',
-                            subtitle: 'Published Turso reviews will appear here.',
-                            icon: Icons.rate_review_outlined,
-                          ),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Feedback published by the YHA community.',
-                                  style: AppTextStyles.bodyMedium,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${reviews.length} review${reviews.length == 1 ? '' : 's'} available',
-                                  style: AppTextStyles.bodySmall,
-                                ),
-                              ],
-                            ),
-                          ),
-                          Expanded(
-                            child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md,
-                              ),
-                              itemCount: visible.length,
-                              itemBuilder: (context, i) => Padding(
-                                padding:
-                                    const EdgeInsets.only(bottom: AppSpacing.sm),
-                                child: _ReviewCard(review: visible[i]),
-                              ),
-                            ),
-                          ),
-                          if (totalPages > 1)
-                            _Pager(
-                              page: page,
-                              totalPages: totalPages,
-                              onChanged: (p) => setState(() => page = p),
-                            ),
-                        ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Feedback published by the YHA community.',
+                          style: AppTextStyles.bodyMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${reviews.length} review${reviews.length == 1 ? '' : 's'} available',
+                          style: AppTextStyles.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
                       ),
+                      itemCount: visible.length,
+                      itemBuilder: (context, i) => Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: _ReviewCard(review: visible[i]),
+                      ),
+                    ),
+                  ),
+                  if (totalPages > 1)
+                    _Pager(
+                      page: page,
+                      totalPages: totalPages,
+                      onChanged: (p) => setState(() => page = p),
+                    ),
+                ],
+              ),
       ),
       bottomNavigationBar: const NavBar(),
     );
@@ -175,9 +182,7 @@ class _ReviewCard extends StatelessWidget {
                 radius: 18,
                 backgroundColor: AppColors.primary,
                 child: Text(
-                  review.name.isNotEmpty
-                      ? review.name[0].toUpperCase()
-                      : '?',
+                  review.name.isNotEmpty ? review.name[0].toUpperCase() : '?',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
@@ -189,10 +194,7 @@ class _ReviewCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      review.name,
-                      style: AppTextStyles.titleSmall,
-                    ),
+                    Text(review.name, style: AppTextStyles.titleSmall),
                     if (review.courseName != null)
                       Text(
                         'via ${review.courseName!}',
@@ -222,15 +224,19 @@ class _Pager extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(vertical: 20, horizontal: AppSpacing.md),
+      padding: const EdgeInsets.symmetric(
+        vertical: 20,
+        horizontal: AppSpacing.md,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           IconButton(
             onPressed: page <= 1 ? null : () => onChanged(page - 1),
-            icon: const Icon(Icons.chevron_left,
-                color: AppColors.onSurfaceVariant),
+            icon: const Icon(
+              Icons.chevron_left,
+              color: AppColors.onSurfaceVariant,
+            ),
           ),
           ...List.generate(totalPages, (i) {
             final isSelected = i + 1 == page;
@@ -265,8 +271,10 @@ class _Pager extends StatelessWidget {
           }),
           IconButton(
             onPressed: page >= totalPages ? null : () => onChanged(page + 1),
-            icon: const Icon(Icons.chevron_right,
-                color: AppColors.onSurfaceVariant),
+            icon: const Icon(
+              Icons.chevron_right,
+              color: AppColors.onSurfaceVariant,
+            ),
           ),
         ],
       ),

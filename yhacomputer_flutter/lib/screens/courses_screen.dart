@@ -203,16 +203,24 @@ class _CoursesScreenState extends State<CoursesScreen> {
             : error.isNotEmpty
             ? ListView(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                children: [AppErrorState(error)],
+                children: [AppErrorState(error, onRetry: _loadData)],
               )
             : filtered.isEmpty
             ? ListView(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                children: const [
+                children: [
                   AppEmptyState(
                     title: 'No matching courses found.',
                     subtitle: 'Try another search or subject filter.',
                     icon: Icons.school_outlined,
+                    actionLabel: 'Clear filters',
+                    onAction: () {
+                      _searchController.clear();
+                      setState(() {
+                        searchQuery = '';
+                        activeFilter = 'All';
+                      });
+                    },
                   ),
                 ],
               )
@@ -236,94 +244,124 @@ class _CourseCard extends StatelessWidget {
 
   String get imageUrl {
     if (course.image == null || course.image!.isEmpty) return '';
-    final v = course.image!;
-    if (v.startsWith('http') || v.startsWith('data:')) return v;
-    return '${ApiService.baseUrl}/${v.replaceAll(RegExp(r'^/'), '')}';
+    final value = course.image!;
+    if (value.startsWith('http') || value.startsWith('data:')) return value;
+    return '${ApiService.baseUrl}/${value.replaceAll(RegExp(r'^/'), '')}';
+  }
+
+  void _openCourse(BuildContext context) {
+    if (course.id == null) return;
+    Navigator.pushNamed(context, '/courses/:id', arguments: {'id': course.id});
   }
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      backgroundColor: AppColors.surface,
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppNetworkImage(
-            imageUrl: imageUrl,
-            fallbackText: course.title.isNotEmpty
-                ? course.title[0].toUpperCase()
-                : 'Y',
-            height: 180,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppDimens.cardRadius),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (course.badgeList.isNotEmpty)
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: course.badgeList
-                        .take(3)
-                        .map((b) => AppBadge(text: b))
-                        .toList(),
+    return Semantics(
+      button: course.id != null,
+      label: 'Open ${course.title}',
+      child: AppCard(
+        backgroundColor: AppColors.surface,
+        padding: EdgeInsets.zero,
+        child: InkWell(
+          onTap: course.id == null ? null : () => _openCourse(context),
+          borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Stack(
+                children: [
+                  AppNetworkImage(
+                    imageUrl: imageUrl,
+                    fallbackText: course.title.isNotEmpty
+                        ? course.title[0].toUpperCase()
+                        : 'Y',
+                    height: 180,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(AppDimens.cardRadius),
+                    ),
                   ),
-                if (course.badgeList.isNotEmpty) const SizedBox(height: 8),
-                Text(
-                  course.title,
-                  style: AppTextStyles.titleMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (course.description != null &&
-                    course.description!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      course.description!,
-                      style: AppTextStyles.bodySmall,
+                  Positioned(
+                    top: AppSpacing.sm,
+                    right: AppSpacing.sm,
+                    child: AppBadge(
+                      text: course.enrollmentOpen
+                          ? 'Enrollment open'
+                          : 'Closed',
+                      backgroundColor: course.enrollmentOpen
+                          ? AppColors.primaryContainer
+                          : AppColors.errorContainer,
+                      textColor: course.enrollmentOpen
+                          ? AppColors.primary
+                          : AppColors.error,
+                    ),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (course.badgeList.isNotEmpty) ...[
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: course.badgeList
+                            .take(3)
+                            .map((badge) => AppBadge(text: badge))
+                            .toList(),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                    ],
+                    Text(
+                      course.title,
+                      style: AppTextStyles.titleMedium,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    if (course.duration != null && course.duration!.isNotEmpty)
-                      Text(course.duration!, style: AppTextStyles.bodySmall),
-                    if (course.duration != null &&
-                        course.duration!.isNotEmpty &&
-                        course.price != null &&
-                        course.price!.isNotEmpty)
-                      Text(' · ', style: AppTextStyles.bodySmall),
-                    Text(
-                      formatCourseFee(course.price),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.accent,
-                        fontSize: 14,
+                    if (course.description != null &&
+                        course.description!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          course.description!,
+                          style: AppTextStyles.bodySmall,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                    AppCircularButton(
-                      icon: Icons.arrow_forward,
-                      onPressed: () => Navigator.pushNamed(
-                        context,
-                        '/courses/:id',
-                        arguments: {'id': course.id},
-                      ),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            [course.duration, formatCourseFee(course.price)]
+                                .whereType<String>()
+                                .where((value) => value.isNotEmpty)
+                                .join(' · '),
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: course.id == null
+                              ? null
+                              : () => _openCourse(context),
+                          icon: const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 18,
+                          ),
+                          label: const Text('View'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

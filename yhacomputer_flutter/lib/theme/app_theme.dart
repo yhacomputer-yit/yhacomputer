@@ -528,7 +528,8 @@ class AppCircularButton extends StatelessWidget {
 class AppErrorState extends StatelessWidget {
   final String message;
   final String? title;
-  const AppErrorState(this.message, {super.key, this.title});
+  final VoidCallback? onRetry;
+  const AppErrorState(this.message, {super.key, this.title, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -542,10 +543,26 @@ class AppErrorState extends StatelessWidget {
             title ?? 'We could not load content.',
             style: AppTextStyles.titleSmall,
           ),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             message,
             style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
+            textAlign: TextAlign.center,
           ),
+          if (onRetry != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Try again'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.error,
+                side: BorderSide(
+                  color: AppColors.error.withValues(alpha: 0.35),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -556,11 +573,15 @@ class AppEmptyState extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
+  final String? actionLabel;
+  final VoidCallback? onAction;
   const AppEmptyState({
     super.key,
     required this.title,
     required this.subtitle,
     this.icon = Icons.inbox_outlined,
+    this.actionLabel,
+    this.onAction,
   });
 
   @override
@@ -578,16 +599,21 @@ class AppEmptyState extends StatelessWidget {
             color: AppColors.onSurface.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 12),
-          Text(
-            title,
-            style: AppTextStyles.titleLarge,
-          ),
+          Text(title, style: AppTextStyles.titleLarge),
           const SizedBox(height: 8),
           Text(
             subtitle,
             style: AppTextStyles.bodySmall,
             textAlign: TextAlign.center,
           ),
+          if (onAction != null && actionLabel != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            TextButton.icon(
+              onPressed: onAction,
+              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+              label: Text(actionLabel!),
+            ),
+          ],
         ],
       ),
     );
