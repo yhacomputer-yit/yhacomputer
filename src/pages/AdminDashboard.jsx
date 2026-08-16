@@ -67,9 +67,9 @@ function AdminDashboard() {
   const location = useLocation(); const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(() => Boolean(sessionStorage.getItem(PW_KEY)));
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [resources, setResources] = useState({ courses: [], subjects: [], sessions: [], teachers: [], students: [], enrollments: [] });
+  const [resources, setResources] = useState({ courses: [], subjects: [], sessions: [], teachers: [], students: [], coupons: [], enrollments: [] });
   const [notice, setNotice] = useState("");
-  const nav = NAV.find((item) => item.path === location.pathname) || NAV[0];
+  const normalizedPath = location.pathname.replace(/\/$/, "") || "/"; const nav = NAV.find((item) => item.path === normalizedPath) || NAV[0];
   useEffect(() => { if (authenticated) Promise.all(Object.keys(resources).map((table) => api("GET", table).then((d) => [table, d.rows || []]).catch(() => [table, []]))).then((pairs) => setResources(Object.fromEntries(pairs))); }, [authenticated]);
   if (!authenticated) return <Login onSuccess={() => setAuthenticated(true)} />;
   function logout() { sessionStorage.removeItem(PW_KEY); setAuthenticated(false); navigate("/admin"); }
