@@ -296,6 +296,10 @@
     }
   }
 
+  document.querySelectorAll("[data-close-student-detail]").forEach(function (element) {
+    element.addEventListener("click", closeStudentDetail);
+  });
+
   function showManage() {
     $("login-view").hidden = true;
     $("manage-view").hidden = false;
@@ -672,11 +676,47 @@
     const schema = SCHEMA[currentTable];
     return (
       '<div class="admin-item-actions">' +
+      (isStudent ? '<button class="btn-mini btn-view-student" data-view-student="' + row.id + '">View details</button>' : "") +
       (schema.create ? '<button class="btn-mini" data-edit="' + row.id + '">Edit</button>' : "") +
       (isStudent ? '<button class="btn-mini btn-password" data-generate="' + row.id + '">Generate Password</button>' : "") +
       '<button class="btn-mini btn-danger" data-delete="' + row.id + '">Delete</button>' +
       "</div>"
     );
+  }
+
+  function showStudentDetail(row) {
+    const modal = $("student-detail-modal");
+    const content = $("student-detail-content");
+    if (!modal || !content) return;
+    const value = (field) => row[field] == null || row[field] === "" ? "Not provided" : String(row[field]);
+    const fields = [
+      ["Student ID", "student_id"], ["Full Name", "name"], ["Email", "email"], ["Phone", "phone"],
+      ["Father Name", "father_name"], ["Mother Name", "mother_name"], ["NRC Number", "nrc_number"],
+      ["Viber Phone", "viber_phone"], ["City", "city"], ["Township", "township"], ["Birthday", "birthday"],
+      ["Gender", "gender"], ["Education", "education"], ["Register Date", "register_date"],
+      ["Enroll Date", "enroll_date"], ["Status", "status"], ["Password", "password_set"], ["Created At", "created_at"],
+    ];
+    const course = row.course_id ? lookupLabel("courses", row.course_id, "title") : "Not assigned";
+    const session = row.session_id ? lookupLabel("sessions", row.session_id, "name") : "Not assigned";
+    $("student-detail-title").textContent = value("name");
+    content.innerHTML =
+      (row.image ? '<div class="student-detail-photo-wrap"><img class="student-detail-photo" src="' + escapeHtml(row.image) + '" alt="' + escapeHtml(value("name")) + '" /></div>' : "") +
+      '<div class="student-detail-grid">' +
+      fields.map(function (field) {
+        const displayValue = field[1] === "password_set" ? (row.password_set ? "Password is set" : "Password not set") : value(field[1]);
+        return '<div class="student-detail-field"><span>' + escapeHtml(field[0]) + '</span><strong>' + escapeHtml(displayValue) + '</strong></div>';
+      }).join("") +
+      '<div class="student-detail-field"><span>Course</span><strong>' + escapeHtml(course) + '</strong></div>' +
+      '<div class="student-detail-field"><span>Session</span><strong>' + escapeHtml(session) + '</strong></div>' +
+      '</div>';
+    modal.hidden = false;
+    document.body.classList.add("student-detail-open");
+  }
+
+  function closeStudentDetail() {
+    const modal = $("student-detail-modal");
+    if (modal) modal.hidden = true;
+    document.body.classList.remove("student-detail-open");
   }
 
   function enrollmentActions(row) {
@@ -795,6 +835,12 @@
     const pageRows = listRows.slice(start, start + LIST_PAGE_SIZE);
     const listEl = $("record-list");
     listEl.innerHTML = pageRows.map(renderRow).join("");
+    listEl.querySelectorAll("[data-view-student]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const row = listRows.find((r) => String(r.id) === btn.dataset.viewStudent);
+        if (row) showStudentDetail(row);
+      });
+    });
     listEl.querySelectorAll("[data-edit]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         const row = listRows.find((r) => String(r.id) === btn.dataset.edit);

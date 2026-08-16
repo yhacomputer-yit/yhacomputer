@@ -109,6 +109,16 @@
       </div>
     </main>
 
+    <div id="student-detail-modal" class="student-detail-modal" hidden>
+      <div class="student-detail-backdrop" data-close-student-detail></div>
+      <section class="student-detail-card" role="dialog" aria-modal="true" aria-labelledby="student-detail-title">
+        <div class="student-detail-header">
+          <div><span class="admin-kicker">Student profile</span><h2 id="student-detail-title">Student details</h2></div>
+          <button type="button" class="student-detail-close" data-close-student-detail aria-label="Close student details">&times;</button>
+        </div>
+        <div id="student-detail-content" class="student-detail-content"></div>
+      </section>
+    </div>
     <script src="/admin.js"></script>
   </body>
 </html>
