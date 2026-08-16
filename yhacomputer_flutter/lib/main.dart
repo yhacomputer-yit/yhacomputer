@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -28,7 +27,7 @@ void callbackDispatcher() {
 }
 
 Future<void> _registerBackgroundNotificationSync() async {
-  if (!Platform.isAndroid) return;
+  if (kIsWeb) return;
 
   await Workmanager().initialize(callbackDispatcher);
   await Workmanager().registerPeriodicTask(
