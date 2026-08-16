@@ -38,6 +38,12 @@
       ]
     },
     {
+      "source": "/admin/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0, must-revalidate" }
+      ]
+    },
+    {
       "source": "/(.*)\\.(css|js|woff2?|svg|png|jpg|jpeg|gif|webp|ico|json|xml|txt|webmanifest)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
