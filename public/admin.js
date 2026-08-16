@@ -318,7 +318,8 @@
     element.addEventListener("click", closeStudentDetail);
   });
 
-  function showManage() {
+  function showManage(initialTable) {
+    if (initialTable && SCHEMA[initialTable]) currentTable = initialTable;
     $("login-view").hidden = true;
     $("manage-view").hidden = false;
     $("logout-link").hidden = false;
@@ -1242,9 +1243,8 @@
     });
 
     if (getPassword()) {
-      showManage();
       const requestedTable = new URLSearchParams(window.location.search).get("table");
-      if (requestedTable && SCHEMA[requestedTable]) selectTable(requestedTable);
+      showManage(requestedTable);
     } else {
       showLogin();
     }
