@@ -1245,6 +1245,9 @@
     if (getPassword()) {
       const requestedTable = new URLSearchParams(window.location.search).get("table");
       showManage(requestedTable);
+      if (requestedTable && SCHEMA[requestedTable]) {
+        window.setTimeout(function () { selectTable(requestedTable); }, 250);
+      }
     } else {
       showLogin();
     }
