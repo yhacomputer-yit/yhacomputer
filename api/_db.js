@@ -12,8 +12,7 @@ const TABLE_COLUMNS = {
   contacts: ["name", "email", "message", "created_at"],
   notifications: ["title", "message", "student_id", "course_id", "priority", "action_url", "publish_at", "expires_at", "is_read", "created_at"],
   students: ["student_id", "name", "email", "phone", "father_name", "mother_name", "nrc_number", "register_date", "enroll_date", "viber_phone", "city", "township", "birthday", "gender", "image", "education", "status", "course_id", "session_id", "password_hash", "created_at", "updated_at"],
-  coupons: ["code", "discount_type", "discount_value", "course_id", "is_active", "max_uses", "used_count", "valid_from", "valid_to", "note", "created_at", "updated_at"],
-  enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "coupon_code", "discount_type", "discount_value", "discount_amount", "payment_status", "payment_due", "payment_paid", "payment_method", "payment_reference", "payment_date", "payment_note", "requested_at", "reviewed_at", "reviewed_by", "created_at", "updated_at"],
+  enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "payment_status", "payment_due", "payment_paid", "payment_method", "payment_reference", "payment_date", "payment_note", "requested_at", "reviewed_at", "reviewed_by", "created_at", "updated_at"],
   student_password_resets: ["student_id", "status", "requested_at", "resolved_at", "resolved_by", "created_at", "updated_at"],
 };
 
@@ -143,21 +142,6 @@ const CREATE_STATEMENTS = [
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
-  `CREATE TABLE IF NOT EXISTS coupons (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT UNIQUE NOT NULL,
-    discount_type TEXT NOT NULL DEFAULT 'fixed',
-    discount_value INTEGER NOT NULL DEFAULT 0,
-    course_id INTEGER REFERENCES courses(id) ON DELETE CASCADE,
-    is_active INTEGER NOT NULL DEFAULT 1,
-    max_uses INTEGER NOT NULL DEFAULT 0,
-    used_count INTEGER NOT NULL DEFAULT 0,
-    valid_from TEXT,
-    valid_to TEXT,
-    note TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )`,
   `CREATE TABLE IF NOT EXISTS enrollments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
@@ -166,10 +150,6 @@ const CREATE_STATEMENTS = [
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled', 'completed')),
     student_note TEXT,
     admin_note TEXT,
-    coupon_code TEXT,
-    discount_type TEXT NOT NULL DEFAULT 'fixed',
-    discount_value INTEGER NOT NULL DEFAULT 0,
-    discount_amount INTEGER NOT NULL DEFAULT 0,
     payment_status TEXT NOT NULL DEFAULT 'unpaid',
     payment_due INTEGER NOT NULL DEFAULT 0,
     payment_paid INTEGER NOT NULL DEFAULT 0,
@@ -209,7 +189,6 @@ const INDEX_STATEMENTS = [
   "CREATE INDEX IF NOT EXISTS idx_students_session_id ON students(session_id)",
   "CREATE INDEX IF NOT EXISTS idx_students_status ON students(status)",
   "CREATE INDEX IF NOT EXISTS idx_contacts_created_at ON contacts(created_at)",
-  "CREATE INDEX IF NOT EXISTS idx_coupons_code_active ON coupons(code, is_active, valid_from, valid_to)",
   "CREATE INDEX IF NOT EXISTS idx_enrollments_student_id ON enrollments(student_id, status, updated_at DESC)",
   "CREATE INDEX IF NOT EXISTS idx_enrollments_course_id ON enrollments(course_id, status, updated_at DESC)",
   "CREATE INDEX IF NOT EXISTS idx_enrollments_session_id ON enrollments(session_id)",
@@ -272,7 +251,7 @@ export async function query(sql, args = []) {
 }
 
 function columnType(column) {
-  const numeric = new Set(["id", "student_id", "course_id", "session_id", "teacher_id", "price", "discount_value", "discount_amount", "payment_due", "payment_paid", "max_uses", "used_count", "is_read", "is_published", "featured", "sort_order", "enrollment_open", "is_active"]);
+  const numeric = new Set(["id", "student_id", "course_id", "session_id", "teacher_id", "price", "payment_paid", "max_uses", "used_count", "is_read", "is_published", "featured", "sort_order", "enrollment_open", "is_active"]);
   return numeric.has(column) ? "INTEGER" : "TEXT";
 }
 
@@ -293,12 +272,6 @@ async function addCompatibilityColumns() {
           payment_status: " DEFAULT 'unpaid'",
           payment_due: " DEFAULT 0",
           payment_paid: " DEFAULT 0",
-          discount_type: " DEFAULT 'fixed'",
-          discount_value: " DEFAULT 0",
-          discount_amount: " DEFAULT 0",
-          max_uses: " DEFAULT 0",
-          used_count: " DEFAULT 0",
-          is_active: " DEFAULT 1",
         }[column] || "";
         await execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${columnType(column)}${defaultValue}`);
       }

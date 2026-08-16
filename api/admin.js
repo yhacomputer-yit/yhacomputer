@@ -100,8 +100,7 @@ const TABLES = {
     "created_at",
     "updated_at",
   ],
-  coupons: ["code", "discount_type", "discount_value", "course_id", "is_active", "max_uses", "used_count", "valid_from", "valid_to", "note"],
-  enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "coupon_code", "discount_type", "discount_value", "discount_amount", "payment_status", "payment_due", "payment_paid", "payment_method", "payment_reference", "payment_date", "payment_note"],
+  enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "payment_status", "payment_due", "payment_paid", "payment_method", "payment_reference", "payment_date", "payment_note"],
   student_password_resets: ["status", "resolved_at", "resolved_by"],
 };
 
@@ -242,18 +241,6 @@ async function normalizeManagedValues(table, values, { creating = false } = {}) 
     if (normalized.is_published !== undefined) normalized.is_published = booleanFlag(normalized.is_published, "Visible to students");
   }
 
-  if (table === "coupons") {
-    if (creating || normalized.code !== undefined) { normalized.code = requiredText(normalized.code, "Coupon code", 60).toUpperCase().replace(/\s+/g, "-"); }
-    if (normalized.discount_type !== undefined) { normalized.discount_type = String(normalized.discount_type).toLowerCase(); if (!["fixed", "percent"].includes(normalized.discount_type)) throw new Error("Discount type must be fixed or percent."); }
-    if (creating && normalized.discount_type === undefined) normalized.discount_type = "fixed";
-    if (normalized.discount_value !== undefined) { normalized.discount_value = nonNegativeInteger(normalized.discount_value, "Discount value"); if (normalized.discount_type === "percent" && normalized.discount_value > 100) throw new Error("Percentage discount cannot exceed 100."); }
-    if (normalized.course_id !== undefined) { normalized.course_id = nullableId(normalized.course_id, "Course"); await ensureCourseExists(normalized.course_id); }
-    for (const field of ["max_uses", "used_count"]) if (normalized[field] !== undefined) normalized[field] = nonNegativeInteger(normalized[field], field);
-    if (normalized.is_active !== undefined) normalized.is_active = booleanFlag(normalized.is_active, "Active");
-    for (const field of ["valid_from", "valid_to"]) if (normalized[field] !== undefined) normalized[field] = normalized[field] ? normalizedIsoDate(normalized[field], field) : null;
-    if (normalized.note !== undefined) normalized.note = optionalText(normalized.note, "Note", 1000);
-  }
-
   if (table === "enrollments") {
     if (creating || normalized.student_id !== undefined) {
       normalized.student_id = nullableId(normalized.student_id, "Student");
@@ -275,12 +262,9 @@ async function normalizeManagedValues(table, values, { creating = false } = {}) 
     } else if (creating) {
       normalized.status = "pending";
     }
-    for (const field of ["student_note", "admin_note", "payment_method", "payment_reference", "payment_note", "coupon_code"]) {
+    for (const field of ["student_note", "admin_note", "payment_method", "payment_reference", "payment_note"]) {
       if (normalized[field] !== undefined) normalized[field] = optionalText(normalized[field], field, 1000);
     }
-    if (normalized.discount_type !== undefined) { normalized.discount_type = String(normalized.discount_type).toLowerCase(); if (!["fixed", "percent"].includes(normalized.discount_type)) throw new Error("Discount type must be fixed or percent."); }
-    if (normalized.discount_value !== undefined) normalized.discount_value = nonNegativeInteger(normalized.discount_value, "Discount value");
-    if (normalized.discount_amount !== undefined) normalized.discount_amount = nonNegativeInteger(normalized.discount_amount, "Discount amount");
     if (normalized.payment_status !== undefined) {
       normalized.payment_status = String(normalized.payment_status).trim().toLowerCase();
       if (!["unpaid", "partial", "paid", "waived", "refunded"].includes(normalized.payment_status)) throw new Error("Invalid payment status.");
