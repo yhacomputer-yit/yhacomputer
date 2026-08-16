@@ -33,6 +33,15 @@ const TABLES = {
     "name",
     "description",
   ],
+  resources: [
+    "course_id",
+    "title",
+    "resource_type",
+    "url",
+    "note",
+    "sort_order",
+    "is_published",
+  ],
   sessions: [
     "course_id",
     "name",
@@ -206,6 +215,30 @@ async function normalizeManagedValues(table, values, { creating = false } = {}) 
     if (normalized.sort_order !== undefined) {
       normalized.sort_order = nonNegativeInteger(normalized.sort_order, "Sort order");
     }
+  }
+
+  if (table === "resources") {
+    if (creating || normalized.course_id !== undefined) {
+      normalized.course_id = nullableId(normalized.course_id, "Course");
+      if (normalized.course_id == null) throw new Error("Course is required.");
+      await ensureCourseExists(normalized.course_id);
+    }
+    if (creating || normalized.title !== undefined) {
+      normalized.title = requiredText(normalized.title, "Resource title", 180);
+    }
+    if (normalized.resource_type !== undefined) {
+      normalized.resource_type = String(normalized.resource_type).trim().toLowerCase();
+      if (!["file", "pdf", "zip", "youtube", "note"].includes(normalized.resource_type)) {
+        throw new Error("Resource type must be file, pdf, zip, or youtube.");
+      }
+    } else if (creating) {
+      normalized.resource_type = "file";
+    }
+    for (const field of ["url", "note"]) {
+      if (normalized[field] !== undefined) normalized[field] = optionalText(normalized[field], field, field === "note" ? 8000 : 2000);
+    }
+    if (normalized.sort_order !== undefined) normalized.sort_order = nonNegativeInteger(normalized.sort_order, "Display order");
+    if (normalized.is_published !== undefined) normalized.is_published = booleanFlag(normalized.is_published, "Visible to students");
   }
 
   if (table === "enrollments") {
@@ -411,7 +444,7 @@ export default async function handler(req, res) {
       const assignments = used.map((c) => c + " = ?");
       const argumentsList = used.map((c) => values[c]);
       const now = new Date().toISOString();
-      if (table === "courses" || table === "enrollments" || table === "student_password_resets" || table === "students") {
+      if (table === "courses" || table === "resources" || table === "enrollments" || table === "student_password_resets" || table === "students") {
         assignments.push("updated_at = ?");
         argumentsList.push(now);
       }

@@ -199,7 +199,19 @@ async function learningBundle(student) {
       END, e.updated_at DESC, e.id DESC`,
     [student.id]
   );
-  return { student: safeStudent(student), enrollments };
+  const resources = await query(
+    `SELECT DISTINCT r.id, r.course_id, r.title, r.resource_type, r.url, r.note, r.sort_order, r.created_at, r.updated_at,
+        c.title AS course_title
+       FROM resources r
+       JOIN courses c ON c.id = r.course_id
+       JOIN enrollments e ON e.course_id = r.course_id
+      WHERE e.student_id = ?
+        AND e.status IN ('approved', 'completed')
+        AND r.is_published = 1
+      ORDER BY r.course_id, r.sort_order ASC, r.id ASC`,
+    [student.id]
+  );
+  return { student: safeStudent(student), enrollments, resources };
 }
 
 function validPassword(value) {

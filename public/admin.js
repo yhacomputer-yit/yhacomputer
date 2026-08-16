@@ -36,6 +36,21 @@
         { name: "description", label: "Description", type: "textarea" },
       ],
     },
+    resources: {
+      label: "Course Resource",
+      plural: "Course Resources",
+      description: "Add files, PDFs, ZIP archives, YouTube videos, and notes for enrolled students.",
+      create: true,
+      fields: [
+        { name: "course_id", label: "Course", type: "select-dynamic", required: true, optionsTable: "courses", optionsLabel: "title", optionsValue: "id" },
+        { name: "title", label: "Resource title", type: "text", required: true },
+        { name: "resource_type", label: "Resource type", type: "select", options: ["file", "pdf", "zip", "youtube", "note"] },
+        { name: "url", label: "File or YouTube URL", type: "url" },
+        { name: "note", label: "Note / description", type: "textarea" },
+        { name: "sort_order", label: "Display order", type: "number" },
+        { name: "is_published", label: "Visible to students", type: "select", options: ["1", "0"] },
+      ],
+    },
     sessions: {
       label: "Session",
       plural: "Sessions",

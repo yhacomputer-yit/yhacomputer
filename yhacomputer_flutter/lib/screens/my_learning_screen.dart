@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/student.dart';
 import '../services/student_auth_service.dart';
@@ -271,11 +272,69 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
                     )
                   else
                     ...learning.enrollments.map(_enrollmentCard),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text('Course resources', style: AppTextStyles.titleLarge),
+                  const SizedBox(height: AppSpacing.sm),
+                  if (learning == null || learning.resources.isEmpty)
+                    AppEmptyState(
+                      title: 'No resources yet',
+                      subtitle: 'Files, PDFs, videos, ZIP archives, and notes will appear after your course is approved.',
+                      icon: Icons.folder_open_outlined,
+                    )
+                  else
+                    ..._resourceGroups(learning.resources),
                 ],
               ),
             ),
       bottomNavigationBar: const NavBar(),
     );
+  }
+
+  List<Widget> _resourceGroups(List<CourseResource> resources) {
+    final groups = <String, List<CourseResource>>{};
+    for (final resource in resources) {
+      groups.putIfAbsent(resource.courseTitle.isEmpty ? 'Course resources' : resource.courseTitle, () => []).add(resource);
+    }
+    return groups.entries.map((entry) => Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: AppCard(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(entry.key, style: AppTextStyles.titleMedium),
+          const SizedBox(height: AppSpacing.sm),
+          ...entry.value.map(_resourceCard),
+        ]),
+      ),
+    )).toList();
+  }
+
+  Widget _resourceCard(CourseResource resource) {
+    final isVideo = resource.resourceType == 'youtube';
+    final isNote = resource.resourceType == 'note';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: CircleAvatar(
+          backgroundColor: isVideo ? AppColors.errorContainer : AppColors.primaryContainer,
+          child: Icon(isVideo ? Icons.play_arrow_rounded : isNote ? Icons.edit_note_rounded : Icons.download_rounded, color: AppColors.primary),
+        ),
+        title: Text(resource.title, style: AppTextStyles.titleMedium),
+        subtitle: resource.note.isEmpty ? Text(resource.resourceType.toUpperCase()) : Text('${resource.resourceType.toUpperCase()} · ${resource.note}'),
+        trailing: resource.url.isEmpty ? null : IconButton(
+          tooltip: isVideo ? 'Watch' : 'Open resource',
+          icon: Icon(isVideo ? Icons.open_in_new_rounded : Icons.download_rounded, color: AppColors.primary),
+          onPressed: () => _openResource(resource.url),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openResource(String value) async {
+    final uri = Uri.tryParse(value);
+    if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open this resource.')));
+    }
   }
 
   Widget _profileHeader(StudentProfile profile) {

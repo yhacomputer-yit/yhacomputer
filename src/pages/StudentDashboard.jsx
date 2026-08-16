@@ -21,7 +21,7 @@ function statusLabel(status) {
 export default function StudentDashboard() {
   const { user, login, logout } = useAuth();
   const { courses } = useSiteData();
-  const [learning, setLearning] = useState({ enrollments: [] });
+  const [learning, setLearning] = useState({ enrollments: [], resources: [] });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState({ type: "idle", message: "" });
@@ -50,7 +50,7 @@ export default function StudentDashboard() {
       })
       .then((data) => {
         if (!active) return;
-        setLearning({ enrollments: data.enrollments || [] });
+        setLearning({ enrollments: data.enrollments || [], resources: data.resources || [] });
         if (data.student) {
           login({ ...data.student, token: user.token });
           setForm(data.student);
@@ -142,7 +142,7 @@ export default function StudentDashboard() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Unable to cancel the request.");
-      setLearning({ enrollments: data.enrollments || [] });
+      setLearning({ enrollments: data.enrollments || [], resources: data.resources || [] });
       setNotice({ type: "success", message: "Enrollment request cancelled." });
     } catch (error) {
       setNotice({ type: "error", message: error.message });
@@ -150,6 +150,16 @@ export default function StudentDashboard() {
       setBusy("");
     }
   };
+
+  const resourcesByCourse = useMemo(() => {
+    const grouped = new Map();
+    learning.resources.forEach((resource) => {
+      const key = String(resource.course_id);
+      if (!grouped.has(key)) grouped.set(key, { title: resource.course_title || "Course resources", items: [] });
+      grouped.get(key).items.push(resource);
+    });
+    return [...grouped.values()];
+  }, [learning.resources]);
 
   return (
     <div className="dashboard-page">
@@ -241,6 +251,30 @@ export default function StudentDashboard() {
             )}
           </div>
         </div>
+
+        <section className="dashboard-card dashboard-resources-card">
+          <div className="dashboard-card-heading">
+            <div><h3>Course Resources</h3><p>Files, PDFs, ZIP archives, YouTube videos, and notes for your approved courses.</p></div>
+          </div>
+          {loading ? <p>Loading course resources…</p> : resourcesByCourse.length === 0 ? <p>Resources will appear here after an admin approves your course enrollment.</p> : (
+            <div className="dashboard-resource-groups">
+              {resourcesByCourse.map((group) => (
+                <div className="dashboard-resource-group" key={group.title}>
+                  <h4>{group.title}</h4>
+                  <div className="dashboard-resource-list">
+                    {group.items.map((resource) => (
+                      <article className="dashboard-resource" key={resource.id}>
+                        <div className="dashboard-resource-icon" aria-hidden="true">{resource.resource_type === "youtube" ? "▶" : resource.resource_type === "note" ? "✎" : "↓"}</div>
+                        <div className="dashboard-resource-body"><strong>{resource.title}</strong>{resource.note && <p>{resource.note}</p>}<span>{String(resource.resource_type || "file").toUpperCase()}</span></div>
+                        {resource.url && <a className="button button-ghost-dark" href={resource.url} target="_blank" rel="noreferrer">{resource.resource_type === "youtube" ? "Watch" : resource.resource_type === "note" ? "Open" : "Download"}</a>}
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

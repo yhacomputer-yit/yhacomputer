@@ -146,14 +146,33 @@ class Enrollment {
   };
 }
 
+class CourseResource {
+  final int id;
+  final int courseId;
+  final String courseTitle;
+  final String title;
+  final String resourceType;
+  final String url;
+  final String note;
+  const CourseResource({required this.id, required this.courseId, required this.courseTitle, required this.title, required this.resourceType, required this.url, required this.note});
+  factory CourseResource.fromJson(Map<String, dynamic> json) {
+    int parseInt(dynamic value) => int.tryParse('${value ?? ''}') ?? 0;
+    String parseText(dynamic value) => value?.toString() ?? '';
+    return CourseResource(id: parseInt(json['id']), courseId: parseInt(json['course_id']), courseTitle: parseText(json['course_title']), title: parseText(json['title']), resourceType: parseText(json['resource_type']), url: parseText(json['url']), note: parseText(json['note']));
+  }
+  Map<String, dynamic> toJson() => {'id': id, 'course_id': courseId, 'course_title': courseTitle, 'title': title, 'resource_type': resourceType, 'url': url, 'note': note};
+}
+
 class StudentLearningBundle {
   final StudentProfile student;
   final List<Enrollment> enrollments;
+  final List<CourseResource> resources;
 
-  const StudentLearningBundle({required this.student, required this.enrollments});
+  const StudentLearningBundle({required this.student, required this.enrollments, this.resources = const []});
 
   factory StudentLearningBundle.fromJson(Map<String, dynamic> json) {
     final rows = json['enrollments'] as List? ?? const [];
+    final resourceRows = json['resources'] as List? ?? const [];
     return StudentLearningBundle(
       student: StudentProfile.fromJson(
         Map<String, dynamic>.from(json['student'] as Map? ?? const {}),
@@ -161,11 +180,15 @@ class StudentLearningBundle {
       enrollments: rows
           .map((row) => Enrollment.fromJson(Map<String, dynamic>.from(row as Map)))
           .toList(),
+      resources: resourceRows
+          .map((row) => CourseResource.fromJson(Map<String, dynamic>.from(row as Map)))
+          .toList(),
     );
   }
 
   Map<String, dynamic> toJson() => {
     'student': student.toJson(),
     'enrollments': enrollments.map((row) => row.toJson()).toList(),
+    'resources': resources.map((row) => row.toJson()).toList(),
   };
 }

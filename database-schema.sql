@@ -29,6 +29,19 @@ CREATE TABLE IF NOT EXISTS subjects (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS resources (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  resource_type TEXT NOT NULL DEFAULT 'file' CHECK (resource_type IN ('file', 'pdf', 'zip', 'youtube', 'note')),
+  url TEXT,
+  note TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  is_published INTEGER NOT NULL DEFAULT 1 CHECK (is_published IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS sessions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
@@ -154,6 +167,7 @@ CREATE TABLE IF NOT EXISTS student_password_resets (
 );
 
 CREATE INDEX IF NOT EXISTS idx_subjects_course_id ON subjects(course_id);
+CREATE INDEX IF NOT EXISTS idx_resources_course_public ON resources(course_id, is_published, sort_order, id);
 CREATE INDEX IF NOT EXISTS idx_sessions_course_id ON sessions(course_id);
 CREATE INDEX IF NOT EXISTS idx_course_teachers_course_id ON course_teachers(course_id);
 CREATE INDEX IF NOT EXISTS idx_course_teachers_teacher_id ON course_teachers(teacher_id);
