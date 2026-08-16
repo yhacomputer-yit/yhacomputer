@@ -32,7 +32,7 @@ export default function Login() {
       if (!response.ok) {
         throw new Error(data.error || "Login failed.");
       }
-      login(data.student);
+      login({ ...data.student, token: data.token });
       navigate("/student/dashboard");
     } catch (error) {
       setStatus({ type: "error", message: error.message });

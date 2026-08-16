@@ -18,13 +18,36 @@ export default function Navbar() {
   const [notifOpen, setNotifOpen] = useState(false);
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
-  const { notifications } = useSiteData();
+  const { notifications: publicNotifications } = useSiteData();
+  const [privateNotifications, setPrivateNotifications] = useState([]);
+  const notifications = [...privateNotifications, ...publicNotifications]
+    .filter((notification, index, list) => list.findIndex((item) => String(item.id) === String(notification.id)) === index)
+    .sort((left, right) => new Date(right.created_at || 0) - new Date(left.created_at || 0));
   const notifRef = useRef(null);
 
   useEffect(() => {
     setOpen(false);
     setNotifOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    let active = true;
+    if (!user?.token) {
+      setPrivateNotifications([]);
+      return () => { active = false; };
+    }
+    fetch("/api/student?action=notifications", {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((response) => (response.ok ? response.json() : { notifications: [] }))
+      .then((data) => {
+        if (active) setPrivateNotifications(data.notifications || []);
+      })
+      .catch(() => {
+        if (active) setPrivateNotifications([]);
+      });
+    return () => { active = false; };
+  }, [user?.token]);
 
   useEffect(() => {
     function handleClickOutside(e) {

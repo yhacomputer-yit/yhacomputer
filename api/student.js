@@ -361,6 +361,21 @@ async function changePassword(req, body) {
   return { message: "Your password was updated." };
 }
 
+async function studentNotifications(req) {
+  const student = await studentFromToken(req);
+  const rows = await query(
+    `SELECT id, title, message, course_id, priority, action_url, publish_at, expires_at, created_at
+       FROM notifications
+      WHERE student_id = ?
+        AND (publish_at IS NULL OR publish_at <= ?)
+        AND (expires_at IS NULL OR expires_at > ?)
+      ORDER BY CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END, created_at DESC, id DESC
+      LIMIT 50`,
+    [student.id, new Date().toISOString(), new Date().toISOString()]
+  );
+  return { notifications: rows.map((row) => ({ ...row, is_read: 0 })) };
+}
+
 async function requestPasswordHelp(body) {
   const studentId = requiredText(body.student_id, "Student ID", 32).toUpperCase();
   const email = requiredText(body.email, "Email", 254).toLowerCase();
@@ -424,6 +439,8 @@ export default async function handler(req, res) {
       payload = await updateProfile(req, body);
     } else if (action === "change_password") {
       payload = await changePassword(req, body);
+    } else if (action === "notifications") {
+      payload = await studentNotifications(req);
     } else if (action === "request_password_help") {
       payload = await requestPasswordHelp(body);
     } else {

@@ -134,7 +134,7 @@ async function fetchPublicData() {
     query("SELECT * FROM course_teachers ORDER BY id"),
     query("SELECT * FROM events ORDER BY COALESCE(date, created_at) DESC, id DESC"),
     query("SELECT id, name, course_id, message, created_at FROM reviews ORDER BY id DESC"),
-    query("SELECT * FROM notifications ORDER BY id DESC"),
+    query("SELECT id, title, message, course_id, priority, action_url, publish_at, expires_at, is_read, created_at FROM notifications WHERE student_id IS NULL ORDER BY id DESC"),
   ]);
 
   return { courses, subjects, sessions, teachers, courseTeachers, events, reviews, notifications };

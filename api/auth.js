@@ -1,5 +1,25 @@
 import { applyCors, handleCorsPreflight } from "./_cors.js";
+import crypto from "crypto";
 import { ensureSchema, generatePassword, hashPassword, passwordNeedsUpgrade, query, execute, verifyPassword } from "./_db.js";
+
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
+
+function sessionSecret() {
+  return process.env.STUDENT_SESSION_SECRET || process.env.TURSO_WRITE_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN || "";
+}
+
+function createSessionToken(student) {
+  const now = Math.floor(Date.now() / 1000);
+  const payload = Buffer.from(JSON.stringify({
+    sub: Number(student.id),
+    sid: String(student.student_id),
+    iat: now,
+    exp: now + SESSION_TTL_SECONDS,
+    v: 1,
+  })).toString("base64url");
+  const signature = crypto.createHmac("sha256", sessionSecret()).update(payload).digest("base64url");
+  return `${payload}.${signature}`;
+}
 
 function readBody(req) {
   if (req.body && typeof req.body === "object") return Promise.resolve(req.body);
@@ -148,6 +168,7 @@ export default async function handler(req, res) {
 
       res.status(200).json({
         ok: true,
+        token: createSessionToken(student),
         student: {
           id: student.id,
           student_id: student.student_id,

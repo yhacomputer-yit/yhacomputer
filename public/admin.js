@@ -118,6 +118,7 @@
       fields: [
         { name: "title", label: "Title", type: "text", required: true },
         { name: "message", label: "Message", type: "textarea", required: true },
+        { name: "student_id", label: "Target student (optional)", type: "select-dynamic", optionsTable: "students", optionsLabel: "name", optionsValue: "id" },
         { name: "course_id", label: "Linked course", type: "select-dynamic", optionsTable: "courses", optionsLabel: "title", optionsValue: "id" },
         { name: "priority", label: "Priority", type: "select", options: ["normal", "high", "urgent"] },
         { name: "action_url", label: "Action URL", type: "url" },
@@ -216,7 +217,7 @@
   }
 
   async function refreshCatalogData() {
-    const tables = ["courses", "subjects", "sessions", "teachers", "course_teachers"];
+    const tables = ["courses", "subjects", "sessions", "teachers", "course_teachers", "students"];
     const results = await Promise.all(tables.map((table) => api("GET", { table: table }).catch(() => ({ rows: [] }))));
     tables.forEach((table, index) => {
       catalogData[table] = results[index].rows || [];

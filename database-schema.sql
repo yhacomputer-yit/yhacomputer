@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
   message TEXT,
+  student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
   course_id INTEGER REFERENCES courses(id) ON DELETE SET NULL,
   priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('normal', 'high', 'urgent')),
   action_url TEXT,
@@ -159,6 +160,7 @@ CREATE INDEX IF NOT EXISTS idx_course_teachers_teacher_id ON course_teachers(tea
 CREATE INDEX IF NOT EXISTS idx_reviews_course_id ON reviews(course_id);
 CREATE INDEX IF NOT EXISTS idx_courses_public_list ON courses(is_published, featured, sort_order, id);
 CREATE INDEX IF NOT EXISTS idx_notifications_public_feed ON notifications(publish_at, expires_at, id);
+CREATE INDEX IF NOT EXISTS idx_notifications_student_feed ON notifications(student_id, publish_at, id);
 CREATE INDEX IF NOT EXISTS idx_students_course_id ON students(course_id);
 CREATE INDEX IF NOT EXISTS idx_students_session_id ON students(session_id);
 CREATE INDEX IF NOT EXISTS idx_students_status ON students(status);

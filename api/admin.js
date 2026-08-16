@@ -63,7 +63,10 @@ const TABLES = {
   ],
   reviews: ["name", "course_id", "message"],
   contacts: ["name", "email", "message"],
-  notifications: ["title", "message", "course_id", "priority", "action_url", "publish_at", "expires_at"],
+  notifications: [
+    "title",
+    "message",
+    "student_id", "course_id", "priority", "action_url", "publish_at", "expires_at"],
   students: [
     "student_id",
     "name",
@@ -247,6 +250,10 @@ async function normalizeManagedValues(table, values, { creating = false } = {}) 
     if (creating || normalized.message !== undefined) {
       normalized.message = requiredText(normalized.message, "Notification message", 2000);
     }
+    if (normalized.student_id !== undefined) {
+      normalized.student_id = nullableId(normalized.student_id, "Student");
+      await ensureStudentExists(normalized.student_id);
+    }
     if (normalized.course_id !== undefined) {
       normalized.course_id = nullableId(normalized.course_id, "Course");
       await ensureCourseExists(normalized.course_id);
@@ -268,6 +275,15 @@ async function normalizeManagedValues(table, values, { creating = false } = {}) 
   }
 
   return normalized;
+}
+
+async function createStudentNotification({ studentId, title, message, courseId = null, priority = "high" }) {
+  const now = new Date().toISOString();
+  await execute(
+    `INSERT INTO notifications (title, message, student_id, course_id, priority, publish_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [title, message, studentId, courseId, priority, now, now]
+  );
 }
 
 function readBody(req) {
@@ -378,6 +394,11 @@ export default async function handler(req, res) {
     if (action === "update") {
       const id = body.id;
       const values = await normalizeManagedValues(table, body.values || {});
+      const previousRows = table === "students"
+        ? await query("SELECT id, student_id, name, status FROM students WHERE id = ? LIMIT 1", [id])
+        : table === "enrollments"
+          ? await query("SELECT e.id, e.student_id, e.course_id, e.status, s.student_id AS student_code, s.name AS student_name, c.title AS course_title FROM enrollments e JOIN students s ON s.id = e.student_id JOIN courses c ON c.id = e.course_id WHERE e.id = ? LIMIT 1", [id])
+          : [];
       if (!id) {
         res.status(400).json({ error: "Missing id." });
         return;
@@ -415,6 +436,25 @@ export default async function handler(req, res) {
           "UPDATE students SET status = 'active', updated_at = ? WHERE id = (SELECT student_id FROM enrollments WHERE id = ?) AND status = 'pending'",
           [now, id]
         );
+        const previous = previousRows[0];
+        if (previous && previous.status !== "approved") {
+          await createStudentNotification({
+            studentId: previous.student_id,
+            courseId: previous.course_id,
+            title: "Course enrollment approved",
+            message: `Your enrollment request for ${previous.course_title} has been approved. You can now access your course from the student portal.`,
+          });
+        }
+      }
+      if (table === "students" && values.status === "active") {
+        const previous = previousRows[0];
+        if (previous && previous.status !== "active") {
+          await createStudentNotification({
+            studentId: previous.id,
+            title: "Student profile approved",
+            message: `Your YHA student profile has been approved. The admin will generate or provide your password so you can sign in with Student ID ${previous.student_id}.`,
+          });
+        }
       }
       res.status(200).json({ ok: true });
       return;

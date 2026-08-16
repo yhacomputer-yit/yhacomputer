@@ -9,7 +9,7 @@ const TABLE_COLUMNS = {
   events: ["title", "description", "date", "venue", "category", "event_type", "duration", "image", "created_at", "updated_at"],
   reviews: ["name", "course_id", "message", "created_at"],
   contacts: ["name", "email", "message", "created_at"],
-  notifications: ["title", "message", "course_id", "priority", "action_url", "publish_at", "expires_at", "is_read", "created_at"],
+  notifications: ["title", "message", "student_id", "course_id", "priority", "action_url", "publish_at", "expires_at", "is_read", "created_at"],
   students: ["student_id", "name", "email", "phone", "father_name", "mother_name", "nrc_number", "register_date", "enroll_date", "viber_phone", "city", "township", "birthday", "gender", "image", "education", "status", "course_id", "session_id", "password_hash", "created_at", "updated_at"],
   enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "requested_at", "reviewed_at", "reviewed_by", "created_at", "updated_at"],
   student_password_resets: ["student_id", "status", "requested_at", "resolved_at", "resolved_by", "created_at", "updated_at"],
@@ -95,6 +95,7 @@ const CREATE_STATEMENTS = [
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     message TEXT,
+    student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
     course_id INTEGER REFERENCES courses(id) ON DELETE SET NULL,
     priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('normal', 'high', 'urgent')),
     action_url TEXT,
@@ -162,6 +163,7 @@ const INDEX_STATEMENTS = [
   "CREATE INDEX IF NOT EXISTS idx_reviews_course_id ON reviews(course_id)",
   "CREATE INDEX IF NOT EXISTS idx_courses_public_list ON courses(is_published, featured, sort_order, id)",
   "CREATE INDEX IF NOT EXISTS idx_notifications_public_feed ON notifications(publish_at, expires_at, id)",
+  "CREATE INDEX IF NOT EXISTS idx_notifications_student_feed ON notifications(student_id, publish_at, id)",
   "CREATE INDEX IF NOT EXISTS idx_students_course_id ON students(course_id)",
   "CREATE INDEX IF NOT EXISTS idx_students_session_id ON students(session_id)",
   "CREATE INDEX IF NOT EXISTS idx_students_status ON students(status)",
@@ -228,7 +230,7 @@ export async function query(sql, args = []) {
 }
 
 function columnType(column) {
-  const numeric = new Set(["id", "course_id", "session_id", "teacher_id", "price", "is_read", "is_published", "featured", "sort_order", "enrollment_open"]);
+  const numeric = new Set(["id", "student_id", "course_id", "session_id", "teacher_id", "price", "is_read", "is_published", "featured", "sort_order", "enrollment_open"]);
   return numeric.has(column) ? "INTEGER" : "TEXT";
 }
 
