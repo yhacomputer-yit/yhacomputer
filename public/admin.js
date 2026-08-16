@@ -326,7 +326,10 @@
     switchView("list");
     syncWorkspaceCopy();
     renderForm();
-    refreshCatalogData().then(loadList);
+    refreshCatalogData().then(function () {
+      loadList();
+      if (initialTable && SCHEMA[initialTable]) selectTable(initialTable);
+    });
   }
 
   function showLogin(message) {
