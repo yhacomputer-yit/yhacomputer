@@ -82,6 +82,8 @@ class Enrollment {
   final String paymentMethod;
   final String paymentReference;
   final String paymentDate;
+  final String paymentDueDate;
+  final String paymentPaidDate;
   final String paymentNote;
   final Course course;
   final int? sessionId;
@@ -103,6 +105,8 @@ class Enrollment {
     this.paymentMethod = '',
     this.paymentReference = '',
     this.paymentDate = '',
+    this.paymentDueDate = '',
+    this.paymentPaidDate = '',
     this.paymentNote = '',
     required this.course,
     this.sessionId,
@@ -128,6 +132,8 @@ class Enrollment {
       paymentMethod: parseText(json['payment_method']),
       paymentReference: parseText(json['payment_reference']),
       paymentDate: parseText(json['payment_date']),
+      paymentDueDate: parseText(json['payment_due_date']),
+      paymentPaidDate: parseText(json['payment_paid_date']),
       paymentNote: parseText(json['payment_note']),
       course: Course.fromJson({
         'id': json['course_id'],
@@ -159,6 +165,8 @@ class Enrollment {
     'payment_method': paymentMethod,
     'payment_reference': paymentReference,
     'payment_date': paymentDate,
+    'payment_due_date': paymentDueDate,
+    'payment_paid_date': paymentPaidDate,
     'payment_note': paymentNote,
     'course_id': course.id,
     'course_title': course.title,

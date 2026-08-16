@@ -100,7 +100,7 @@ const TABLES = {
     "created_at",
     "updated_at",
   ],
-  enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "payment_status", "payment_due", "payment_paid", "payment_method", "payment_reference", "payment_date", "payment_note"],
+  enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "payment_status", "payment_due", "payment_paid", "payment_method", "payment_reference", "payment_date", "payment_due_date", "payment_paid_date", "payment_note"],
   student_password_resets: ["status", "resolved_at", "resolved_by"],
 };
 
@@ -274,7 +274,15 @@ async function normalizeManagedValues(table, values, { creating = false } = {}) 
     for (const field of ["payment_due", "payment_paid"]) {
       if (normalized[field] !== undefined) normalized[field] = nonNegativeInteger(normalized[field], field === "payment_due" ? "Payment due" : "Payment paid");
     }
+    if (normalized.payment_due_date !== undefined) normalized.payment_due_date = normalized.payment_due_date ? normalizedIsoDate(normalized.payment_due_date, "Payment due date") : null;
+    if (normalized.payment_paid_date !== undefined) normalized.payment_paid_date = normalized.payment_paid_date ? normalizedIsoDate(normalized.payment_paid_date, "Payment paid date") : null;
     if (normalized.payment_date !== undefined) normalized.payment_date = normalized.payment_date ? normalizedIsoDate(normalized.payment_date, "Payment date") : null;
+    const due = Number(normalized.payment_due ?? 0);
+    const paid = Number(normalized.payment_paid ?? 0);
+    if (normalized.payment_status !== "waived" && normalized.payment_status !== "refunded") {
+      normalized.payment_status = due > 0 && paid >= due ? "paid" : paid > 0 ? "partial" : "unpaid";
+      if (normalized.payment_status === "paid" && normalized.payment_paid_date === undefined && normalized.payment_date === undefined) normalized.payment_paid_date = new Date().toISOString();
+    }
   }
 
   if (table === "student_password_resets") {

@@ -401,10 +401,10 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
                 const SizedBox(height: 10),
                 Text(formatCourseFee(course.price), style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w800, color: AppColors.primary)),
                 const SizedBox(height: 8),
-                Row(children: [const Icon(Icons.payments_outlined, size: 17, color: AppColors.onSurfaceVariant), const SizedBox(width: 6), Expanded(child: Text('Payment: ${enrollment.paymentStatus.toUpperCase()}${enrollment.paymentDue > 0 ? ' · Due ${enrollment.paymentDue}' : ''}${enrollment.paymentPaid > 0 ? ' · Paid ${enrollment.paymentPaid}' : ''}', style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w700, color: enrollment.paymentStatus == 'paid' || enrollment.paymentStatus == 'waived' ? AppColors.success : AppColors.onSurfaceVariant))) ]),
-                if (enrollment.paymentMethod.isNotEmpty || enrollment.paymentReference.isNotEmpty) ...[
+                Row(children: [const Icon(Icons.payments_outlined, size: 17, color: AppColors.onSurfaceVariant), const SizedBox(width: 6), Expanded(child: Text('Payment: ${enrollment.paymentStatus.toUpperCase()} · Total ${enrollment.paymentDue} · Paid ${enrollment.paymentPaid} · Balance ${(enrollment.paymentDue - enrollment.paymentPaid).clamp(0, enrollment.paymentDue)}', style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w700, color: enrollment.paymentStatus == 'paid' || enrollment.paymentStatus == 'waived' ? AppColors.success : AppColors.onSurfaceVariant))) ]),
+                if (enrollment.paymentMethod.isNotEmpty || enrollment.paymentReference.isNotEmpty || enrollment.paymentDueDate.isNotEmpty || enrollment.paymentPaidDate.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text('${enrollment.paymentMethod}${enrollment.paymentReference.isNotEmpty ? ' · ${enrollment.paymentReference}' : ''}', style: AppTextStyles.bodySmall),
+                  Text('${enrollment.paymentMethod}${enrollment.paymentReference.isNotEmpty ? ' · ${enrollment.paymentReference}' : ''}${enrollment.paymentDueDate.isNotEmpty ? ' · Due date: ${enrollment.paymentDueDate.substring(0, enrollment.paymentDueDate.length > 10 ? 10 : enrollment.paymentDueDate.length)}' : ''}${enrollment.paymentPaidDate.isNotEmpty ? ' · Paid date: ${enrollment.paymentPaidDate.substring(0, enrollment.paymentPaidDate.length > 10 ? 10 : enrollment.paymentPaidDate.length)}' : ''}', style: AppTextStyles.bodySmall),
                 ],
                 if (enrollment.adminNote.isNotEmpty || enrollment.studentNote.isNotEmpty) ...[
                   const SizedBox(height: 10),

@@ -12,7 +12,7 @@ const TABLE_COLUMNS = {
   contacts: ["name", "email", "message", "created_at"],
   notifications: ["title", "message", "student_id", "course_id", "priority", "action_url", "publish_at", "expires_at", "is_read", "created_at"],
   students: ["student_id", "name", "email", "phone", "father_name", "mother_name", "nrc_number", "register_date", "enroll_date", "viber_phone", "city", "township", "birthday", "gender", "image", "education", "status", "course_id", "session_id", "password_hash", "created_at", "updated_at"],
-  enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "payment_status", "payment_due", "payment_paid", "payment_method", "payment_reference", "payment_date", "payment_note", "requested_at", "reviewed_at", "reviewed_by", "created_at", "updated_at"],
+  enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "payment_status", "payment_due", "payment_paid", "payment_method", "payment_reference", "payment_date", "payment_due_date", "payment_paid_date", "payment_note", "requested_at", "reviewed_at", "reviewed_by", "created_at", "updated_at"],
   student_password_resets: ["student_id", "status", "requested_at", "resolved_at", "resolved_by", "created_at", "updated_at"],
 };
 
@@ -156,6 +156,8 @@ const CREATE_STATEMENTS = [
     payment_method TEXT,
     payment_reference TEXT,
     payment_date TEXT,
+    payment_due_date TEXT,
+    payment_paid_date TEXT,
     payment_note TEXT,
     requested_at TEXT NOT NULL DEFAULT (datetime('now')),
     reviewed_at TEXT,
@@ -272,6 +274,8 @@ async function addCompatibilityColumns() {
           payment_status: " DEFAULT 'unpaid'",
           payment_due: " DEFAULT 0",
           payment_paid: " DEFAULT 0",
+          payment_due_date: "",
+          payment_paid_date: "",
         }[column] || "";
         await execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${columnType(column)}${defaultValue}`);
       }

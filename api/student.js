@@ -182,7 +182,7 @@ function safeStudent(student) {
 
 async function learningBundle(student) {
   const enrollments = await query(
-    `SELECT e.id, e.status, e.student_note, e.admin_note, e.payment_status, e.payment_due, e.payment_paid, e.payment_method, e.payment_reference, e.payment_date, e.payment_note, e.requested_at, e.reviewed_at, e.updated_at,
+    `SELECT e.id, e.status, e.student_note, e.admin_note, e.payment_status, e.payment_due, e.payment_paid, e.payment_method, e.payment_reference, e.payment_date, e.payment_due_date, e.payment_paid_date, e.payment_note, e.requested_at, e.reviewed_at, e.updated_at,
         c.id AS course_id, c.title AS course_title, c.image AS course_image, c.subject AS course_subject,
         c.level AS course_level, c.duration AS course_duration, c.price AS course_price,
         s.id AS session_id, s.name AS session_name, s.start_time AS session_start_time, s.end_time AS session_end_time
