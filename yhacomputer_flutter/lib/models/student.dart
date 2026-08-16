@@ -15,6 +15,14 @@ class StudentProfile {
   final String image;
   final String status;
 
+  String get statusLabel {
+    final normalized = status.trim().toLowerCase();
+    if (normalized == '1' || normalized == 'true' || normalized == 'active') return 'Active';
+    if (normalized == '0' || normalized == 'false' || normalized == 'inactive') return 'Inactive';
+    if (normalized.isEmpty) return 'Not provided';
+    return normalized.replaceAll('_', ' ').split(' ').map((word) => word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1)}').join(' ');
+  }
+
   const StudentProfile({
     required this.id,
     required this.studentId,
@@ -86,6 +94,14 @@ class Enrollment {
   final String paymentPaidDate;
   final String paymentNote;
   final Course course;
+
+  String get paymentStatusLabel {
+    final normalized = paymentStatus.trim().toLowerCase();
+    if (normalized == '1' || normalized == 'true' || normalized == 'active') return 'Active';
+    if (normalized == '0' || normalized == 'false' || normalized == 'inactive') return 'Inactive';
+    if (normalized.isEmpty) return 'Unpaid';
+    return normalized.replaceAll('_', ' ').split(' ').map((word) => word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1)}').join(' ');
+  }
   final int? sessionId;
   final String sessionName;
   final String sessionStartTime;

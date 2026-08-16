@@ -349,6 +349,8 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
           Text('Welcome, ${profile.name}', style: AppTextStyles.titleLarge.copyWith(color: Colors.white)),
           const SizedBox(height: 4),
           Text(profile.studentId, style: AppTextStyles.bodySmall.copyWith(color: Colors.white.withValues(alpha: 0.8))),
+          const SizedBox(height: 4),
+          Text('Account: ${profile.statusLabel}', style: AppTextStyles.bodySmall.copyWith(color: Colors.white.withValues(alpha: 0.86), fontWeight: FontWeight.w700)),
           const SizedBox(height: AppSpacing.md),
           Row(
             children: [
@@ -401,7 +403,7 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
                 const SizedBox(height: 10),
                 Text(formatCourseFee(course.price), style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w800, color: AppColors.primary)),
                 const SizedBox(height: 8),
-                Row(children: [const Icon(Icons.payments_outlined, size: 17, color: AppColors.onSurfaceVariant), const SizedBox(width: 6), Expanded(child: Text('Payment: ${enrollment.paymentStatus.toUpperCase()} · Total ${enrollment.paymentDue} · Paid ${enrollment.paymentPaid} · Balance ${(enrollment.paymentDue - enrollment.paymentPaid).clamp(0, enrollment.paymentDue)}', style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w700, color: enrollment.paymentStatus == 'paid' || enrollment.paymentStatus == 'waived' ? AppColors.success : AppColors.onSurfaceVariant))) ]),
+                Row(children: [const Icon(Icons.payments_outlined, size: 17, color: AppColors.onSurfaceVariant), const SizedBox(width: 6), Expanded(child: Text('Payment: ${enrollment.paymentStatusLabel} · Total ${enrollment.paymentDue} · Paid ${enrollment.paymentPaid} · Balance ${(enrollment.paymentDue - enrollment.paymentPaid).clamp(0, enrollment.paymentDue)}', style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w700, color: enrollment.paymentStatus == 'paid' || enrollment.paymentStatus == 'waived' ? AppColors.success : AppColors.onSurfaceVariant))) ]),
                 if (enrollment.paymentMethod.isNotEmpty || enrollment.paymentReference.isNotEmpty || enrollment.paymentDueDate.isNotEmpty || enrollment.paymentPaidDate.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text('${enrollment.paymentMethod}${enrollment.paymentReference.isNotEmpty ? ' · ${enrollment.paymentReference}' : ''}${enrollment.paymentDueDate.isNotEmpty ? ' · Due date: ${enrollment.paymentDueDate.substring(0, enrollment.paymentDueDate.length > 10 ? 10 : enrollment.paymentDueDate.length)}' : ''}${enrollment.paymentPaidDate.isNotEmpty ? ' · Paid date: ${enrollment.paymentPaidDate.substring(0, enrollment.paymentPaidDate.length > 10 ? 10 : enrollment.paymentPaidDate.length)}' : ''}', style: AppTextStyles.bodySmall),
@@ -423,8 +425,10 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
   }
 
   Widget _statusBadge(String status) {
-    final normalized = status.toLowerCase();
+    final normalized = status.trim().toLowerCase();
     final (label, color, background) = switch (normalized) {
+      '1' || 'true' || 'active' => ('ACTIVE', AppColors.success, const Color(0xFFECFDF5)),
+      '0' || 'false' || 'inactive' => ('INACTIVE', AppColors.onSurfaceVariant, AppColors.background),
       'approved' => ('ENROLLED', AppColors.success, const Color(0xFFECFDF5)),
       'completed' => ('COMPLETED', AppColors.primary, AppColors.primaryContainer),
       'rejected' => ('NOT APPROVED', AppColors.error, AppColors.errorContainer),
