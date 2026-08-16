@@ -3,124 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Manage YHA Computer live course catalog data in Turso." />
-    <meta name="theme-color" content="#0b1220" />
-    <title>YHA Computer | Catalog Admin</title>
-    <link rel="stylesheet" href="/admin.css" />
+    <meta http-equiv="refresh" content="0;url=/admin" />
+    <title>YHA Computer | Admin</title>
   </head>
-  <body class="admin-body">
-    <header class="admin-topbar">
-      <div class="admin-container admin-nav">
-        <a href="/" class="admin-brand">
-          <span class="admin-logo-mark">Y</span>
-          <span><strong>YHA Admin</strong></span>
-        </a>
-        <div class="admin-nav-actions">
-          <a href="/" class="admin-site-link">View public site</a>
-          <button type="button" id="logout-link" class="admin-logout" hidden>Log out</button>
-        </div>
-      </div>
-    </header>
-
-    <aside class="admin-sidebar" id="admin-sidebar" aria-label="Admin navigation">
-      <div class="admin-sidebar-header">
-        <strong class="admin-sidebar-title">Menu</strong>
-        <button type="button" class="admin-sidebar-close" id="sidebar-close" aria-label="Close menu">×</button>
-      </div>
-      <nav class="admin-sidebar-nav">
-        <span class="admin-nav-label">Catalog</span>
-        <button class="admin-tab is-active" data-table="courses" role="tab">Courses</button>
-        <button class="admin-tab" data-table="subjects" role="tab">Subjects</button>
-        <a class="admin-tab" data-table="resources" role="tab" aria-label="Course resources" href="/admin.html?table=resources">Course resources</a>
-        <button class="admin-tab" data-table="sessions" role="tab">Sessions</button>
-        <button class="admin-tab" data-table="teachers" role="tab">Teachers</button>
-        <button class="admin-tab" data-table="course_teachers" role="tab">Assignments</button>
-        <span class="admin-nav-label">Manage</span>
-        <button class="admin-tab" data-table="events" role="tab">Events</button>
-        <button class="admin-tab" data-table="reviews" role="tab">Reviews</button>
-        <button class="admin-tab" data-table="notifications" role="tab">Notifications</button>
-        <button class="admin-tab" data-table="enrollments" role="tab">Enrollment requests</button>
-        <a class="admin-tab" data-table="students" role="tab" aria-label="Students" href="/admin.html?table=students">Students</a>
-        <button class="admin-tab" data-table="student_password_resets" role="tab">Password help</button>
-        <button class="admin-tab" data-table="contacts" role="tab">Contact inbox</button>
-      </nav>
-    </aside>
-
-    <div class="admin-sidebar-overlay" id="sidebar-overlay"></div>
-
-    <main class="admin-main">
-      <div class="admin-container">
-        <div class="admin-mobile-toolbar">
-          <button type="button" class="admin-menu-toggle" id="menu-toggle" aria-label="Open navigation menu">
-            <span></span><span></span><span></span>
-          </button>
-          <div>
-            <strong>Catalog manager</strong>
-            <span>Live Turso data</span>
-          </div>
-          <span class="admin-live-indicator"><i></i>Live</span>
-        </div>
-
-        <section id="login-view" class="admin-login-layout" hidden>
-          <div class="admin-login-card">
-            <h2>Admin login</h2>
-            <form id="login-form" class="admin-form">
-              <label>Admin password
-                <input type="password" id="password-input" placeholder="Enter password" autocomplete="current-password" required />
-              </label>
-              <button type="submit" class="admin-button admin-button-primary">Sign in</button>
-              <p class="admin-error" id="login-error" hidden></p>
-            </form>
-          </div>
-        </section>
-
-        <section id="manage-view" class="admin-workspace" hidden>
-          <div class="admin-workspace-toolbar">
-            <h1 id="workspace-title">Courses</h1>
-            <div class="admin-workspace-actions">
-              <div class="admin-view-tabs" id="view-tabs">
-                <button class="admin-view-tab is-active" data-view="list" role="tab">List</button>
-                <button class="admin-view-tab" data-view="form" role="tab">Form</button>
-              </div>
-              <button type="button" class="admin-button admin-button-secondary" id="export-students" hidden>Export CSV</button>
-              <button type="button" class="admin-button admin-button-primary" id="new-record">+ Add</button>
-            </div>
-          </div>
-
-          <div class="admin-panel">
-            <div id="list-view" class="admin-view-section is-active">
-              <div class="admin-list-wrap">
-                <div class="list-heading">
-                  <div><h2 id="list-title">Courses</h2></div>
-                  <div class="admin-count"><strong id="record-count">0</strong><span>records</span></div>
-                </div>
-                <p class="admin-status" id="list-status"></p>
-                <div id="record-list" class="admin-list"></div>
-                <div id="list-pager" class="admin-pager" hidden></div>
-              </div>
-            </div>
-
-            <div id="form-view" class="admin-view-section" hidden>
-              <div class="admin-form-wrap">
-                <div class="panel-title"><h2 id="form-title">Add course</h2></div>
-                <form id="record-form" class="admin-form"></form>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-    </main>
-
-    <div id="student-detail-modal" class="student-detail-modal" hidden>
-      <div class="student-detail-backdrop" data-close-student-detail></div>
-      <section class="student-detail-card" role="dialog" aria-modal="true" aria-labelledby="student-detail-title">
-        <div class="student-detail-header">
-          <div><span class="admin-kicker">Student profile</span><h2 id="student-detail-title">Student details</h2></div>
-          <button type="button" class="student-detail-close" data-close-student-detail aria-label="Close student details">&times;</button>
-        </div>
-        <div id="student-detail-content" class="student-detail-content"></div>
-      </section>
-    </div>
-    <script src="/admin.js"></script>
+  <body>
+    <p>Opening the React Admin Dashboard…</p>
+    <script>
+      (function () {
+        var table = new URLSearchParams(window.location.search).get("table");
+        var routes = { courses: "courses", subjects: "subjects", resources: "resources", sessions: "sessions", teachers: "teachers", course_teachers: "assignments", events: "events", reviews: "reviews", notifications: "notifications", enrollments: "enrollments", students: "students", student_password_resets: "password-help", contacts: "contacts" };
+        var destination = routes[table] ? "/admin/" + routes[table] : "/admin";
+        window.location.replace(destination);
+      })();
+    </script>
   </body>
 </html>
