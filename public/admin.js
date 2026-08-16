@@ -1157,6 +1157,8 @@
     if (menuToggle) menuToggle.setAttribute("aria-expanded", "false");
   }
 
+  window.__yhaSelectTable = selectTable;
+
   async function onLogin(e) {
     e.preventDefault();
     const pw = $("password-input").value;
