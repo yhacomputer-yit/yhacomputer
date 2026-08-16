@@ -210,6 +210,7 @@
     enrollments: "Approve, reject, complete, or cancel incoming student course requests.",
     student_password_resets: "Verify the learner identity, then generate a replacement password to resolve a request.",
     contacts: "Review messages submitted through the public contact form.",
+    resources: "Add published files, PDFs, ZIP archives, YouTube videos, and notes for each course.",
   };
 
   const $ = (id) => document.getElementById(id);
@@ -1127,14 +1128,26 @@
   }
 
   function selectTable(table) {
+    if (!SCHEMA[table]) return;
     currentTable = table;
     editingId = null;
+    listRows = [];
+    listPage = 1;
     document.querySelectorAll(".admin-tab").forEach(function (t) {
       t.classList.toggle("is-active", t.dataset.table === table);
     });
     switchView("list");
     syncWorkspaceCopy();
-    renderForm();
+    // Always update the list shell before rendering the optional form. This keeps
+    // the selected table visible even if a dynamic form option request fails.
+    $("list-title").textContent = SCHEMA[table].plural;
+    $("record-list").innerHTML = "";
+    $("list-status").textContent = "Loading…";
+    try {
+      renderForm();
+    } catch (error) {
+      console.error("Admin form render failed", error);
+    }
     loadList();
     const sidebar = $("admin-sidebar");
     const overlay = $("sidebar-overlay");
@@ -1170,9 +1183,19 @@
     $("new-record").addEventListener("click", startNewRecord);
     $("export-students").addEventListener("click", exportStudentsCsv);
     document.querySelectorAll(".admin-tab").forEach(function (t) {
-      t.addEventListener("click", function () {
+      t.addEventListener("click", function (event) {
+        event.preventDefault();
         selectTable(t.dataset.table);
       });
+    });
+    // Delegated fallback keeps navigation working if the sidebar is re-rendered
+    // or a stale browser listener survives a deployment update.
+    document.addEventListener("click", function (event) {
+      const tab = event.target.closest && event.target.closest(".admin-tab");
+      if (tab) {
+        event.preventDefault();
+        selectTable(tab.dataset.table);
+      }
     });
 
     document.querySelectorAll(".admin-view-tab").forEach(function (tab) {
