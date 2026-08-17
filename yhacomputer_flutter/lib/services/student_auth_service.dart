@@ -196,6 +196,30 @@ class StudentAuthService {
     return learning;
   }
 
+  Future<void> markNotificationRead(int notificationId) async {
+    final current = session.value;
+    if (current == null) throw Exception('Please sign in to continue.');
+    final payload = await ApiService.studentRequest('mark_notification_read', token: current.token, values: {'notification_id': notificationId});
+    final learning = StudentLearningBundle.fromJson(payload);
+    await _persist(StudentSession(token: current.token, learning: learning));
+  }
+
+  Future<String> downloadResource(int resourceId) async {
+    final current = session.value;
+    if (current == null) throw Exception('Please sign in to continue.');
+    final payload = await ApiService.studentRequest('download_resource', token: current.token, values: {'resource_id': resourceId});
+    return payload['url']?.toString() ?? '';
+  }
+
+  Future<StudentLearningBundle> submitAssignment({required int assignmentId, String? submissionUrl, String? submissionNote}) async {
+    final current = session.value;
+    if (current == null) throw Exception('Please sign in to continue.');
+    final payload = await ApiService.studentRequest('submit_assignment', token: current.token, values: {'assignment_id': assignmentId, 'submission_url': submissionUrl ?? '', 'submission_note': submissionNote ?? ''});
+    final learning = StudentLearningBundle.fromJson(payload);
+    await _persist(StudentSession(token: current.token, learning: learning));
+    return learning;
+  }
+
   Future<String> changePassword({
     required String currentPassword,
     required String newPassword,

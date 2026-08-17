@@ -200,7 +200,7 @@ async function learningBundle(student) {
     [student.id]
   );
   const resources = await query(
-    `SELECT DISTINCT r.id, r.course_id, r.title, r.resource_type, r.url, r.note, r.sort_order, r.created_at, r.updated_at,
+    `SELECT DISTINCT r.id, r.course_id, r.subject_id, r.title, r.resource_type, r.url, r.note, r.lesson, r.week, r.file_size, r.download_count, r.sort_order, r.created_at, r.updated_at,
         c.title AS course_title, c.subject AS course_subject
        FROM resources r
        JOIN courses c ON c.id = r.course_id
@@ -211,7 +211,11 @@ async function learningBundle(student) {
       ORDER BY r.course_id, r.sort_order ASC, r.id ASC`,
     [student.id]
   );
-  return { student: safeStudent(student), enrollments, resources };
+  const now = new Date().toISOString();
+  const notifications = await query(`SELECT n.id, n.title, n.message, n.course_id, n.priority, n.action_url, n.publish_at, n.expires_at, n.created_at, CASE WHEN nr.notification_id IS NULL THEN 0 ELSE 1 END AS is_read FROM notifications n LEFT JOIN notification_reads nr ON nr.notification_id = n.id AND nr.student_id = ? WHERE (n.student_id = ? OR n.student_id IS NULL) AND (n.publish_at IS NULL OR n.publish_at <= ?) AND (n.expires_at IS NULL OR n.expires_at > ?) ORDER BY is_read ASC, n.created_at DESC, n.id DESC LIMIT 50`, [student.id, student.id, now, now]);
+  const attendanceSummary = await query("SELECT course_id, COUNT(*) AS total, SUM(CASE WHEN status IN ('present','late') THEN 1 ELSE 0 END) AS attended FROM attendance_records WHERE student_id = ? GROUP BY course_id", [student.id]);
+  const assignments = await query(`SELECT DISTINCT a.id, a.course_id, c.title AS course_title, a.subject_id, a.title, a.description, a.due_date, a.max_score, a.resource_url, a.status, s.id AS submission_id, s.submission_url, s.submission_note, s.submitted_at, s.score, s.feedback, s.status AS submission_status FROM assignments a JOIN courses c ON c.id = a.course_id JOIN enrollments e ON e.student_id = ? AND e.course_id = a.course_id AND e.status IN ('approved','completed') LEFT JOIN assignment_submissions s ON s.assignment_id = a.id AND s.student_id = ? WHERE a.status = 'published' ORDER BY a.due_date IS NULL, a.due_date ASC, a.id DESC`, [student.id, student.id]);
+  return { student: safeStudent(student), enrollments, resources, notifications, attendance_summary: attendanceSummary, assignments };
 }
 
 function validPassword(value) {
@@ -383,17 +387,67 @@ async function changePassword(req, body) {
 
 async function studentNotifications(req) {
   const student = await studentFromToken(req);
+  const now = new Date().toISOString();
   const rows = await query(
-    `SELECT id, title, message, course_id, priority, action_url, publish_at, expires_at, created_at
-       FROM notifications
-      WHERE student_id = ?
-        AND (publish_at IS NULL OR publish_at <= ?)
-        AND (expires_at IS NULL OR expires_at > ?)
-      ORDER BY CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END, created_at DESC, id DESC
+    `SELECT n.id, n.title, n.message, n.course_id, n.priority, n.action_url, n.publish_at, n.expires_at, n.created_at,
+            CASE WHEN nr.notification_id IS NULL THEN 0 ELSE 1 END AS is_read
+       FROM notifications n
+       LEFT JOIN notification_reads nr ON nr.notification_id = n.id AND nr.student_id = ?
+      WHERE (n.student_id = ? OR n.student_id IS NULL)
+        AND (n.publish_at IS NULL OR n.publish_at <= ?)
+        AND (n.expires_at IS NULL OR n.expires_at > ?)
+      ORDER BY is_read ASC, CASE n.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END, n.created_at DESC, n.id DESC
       LIMIT 50`,
-    [student.id, new Date().toISOString(), new Date().toISOString()]
+    [student.id, student.id, now, now]
   );
-  return { notifications: rows.map((row) => ({ ...row, is_read: 0 })) };
+  return { notifications: rows };
+}
+
+async function markNotificationRead(req, body) {
+  const student = await studentFromToken(req);
+  const notificationId = optionalId(body.notification_id, "Notification");
+  if (notificationId == null) throw new Error("Select a notification.");
+  await execute("INSERT OR REPLACE INTO notification_reads (notification_id, student_id, read_at) SELECT id, ?, ? FROM notifications WHERE id = ? AND (student_id = ? OR student_id IS NULL)", [student.id, new Date().toISOString(), notificationId, student.id]);
+  return studentNotifications(req);
+}
+
+async function downloadResource(req, body) {
+  const student = await studentFromToken(req);
+  const resourceId = optionalId(body.resource_id, "Resource");
+  if (resourceId == null) throw new Error("Select a resource.");
+  const rows = await query("SELECT r.id, r.url FROM resources r JOIN enrollments e ON e.course_id = r.course_id WHERE r.id = ? AND e.student_id = ? AND e.status IN ('approved','completed') AND r.is_published = 1 LIMIT 1", [resourceId, student.id]);
+  if (!rows.length || !rows[0].url) throw new Error("Resource is unavailable.");
+  await execute("UPDATE resources SET download_count = COALESCE(download_count, 0) + 1 WHERE id = ?", [resourceId]);
+  return { url: rows[0].url };
+}
+
+async function studentAttendance(req) {
+  const student = await studentFromToken(req);
+  const rows = await query(`SELECT a.id, a.enrollment_id, a.course_id, c.title AS course_title, a.session_id, a.attendance_date, a.status, a.note FROM attendance_records a JOIN courses c ON c.id = a.course_id WHERE a.student_id = ? ORDER BY a.attendance_date DESC, a.id DESC`, [student.id]);
+  const summary = await query("SELECT course_id, COUNT(*) AS total, SUM(CASE WHEN status IN ('present','late') THEN 1 ELSE 0 END) AS attended FROM attendance_records WHERE student_id = ? GROUP BY course_id", [student.id]);
+  return { attendance: rows, attendance_summary: summary };
+}
+
+async function studentAssignments(req) {
+  const student = await studentFromToken(req);
+  const rows = await query(`SELECT a.id, a.course_id, c.title AS course_title, a.subject_id, a.title, a.description, a.due_date, a.max_score, a.resource_url, a.status, s.id AS submission_id, s.submission_url, s.submission_note, s.submitted_at, s.score, s.feedback, s.status AS submission_status FROM assignments a JOIN courses c ON c.id = a.course_id JOIN enrollments e ON e.student_id = ? AND e.course_id = a.course_id AND e.status IN ('approved','completed') LEFT JOIN assignment_submissions s ON s.assignment_id = a.id AND s.student_id = ? WHERE a.status = 'published' ORDER BY a.due_date IS NULL, a.due_date ASC, a.id DESC`, [student.id, student.id]);
+  return { assignments: rows };
+}
+
+async function submitAssignment(req, body) {
+  const student = await studentFromToken(req);
+  const assignmentId = optionalId(body.assignment_id, "Assignment");
+  if (assignmentId == null) throw new Error("Select an assignment.");
+  const assignment = await query("SELECT id, course_id FROM assignments WHERE id = ? AND status = 'published' LIMIT 1", [assignmentId]);
+  if (!assignment.length) throw new Error("Assignment not found.");
+  const enrollment = await query("SELECT id FROM enrollments WHERE student_id = ? AND course_id = ? AND status IN ('approved','completed') LIMIT 1", [student.id, assignment[0].course_id]);
+  if (!enrollment.length) throw new Error("You are not enrolled in this assignment's course.");
+  const submissionUrl = optionalText(body.submission_url, "Submission link", 2000);
+  const submissionNote = optionalText(body.submission_note, "Submission note", 3000);
+  if (!submissionUrl && !submissionNote) throw new Error("Add a submission link or note.");
+  const now = new Date().toISOString();
+  await execute("INSERT INTO assignment_submissions (assignment_id, student_id, enrollment_id, submission_url, submission_note, submitted_at, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'submitted', ?, ?) ON CONFLICT(assignment_id, student_id) DO UPDATE SET submission_url = excluded.submission_url, submission_note = excluded.submission_note, submitted_at = excluded.submitted_at, status = 'submitted', updated_at = excluded.updated_at", [assignmentId, student.id, enrollment[0].id, submissionUrl, submissionNote, now, now, now]);
+  return studentAssignments(req);
 }
 
 async function requestPasswordHelp(body) {
@@ -461,6 +515,16 @@ export default async function handler(req, res) {
       payload = await changePassword(req, body);
     } else if (action === "notifications") {
       payload = await studentNotifications(req);
+    } else if (action === "mark_notification_read") {
+      payload = await markNotificationRead(req, body);
+    } else if (action === "download_resource") {
+      payload = await downloadResource(req, body);
+    } else if (action === "attendance") {
+      payload = await studentAttendance(req);
+    } else if (action === "assignments") {
+      payload = await studentAssignments(req);
+    } else if (action === "submit_assignment") {
+      payload = await submitAssignment(req, body);
     } else if (action === "request_password_help") {
       payload = await requestPasswordHelp(body);
     } else {

@@ -54,6 +54,9 @@ export default function StudentDashboard() {
   const { user, login, logout } = useAuth();
   const { courses } = useSiteData();
   const [learning, setLearning] = useState({ enrollments: [], resources: [] });
+  const [notifications, setNotifications] = useState([]);
+  const [attendance, setAttendance] = useState({ rows: [], summary: [] });
+  const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState({ type: "idle", message: "" });
@@ -83,9 +86,13 @@ export default function StudentDashboard() {
         if (!response.ok) throw new Error(data.error || "Unable to load your learning data.");
         return data;
       })
-      .then((data) => {
+      .then(async (data) => {
         if (!active) return;
         setLearning({ enrollments: data.enrollments || [], resources: data.resources || [] });
+        const [notificationData, attendanceData, assignmentData] = await Promise.all(["notifications", "attendance", "assignments"].map((action) => fetch(`/api/student?action=${action}`, { headers: { Authorization: `Bearer ${user.token}` } }).then((response) => response.ok ? response.json() : {}).catch(() => ({}))));
+        setNotifications(notificationData.notifications || []);
+        setAttendance({ rows: attendanceData.attendance || [], summary: attendanceData.attendance_summary || [] });
+        setAssignments(assignmentData.assignments || []);
         if (data.student) {
           login({ ...data.student, token: user.token });
           setForm(data.student);
@@ -129,6 +136,21 @@ export default function StudentDashboard() {
   }
 
   const currentForm = form || user;
+  const markNotificationRead = async (notificationId) => {
+    setNotifications((rows) => rows.map((row) => String(row.id) === String(notificationId) ? { ...row, is_read: 1 } : row));
+    await fetch("/api/student", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${user.token}` }, body: JSON.stringify({ action: "mark_notification_read", notification_id: notificationId }) }).catch(() => {});
+  };
+
+  const downloadResource = async (resource) => {
+    try {
+      const response = await fetch("/api/student", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${user.token}` }, body: JSON.stringify({ action: "download_resource", resource_id: resource.id }) });
+      const data = await response.json().catch(() => ({}));
+      const target = data.url || resource.url;
+      if (target) window.open(target, "_blank", "noopener,noreferrer");
+    } catch (_) {
+      if (resource.url) window.open(resource.url, "_blank", "noopener,noreferrer");
+    }
+  };
 
   const onProfileChange = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -237,6 +259,8 @@ export default function StudentDashboard() {
 
         {notice.type !== "idle" && <p className={`form-status form-status-${notice.type}`} role="status">{notice.message}</p>}
 
+        {notifications.length > 0 && <section className="dashboard-card dashboard-notifications-card"><div className="dashboard-card-heading"><div><span className="eyebrow">Updates</span><h3>Notifications</h3></div><span className="dashboard-resource-count">{notifications.filter((item) => !Number(item.is_read)).length} unread</span></div><div className="dashboard-notification-list">{notifications.slice(0, 5).map((item) => <button className={`dashboard-notification ${Number(item.is_read) ? "read" : "unread"}`} key={item.id} onClick={() => markNotificationRead(item.id)}><span className="dashboard-notification-dot"/><span><strong>{item.title}</strong><small>{item.message}</small></span><time>{item.priority}</time></button>)}</div></section>}
+
         <div className="dashboard-metrics">
           <div className="dashboard-metric dashboard-metric-primary"><strong>{courseCount}</strong><span>Active courses</span><small>Approved or completed</small></div>
           <div className="dashboard-metric"><strong>{pendingCount}</strong><span>Awaiting review</span><small>Requests being reviewed</small></div>
@@ -318,6 +342,10 @@ export default function StudentDashboard() {
           </div>
         </div>
 
+        <section className="dashboard-card dashboard-progress-card"><div className="dashboard-card-heading"><div><span className="eyebrow">Progress tracking</span><h3>Attendance</h3></div><span className="dashboard-resource-count">{attendance.rows.length} records</span></div>{attendance.summary.length === 0 ? <p>Attendance records will appear after your instructor marks a class.</p> : <div className="dashboard-attendance-grid">{attendance.summary.map((item) => <div className="dashboard-attendance-item" key={item.course_id}><strong>{item.attended || 0}/{item.total || 0}</strong><span>{learning.enrollments.find((row) => String(row.course_id) === String(item.course_id))?.course_title || "Course"}</span></div>)}</div>}</section>
+
+        <section className="dashboard-card dashboard-assignments-card"><div className="dashboard-card-heading"><div><span className="eyebrow">Keep learning</span><h3>Assignments</h3></div><span className="dashboard-resource-count">{assignments.length} total</span></div>{assignments.length === 0 ? <p>No assignments have been published for your approved courses yet.</p> : <div className="dashboard-assignment-list">{assignments.slice(0, 8).map((item) => <article className="dashboard-assignment" key={item.id}><div><strong>{item.title}</strong><span>{item.course_title} · Due {item.due_date ? new Date(item.due_date).toLocaleDateString() : "No due date"}</span></div><b className={`assignment-status ${item.submission_status || "pending"}`}>{item.submission_status ? item.submission_status.toUpperCase() : "NOT SUBMITTED"}</b></article>)}</div>}</section>
+
         <section className="dashboard-card dashboard-resources-card">
           <div className="dashboard-card-heading">
             <div><h3>Course Resources</h3><p>Files, PDFs, ZIP archives, YouTube videos, and notes for your approved courses.</p></div>
@@ -338,7 +366,7 @@ export default function StudentDashboard() {
                       <article className="dashboard-resource" key={resource.id}>
                         <div className="dashboard-resource-icon" aria-hidden="true">{resourceTypeOf(resource) === "youtube" ? "▶" : resourceTypeOf(resource) === "note" ? "✎" : resourceTypeOf(resource) === "pdf" ? "▣" : "↓"}</div>
                         <div className="dashboard-resource-body"><strong>{resource.title}</strong>{resource.note && <p>{resource.note}</p>}<span>{resourceTypeOf(resource).toUpperCase()}</span></div>
-                        {resource.url && resourceTypeOf(resource) === "youtube" ? <button className="button button-ghost-dark" onClick={() => setViewer(resource)}>Watch</button> : resource.url ? <a className="button button-ghost-dark" href={resource.url} target="_blank" rel="noopener noreferrer" download={resourceTypeOf(resource) === "pdf" || resourceTypeOf(resource) === "zip" ? true : undefined}>{resourceTypeOf(resource) === "pdf" ? "Download PDF" : resourceTypeOf(resource) === "note" ? "Open" : "Download"}</a> : null}
+                        {resource.url && resourceTypeOf(resource) === "youtube" ? <button className="button button-ghost-dark" onClick={() => setViewer(resource)}>Watch</button> : resource.url ? <button className="button button-ghost-dark" onClick={() => downloadResource(resource)}>{resourceTypeOf(resource) === "pdf" ? "Download PDF" : resourceTypeOf(resource) === "note" ? "Open" : "Download"}</button> : null}
                       </article>
                     ))}
                   </div>

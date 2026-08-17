@@ -207,25 +207,71 @@ class CourseResource {
   final String resourceType;
   final String url;
   final String note;
-  const CourseResource({required this.id, required this.courseId, required this.courseTitle, this.courseSubject = '', required this.title, required this.resourceType, required this.url, required this.note});
+  final String lesson;
+  final int week;
+  final int fileSize;
+  final int downloadCount;
+  const CourseResource({required this.id, required this.courseId, required this.courseTitle, this.courseSubject = '', required this.title, required this.resourceType, required this.url, required this.note, this.lesson = '', this.week = 0, this.fileSize = 0, this.downloadCount = 0});
   factory CourseResource.fromJson(Map<String, dynamic> json) {
     int parseInt(dynamic value) => int.tryParse('${value ?? ''}') ?? 0;
     String parseText(dynamic value) => value?.toString() ?? '';
-    return CourseResource(id: parseInt(json['id']), courseId: parseInt(json['course_id']), courseTitle: parseText(json['course_title']), courseSubject: parseText(json['course_subject']), title: parseText(json['title']), resourceType: parseText(json['resource_type']), url: parseText(json['url']), note: parseText(json['note']));
+    return CourseResource(id: parseInt(json['id']), courseId: parseInt(json['course_id']), courseTitle: parseText(json['course_title']), courseSubject: parseText(json['course_subject']), title: parseText(json['title']), resourceType: parseText(json['resource_type']), url: parseText(json['url']), note: parseText(json['note']), lesson: parseText(json['lesson']), week: parseInt(json['week']), fileSize: parseInt(json['file_size']), downloadCount: parseInt(json['download_count']));
   }
-  Map<String, dynamic> toJson() => {'id': id, 'course_id': courseId, 'course_title': courseTitle, 'course_subject': courseSubject, 'title': title, 'resource_type': resourceType, 'url': url, 'note': note};
+  Map<String, dynamic> toJson() => {'id': id, 'course_id': courseId, 'course_title': courseTitle, 'course_subject': courseSubject, 'title': title, 'resource_type': resourceType, 'url': url, 'note': note, 'lesson': lesson, 'week': week, 'file_size': fileSize, 'download_count': downloadCount};
+}
+
+class StudentNotification {
+  final int id;
+  final String title;
+  final String message;
+  final String priority;
+  final bool isRead;
+  const StudentNotification({required this.id, required this.title, required this.message, this.priority = 'normal', this.isRead = false});
+  factory StudentNotification.fromJson(Map<String, dynamic> json) => StudentNotification(id: int.tryParse('${json['id'] ?? 0}') ?? 0, title: json['title']?.toString() ?? '', message: json['message']?.toString() ?? '', priority: json['priority']?.toString() ?? 'normal', isRead: '${json['is_read'] ?? 0}' == '1' || '${json['is_read'] ?? 0}'.toLowerCase() == 'true');
+}
+
+class AttendanceSummary {
+  final int courseId;
+  final int total;
+  final int attended;
+  const AttendanceSummary({required this.courseId, this.total = 0, this.attended = 0});
+  double get percentage => total == 0 ? 0 : attended * 100 / total;
+  factory AttendanceSummary.fromJson(Map<String, dynamic> json) => AttendanceSummary(courseId: int.tryParse('${json['course_id'] ?? 0}') ?? 0, total: int.tryParse('${json['total'] ?? 0}') ?? 0, attended: int.tryParse('${json['attended'] ?? 0}') ?? 0);
+}
+
+class StudentAssignment {
+  final int id;
+  final int courseId;
+  final String courseTitle;
+  final String title;
+  final String description;
+  final String dueDate;
+  final int maxScore;
+  final String submissionUrl;
+  final String submissionNote;
+  final String submissionStatus;
+  final int? score;
+  final String feedback;
+  const StudentAssignment({required this.id, required this.courseId, required this.courseTitle, required this.title, this.description = '', this.dueDate = '', this.maxScore = 100, this.submissionUrl = '', this.submissionNote = '', this.submissionStatus = '', this.score, this.feedback = ''});
+  factory StudentAssignment.fromJson(Map<String, dynamic> json) => StudentAssignment(id: int.tryParse('${json['id'] ?? 0}') ?? 0, courseId: int.tryParse('${json['course_id'] ?? 0}') ?? 0, courseTitle: json['course_title']?.toString() ?? '', title: json['title']?.toString() ?? '', description: json['description']?.toString() ?? '', dueDate: json['due_date']?.toString() ?? '', maxScore: int.tryParse('${json['max_score'] ?? 100}') ?? 100, submissionUrl: json['submission_url']?.toString() ?? '', submissionNote: json['submission_note']?.toString() ?? '', submissionStatus: json['submission_status']?.toString() ?? '', score: json['score'] == null ? null : int.tryParse('${json['score']}'), feedback: json['feedback']?.toString() ?? '');
 }
 
 class StudentLearningBundle {
   final StudentProfile student;
   final List<Enrollment> enrollments;
   final List<CourseResource> resources;
+  final List<StudentNotification> notifications;
+  final List<AttendanceSummary> attendanceSummary;
+  final List<StudentAssignment> assignments;
 
-  const StudentLearningBundle({required this.student, required this.enrollments, this.resources = const []});
+  const StudentLearningBundle({required this.student, required this.enrollments, this.resources = const [], this.notifications = const [], this.attendanceSummary = const [], this.assignments = const []});
 
   factory StudentLearningBundle.fromJson(Map<String, dynamic> json) {
     final rows = json['enrollments'] as List? ?? const [];
     final resourceRows = json['resources'] as List? ?? const [];
+    final notificationRows = json['notifications'] as List? ?? const [];
+    final attendanceRows = json['attendance_summary'] as List? ?? const [];
+    final assignmentRows = json['assignments'] as List? ?? const [];
     return StudentLearningBundle(
       student: StudentProfile.fromJson(
         Map<String, dynamic>.from(json['student'] as Map? ?? const {}),
@@ -236,6 +282,9 @@ class StudentLearningBundle {
       resources: resourceRows
           .map((row) => CourseResource.fromJson(Map<String, dynamic>.from(row as Map)))
           .toList(),
+      notifications: notificationRows.map((row) => StudentNotification.fromJson(Map<String, dynamic>.from(row as Map))).toList(),
+      attendanceSummary: attendanceRows.map((row) => AttendanceSummary.fromJson(Map<String, dynamic>.from(row as Map))).toList(),
+      assignments: assignmentRows.map((row) => StudentAssignment.fromJson(Map<String, dynamic>.from(row as Map))).toList(),
     );
   }
 
@@ -243,5 +292,8 @@ class StudentLearningBundle {
     'student': student.toJson(),
     'enrollments': enrollments.map((row) => row.toJson()).toList(),
     'resources': resources.map((row) => row.toJson()).toList(),
+    'notifications': notifications.map((row) => {'id': row.id, 'title': row.title, 'message': row.message, 'priority': row.priority, 'is_read': row.isRead ? 1 : 0}).toList(),
+    'attendance_summary': attendanceSummary.map((row) => {'course_id': row.courseId, 'total': row.total, 'attended': row.attended}).toList(),
+    'assignments': assignments.map((row) => {'id': row.id, 'course_id': row.courseId, 'course_title': row.courseTitle, 'title': row.title, 'description': row.description, 'due_date': row.dueDate, 'max_score': row.maxScore, 'submission_url': row.submissionUrl, 'submission_note': row.submissionNote, 'submission_status': row.submissionStatus, 'score': row.score, 'feedback': row.feedback}).toList(),
   };
 }

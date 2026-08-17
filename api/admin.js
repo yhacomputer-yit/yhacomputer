@@ -35,10 +35,15 @@ const TABLES = {
   ],
   resources: [
     "course_id",
+    "subject_id",
     "title",
     "resource_type",
     "url",
     "note",
+    "lesson",
+    "week",
+    "file_size",
+    "download_count",
     "sort_order",
     "is_published",
   ],
@@ -102,6 +107,10 @@ const TABLES = {
   ],
   enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "payment_status", "payment_due", "payment_paid", "payment_method", "payment_reference", "payment_date", "payment_due_date", "payment_paid_date", "payment_note"],
   student_password_resets: ["status", "resolved_at", "resolved_by"],
+  payment_reminders: ["enrollment_id", "student_id", "reminder_type", "scheduled_for", "sent_at", "status"],
+  attendance_records: ["enrollment_id", "student_id", "course_id", "session_id", "attendance_date", "status", "note", "marked_by"],
+  assignments: ["course_id", "subject_id", "title", "description", "due_date", "max_score", "resource_url", "status"],
+  assignment_submissions: ["assignment_id", "student_id", "enrollment_id", "submission_url", "submission_note", "submitted_at", "score", "feedback", "status", "graded_at", "graded_by"],
 };
 
 
@@ -218,6 +227,12 @@ async function normalizeManagedValues(table, values, { creating = false } = {}) 
   }
 
   if (table === "resources") {
+    for (const field of ["course_id", "subject_id"]) if (normalized[field] !== undefined) normalized[field] = nullableId(normalized[field], field === "course_id" ? "Course" : "Subject");
+    for (const field of ["title", "url", "note", "lesson"]) if (normalized[field] !== undefined) normalized[field] = optionalText(normalized[field], field, field === "note" ? 3000 : 1000);
+    if (normalized.week !== undefined) normalized.week = nonNegativeInteger(normalized.week, "Week");
+    if (normalized.file_size !== undefined) normalized.file_size = nonNegativeInteger(normalized.file_size, "File size");
+    if (normalized.download_count !== undefined) normalized.download_count = nonNegativeInteger(normalized.download_count, "Download count");
+
     if (creating || normalized.course_id !== undefined) {
       normalized.course_id = nullableId(normalized.course_id, "Course");
       if (normalized.course_id == null) throw new Error("Course is required.");
@@ -285,6 +300,33 @@ async function normalizeManagedValues(table, values, { creating = false } = {}) 
     }
   }
 
+  if (table === "payment_reminders") {
+    for (const field of ["enrollment_id", "student_id"]) if (normalized[field] !== undefined) normalized[field] = nullableId(normalized[field], field);
+    if (normalized.scheduled_for !== undefined) normalized.scheduled_for = normalizedIsoDate(normalized.scheduled_for, "Scheduled time");
+    if (normalized.sent_at !== undefined) normalized.sent_at = normalized.sent_at ? normalizedIsoDate(normalized.sent_at, "Sent time") : null;
+    for (const field of ["reminder_type", "status"]) if (normalized[field] !== undefined) normalized[field] = optionalText(normalized[field], field, 40);
+  }
+  if (table === "attendance_records") {
+    for (const field of ["enrollment_id", "student_id", "course_id", "session_id"]) if (normalized[field] !== undefined) normalized[field] = nullableId(normalized[field], field);
+    if (normalized.attendance_date !== undefined) normalized.attendance_date = normalizedIsoDate(normalized.attendance_date, "Attendance date");
+    if (normalized.status !== undefined && !["present", "absent", "late", "excused"].includes(String(normalized.status).toLowerCase())) throw new Error("Invalid attendance status.");
+    for (const field of ["note", "marked_by"]) if (normalized[field] !== undefined) normalized[field] = optionalText(normalized[field], field, 1000);
+  }
+  if (table === "assignments") {
+    if (creating || normalized.title !== undefined) normalized.title = requiredText(normalized.title, "Assignment title", 180);
+    for (const field of ["course_id", "subject_id"]) if (normalized[field] !== undefined) normalized[field] = nullableId(normalized[field], field);
+    for (const field of ["description", "resource_url"]) if (normalized[field] !== undefined) normalized[field] = optionalText(normalized[field], field, 5000);
+    if (normalized.due_date !== undefined) normalized.due_date = normalized.due_date ? normalizedIsoDate(normalized.due_date, "Due date") : null;
+    if (normalized.max_score !== undefined) normalized.max_score = nonNegativeInteger(normalized.max_score, "Maximum score");
+    if (normalized.status !== undefined && !["draft", "published", "closed"].includes(String(normalized.status).toLowerCase())) throw new Error("Invalid assignment status.");
+  }
+  if (table === "assignment_submissions") {
+    for (const field of ["assignment_id", "student_id", "enrollment_id"]) if (normalized[field] !== undefined) normalized[field] = nullableId(normalized[field], field);
+    for (const field of ["submission_url", "submission_note", "feedback", "graded_by"]) if (normalized[field] !== undefined) normalized[field] = optionalText(normalized[field], field, 5000);
+    for (const field of ["submitted_at", "graded_at"]) if (normalized[field] !== undefined) normalized[field] = normalized[field] ? normalizedIsoDate(normalized[field], field) : null;
+    if (normalized.score !== undefined) normalized.score = nonNegativeInteger(normalized.score, "Score");
+    if (normalized.status !== undefined && !["draft", "submitted", "graded", "returned"].includes(String(normalized.status).toLowerCase())) throw new Error("Invalid submission status.");
+  }
   if (table === "student_password_resets") {
     if (normalized.status !== undefined) {
       normalized.status = String(normalized.status).trim().toLowerCase();
@@ -337,6 +379,24 @@ async function createStudentNotification({ studentId, title, message, courseId =
   );
 }
 
+async function generatePaymentReminders() {
+  const now = new Date();
+  const cutoff = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString();
+  const current = now.toISOString();
+  const rows = await query(`SELECT e.id, e.student_id, e.course_id, e.payment_due_date, e.payment_due, e.payment_paid, c.title AS course_title, s.name AS student_name FROM enrollments e JOIN courses c ON c.id = e.course_id JOIN students s ON s.id = e.student_id WHERE e.payment_status IN ('unpaid','partial') AND e.payment_due > e.payment_paid AND e.payment_due_date IS NOT NULL AND e.payment_due_date <= ? AND e.status IN ('approved','completed')`, [cutoff]);
+  let created = 0;
+  for (const row of rows) {
+    const overdue = String(row.payment_due_date) < current;
+    const type = overdue ? 'overdue' : 'due_soon';
+    const exists = await query("SELECT id FROM payment_reminders WHERE enrollment_id = ? AND reminder_type = ? AND created_at >= date('now') LIMIT 1", [row.id, type]);
+    if (exists.length) continue;
+    await execute("INSERT INTO payment_reminders (enrollment_id, student_id, reminder_type, scheduled_for, status, created_at) VALUES (?, ?, ?, ?, 'sent', ?)", [row.id, row.student_id, type, current, current]);
+    await createStudentNotification({ studentId: row.student_id, courseId: row.course_id, priority: overdue ? 'urgent' : 'high', title: overdue ? 'Payment overdue' : 'Payment due soon', message: `${row.course_title}: your remaining balance is ${Math.max(0, Number(row.payment_due || 0) - Number(row.payment_paid || 0)).toLocaleString()}. ${overdue ? 'Please contact YHA Computer about this overdue payment.' : 'Please complete payment by the due date.'}` });
+    created += 1;
+  }
+  return { created, checked: rows.length };
+}
+
 function readBody(req) {
   if (req.body && typeof req.body === "object") return Promise.resolve(req.body);
   return new Promise((resolve, reject) => {
@@ -386,6 +446,10 @@ export default async function handler(req, res) {
       body = await readBody(req);
     }
     const action = req.method === "GET" ? "list" : body.action;
+    if (action === "generate_payment_reminders") {
+      res.status(200).json(await generatePaymentReminders());
+      return;
+    }
     const table = req.method === "GET" ? req.query.table : body.table;
 
     if (!TABLES[table]) {

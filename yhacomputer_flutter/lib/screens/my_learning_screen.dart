@@ -253,6 +253,9 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
                 padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.xl),
                 children: [
                   if (learning != null) _profileHeader(learning.student),
+                  if (learning != null && learning.notifications.isNotEmpty) _notificationSection(learning.notifications),
+                  if (learning != null && learning.attendanceSummary.isNotEmpty) _attendanceSection(learning),
+                  if (learning != null && learning.assignments.isNotEmpty) _assignmentSection(learning.assignments),
                   if (_error.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.md),
                     AppErrorState(_error, title: 'Showing your saved learning records', onRetry: _refresh),
@@ -300,6 +303,19 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
             ),
       bottomNavigationBar: const NavBar(),
     );
+  }
+
+  Widget _notificationSection(List<StudentNotification> notifications) {
+    final unread = notifications.where((item) => !item.isRead).length;
+    return Padding(padding: const EdgeInsets.only(bottom: AppSpacing.lg), child: AppCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Notifications', style: AppTextStyles.titleLarge), if (unread > 0) AppBadge(text: '$unread unread')]), const SizedBox(height: AppSpacing.sm), ...notifications.take(5).map((item) => ListTile(contentPadding: EdgeInsets.zero, leading: Icon(item.priority == 'urgent' ? Icons.priority_high_rounded : Icons.notifications_none_rounded, color: item.priority == 'urgent' ? AppColors.error : AppColors.primary), title: Text(item.title), subtitle: Text(item.message), isThreeLine: true))])));
+  }
+
+  Widget _attendanceSection(StudentLearningBundle learning) {
+    return Padding(padding: const EdgeInsets.only(bottom: AppSpacing.lg), child: AppCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Attendance', style: AppTextStyles.titleLarge), const SizedBox(height: AppSpacing.sm), ...learning.attendanceSummary.map((item) => ListTile(contentPadding: EdgeInsets.zero, leading: CircleAvatar(child: Text('${item.percentage.round()}%')), title: Text(learning.enrollments.firstWhere((enrollment) => enrollment.course.id == item.courseId, orElse: () => learning.enrollments.first).course.title), subtitle: Text('${item.attended} attended of ${item.total} recorded')))])));
+  }
+
+  Widget _assignmentSection(List<StudentAssignment> assignments) {
+    return Padding(padding: const EdgeInsets.only(bottom: AppSpacing.lg), child: AppCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Assignments', style: AppTextStyles.titleLarge), const SizedBox(height: AppSpacing.sm), ...assignments.take(8).map((item) => ListTile(contentPadding: EdgeInsets.zero, leading: Icon(item.submissionStatus.isEmpty ? Icons.assignment_outlined : Icons.assignment_turned_in_outlined, color: AppColors.primary), title: Text(item.title), subtitle: Text('${item.courseTitle} · ${item.dueDate.isEmpty ? 'No due date' : 'Due ${item.dueDate.substring(0, item.dueDate.length > 10 ? 10 : item.dueDate.length)}'}'), trailing: Text(item.submissionStatus.isEmpty ? 'Not submitted' : item.submissionStatus.toUpperCase(), style: AppTextStyles.labelSmall)))])));
   }
 
   List<CourseResource> _filteredResources(List<CourseResource> resources) {

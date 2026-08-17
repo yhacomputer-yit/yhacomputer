@@ -3,7 +3,7 @@ import crypto from "crypto";
 const TABLE_COLUMNS = {
   courses: ["title", "description", "price", "image", "subject", "level", "duration", "is_published", "featured", "sort_order", "enrollment_open", "created_at", "updated_at"],
   subjects: ["course_id", "name", "description", "created_at"],
-  resources: ["course_id", "title", "resource_type", "url", "note", "sort_order", "is_published", "created_at", "updated_at"],
+  resources: ["course_id", "subject_id", "title", "resource_type", "url", "note", "lesson", "week", "file_size", "download_count", "sort_order", "is_published", "created_at", "updated_at"],
   sessions: ["course_id", "name", "start_time", "end_time", "created_at"],
   teachers: ["name", "email", "phone", "specialization", "image", "bio", "created_at"],
   course_teachers: ["course_id", "teacher_id", "created_at"],
@@ -14,6 +14,11 @@ const TABLE_COLUMNS = {
   students: ["student_id", "name", "email", "phone", "father_name", "mother_name", "nrc_number", "register_date", "enroll_date", "viber_phone", "city", "township", "birthday", "gender", "image", "education", "status", "course_id", "session_id", "password_hash", "created_at", "updated_at"],
   enrollments: ["student_id", "course_id", "session_id", "status", "student_note", "admin_note", "payment_status", "payment_due", "payment_paid", "payment_method", "payment_reference", "payment_date", "payment_due_date", "payment_paid_date", "payment_note", "requested_at", "reviewed_at", "reviewed_by", "created_at", "updated_at"],
   student_password_resets: ["student_id", "status", "requested_at", "resolved_at", "resolved_by", "created_at", "updated_at"],
+  notification_reads: ["notification_id", "student_id", "read_at"],
+  payment_reminders: ["enrollment_id", "student_id", "reminder_type", "scheduled_for", "sent_at", "status", "created_at"],
+  attendance_records: ["enrollment_id", "student_id", "course_id", "session_id", "attendance_date", "status", "note", "marked_by", "created_at", "updated_at"],
+  assignments: ["course_id", "subject_id", "title", "description", "due_date", "max_score", "resource_url", "status", "created_at", "updated_at"],
+  assignment_submissions: ["assignment_id", "student_id", "enrollment_id", "submission_url", "submission_note", "submitted_at", "score", "feedback", "status", "graded_at", "graded_by", "created_at", "updated_at"],
 };
 
 const CREATE_STATEMENTS = [
@@ -165,6 +170,66 @@ const CREATE_STATEMENTS = [
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
+  `CREATE TABLE IF NOT EXISTS notification_reads (
+    notification_id INTEGER NOT NULL REFERENCES notifications(id) ON DELETE CASCADE,
+    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    read_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (notification_id, student_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS payment_reminders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    enrollment_id INTEGER NOT NULL REFERENCES enrollments(id) ON DELETE CASCADE,
+    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    reminder_type TEXT NOT NULL DEFAULT 'due_soon',
+    scheduled_for TEXT NOT NULL,
+    sent_at TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'cancelled')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS attendance_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    enrollment_id INTEGER NOT NULL REFERENCES enrollments(id) ON DELETE CASCADE,
+    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    session_id INTEGER REFERENCES sessions(id) ON DELETE SET NULL,
+    attendance_date TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'present' CHECK (status IN ('present', 'absent', 'late', 'excused')),
+    note TEXT,
+    marked_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(enrollment_id, attendance_date)
+  )`,
+  `CREATE TABLE IF NOT EXISTS assignments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    due_date TEXT,
+    max_score INTEGER NOT NULL DEFAULT 100,
+    resource_url TEXT,
+    status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('draft', 'published', 'closed')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS assignment_submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    assignment_id INTEGER NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
+    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    enrollment_id INTEGER NOT NULL REFERENCES enrollments(id) ON DELETE CASCADE,
+    submission_url TEXT,
+    submission_note TEXT,
+    submitted_at TEXT,
+    score INTEGER,
+    feedback TEXT,
+    status TEXT NOT NULL DEFAULT 'submitted' CHECK (status IN ('draft', 'submitted', 'graded', 'returned')),
+    graded_at TEXT,
+    graded_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(assignment_id, student_id)
+  )`,
   `CREATE TABLE IF NOT EXISTS student_password_resets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
@@ -197,6 +262,13 @@ const INDEX_STATEMENTS = [
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_enrollments_one_open_request ON enrollments(student_id, course_id) WHERE status IN ('pending', 'approved')",
   "CREATE INDEX IF NOT EXISTS idx_password_resets_student_status ON student_password_resets(student_id, status, requested_at DESC)",
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_password_resets_one_pending ON student_password_resets(student_id) WHERE status = 'pending'",
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_notification_reads_pair ON notification_reads(notification_id, student_id)",
+  "CREATE INDEX IF NOT EXISTS idx_payment_reminders_due ON payment_reminders(status, scheduled_for)",
+  "CREATE INDEX IF NOT EXISTS idx_payment_reminders_student ON payment_reminders(student_id, status, scheduled_for)",
+  "CREATE INDEX IF NOT EXISTS idx_attendance_student_date ON attendance_records(student_id, attendance_date DESC)",
+  "CREATE INDEX IF NOT EXISTS idx_attendance_course_date ON attendance_records(course_id, attendance_date DESC)",
+  "CREATE INDEX IF NOT EXISTS idx_assignments_course_due ON assignments(course_id, status, due_date)",
+  "CREATE INDEX IF NOT EXISTS idx_submissions_student_status ON assignment_submissions(student_id, status, updated_at DESC)",
 ];
 
 function toHttpUrl(url) {
@@ -253,7 +325,7 @@ export async function query(sql, args = []) {
 }
 
 function columnType(column) {
-  const numeric = new Set(["id", "student_id", "course_id", "session_id", "teacher_id", "price", "payment_paid", "max_uses", "used_count", "is_read", "is_published", "featured", "sort_order", "enrollment_open", "is_active"]);
+  const numeric = new Set(["id", "student_id", "course_id", "subject_id", "session_id", "teacher_id", "notification_id", "enrollment_id", "assignment_id", "price", "payment_due", "payment_paid", "max_uses", "used_count", "is_read", "is_published", "featured", "sort_order", "enrollment_open", "is_active", "week", "file_size", "download_count", "max_score", "score"]);
   return numeric.has(column) ? "INTEGER" : "TEXT";
 }
 
@@ -276,6 +348,9 @@ async function addCompatibilityColumns() {
           payment_paid: " DEFAULT 0",
           payment_due_date: "",
           payment_paid_date: "",
+          download_count: " DEFAULT 0",
+          week: " DEFAULT 0",
+          max_score: " DEFAULT 100",
         }[column] || "";
         await execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${columnType(column)}${defaultValue}`);
       }
