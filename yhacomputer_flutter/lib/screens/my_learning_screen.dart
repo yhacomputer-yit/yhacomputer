@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 import '../models/student.dart';
 import '../services/student_auth_service.dart';
@@ -309,21 +310,60 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
 
   Widget _resourceCard(CourseResource resource) {
     final isVideo = resource.resourceType == 'youtube';
+    final isPdf = resource.resourceType == 'pdf';
     final isNote = resource.resourceType == 'note';
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: CircleAvatar(
-          backgroundColor: isVideo ? AppColors.errorContainer : AppColors.primaryContainer,
-          child: Icon(isVideo ? Icons.play_arrow_rounded : isNote ? Icons.edit_note_rounded : Icons.download_rounded, color: AppColors.primary),
+          backgroundColor: isVideo ? AppColors.errorContainer : isPdf ? AppColors.primaryContainer : AppColors.primaryContainer,
+          child: Icon(isVideo ? Icons.play_arrow_rounded : isPdf ? Icons.picture_as_pdf_rounded : isNote ? Icons.edit_note_rounded : Icons.download_rounded, color: AppColors.primary),
         ),
         title: Text(resource.title, style: AppTextStyles.titleMedium),
         subtitle: resource.note.isEmpty ? Text(resource.resourceType.toUpperCase()) : Text('${resource.resourceType.toUpperCase()} · ${resource.note}'),
         trailing: resource.url.isEmpty ? null : IconButton(
-          tooltip: isVideo ? 'Watch' : 'Open resource',
-          icon: Icon(isVideo ? Icons.open_in_new_rounded : Icons.download_rounded, color: AppColors.primary),
-          onPressed: () => _openResource(resource.url),
+          tooltip: isVideo ? 'Watch video' : isPdf ? 'Read PDF' : 'Download resource',
+          icon: Icon(isVideo ? Icons.play_circle_outline_rounded : isPdf ? Icons.menu_book_rounded : Icons.download_rounded, color: AppColors.primary),
+          onPressed: () => (isVideo || isPdf) ? _showResourceViewer(resource) : _openResource(resource.url),
+        ),
+      ),
+    );
+  }
+
+  String _youtubeEmbedUrl(String value) {
+    final uri = Uri.tryParse(value);
+    if (uri == null) return value;
+    final id = uri.host.contains('youtu.be') ? (uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null) : uri.queryParameters['v'] ?? (uri.pathSegments.isNotEmpty ? uri.pathSegments.last : null);
+    return id == null || id.isEmpty ? value : 'https://www.youtube-nocookie.com/embed/$id?rel=0';
+  }
+
+  Future<void> _showResourceViewer(CourseResource resource) async {
+    final isVideo = resource.resourceType == 'youtube';
+    final source = isVideo ? _youtubeEmbedUrl(resource.url) : 'https://docs.google.com/gview?embedded=1&url=${Uri.encodeComponent(resource.url)}';
+    final controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(NavigationDelegate(onWebResourceError: (_) {}))
+      ..loadRequest(Uri.parse(source));
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: SizedBox(
+          width: double.infinity,
+          height: MediaQuery.of(dialogContext).size.height * .78,
+          child: Column(
+            children: [
+              ListTile(
+                title: Text(resource.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Text(isVideo ? 'Video lesson' : 'PDF preview'),
+                trailing: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(dialogContext).pop()),
+              ),
+              const Divider(height: 1),
+              Expanded(child: WebViewWidget(controller: controller)),
+            ],
+          ),
         ),
       ),
     );

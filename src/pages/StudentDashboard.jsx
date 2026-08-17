@@ -23,6 +23,28 @@ function statusLabel(status) {
   }[String(status || "pending").toLowerCase()] || "PENDING";
 }
 
+function youtubeEmbedUrl(value) {
+  try {
+    const url = new URL(value);
+    const id = url.hostname.includes("youtu.be") ? url.pathname.slice(1) : url.searchParams.get("v") || url.pathname.split("/").pop();
+    return id ? `https://www.youtube-nocookie.com/embed/${id}?rel=0` : "";
+  } catch {
+    return "";
+  }
+}
+
+function ResourceViewer({ resource, onClose }) {
+  const type = String(resource.resource_type || "file").toLowerCase();
+  const videoUrl = type === "youtube" ? youtubeEmbedUrl(resource.url) : "";
+  return <div className="resource-viewer-backdrop" role="dialog" aria-modal="true" aria-label={resource.title}>
+    <section className="resource-viewer-card">
+      <div className="resource-viewer-header"><div><span className="eyebrow">{type === "youtube" ? "Video lesson" : type === "pdf" ? "PDF preview" : "Resource"}</span><h3>{resource.title}</h3></div><button className="resource-viewer-close" onClick={onClose} aria-label="Close viewer">×</button></div>
+      {type === "youtube" && videoUrl ? <div className="resource-video-frame"><iframe src={videoUrl} title={resource.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div> : type === "pdf" && resource.url ? <iframe className="resource-pdf-frame" src={resource.url} title={resource.title} /> : <div className="resource-note-preview">{resource.note || "This resource does not have an inline preview."}</div>}
+      <div className="resource-viewer-footer"><span>{resource.note || "You can close this viewer and continue learning."}</span>{resource.url && type !== "youtube" && <a className="button button-ghost-dark" href={resource.url} target="_blank" rel="noreferrer">Open separately</a>}</div>
+    </section>
+  </div>;
+}
+
 export default function StudentDashboard() {
   const { user, login, logout } = useAuth();
   const { courses } = useSiteData();
@@ -32,6 +54,7 @@ export default function StudentDashboard() {
   const [notice, setNotice] = useState({ type: "idle", message: "" });
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(null);
+  const [viewer, setViewer] = useState(null);
 
   useSeo({
     title: "Student Dashboard",
@@ -284,7 +307,7 @@ export default function StudentDashboard() {
                       <article className="dashboard-resource" key={resource.id}>
                         <div className="dashboard-resource-icon" aria-hidden="true">{resource.resource_type === "youtube" ? "▶" : resource.resource_type === "note" ? "✎" : "↓"}</div>
                         <div className="dashboard-resource-body"><strong>{resource.title}</strong>{resource.note && <p>{resource.note}</p>}<span>{String(resource.resource_type || "file").toUpperCase()}</span></div>
-                        {resource.url && <a className="button button-ghost-dark" href={resource.url} target="_blank" rel="noreferrer">{resource.resource_type === "youtube" ? "Watch" : resource.resource_type === "note" ? "Open" : "Download"}</a>}
+                        {resource.url && (resource.resource_type === "youtube" || resource.resource_type === "pdf") ? <button className="button button-ghost-dark" onClick={() => setViewer(resource)}>{resource.resource_type === "youtube" ? "Watch" : "Read PDF"}</button> : resource.url ? <a className="button button-ghost-dark" href={resource.url} target="_blank" rel="noreferrer" download={resource.resource_type === "zip" ? true : undefined}>{resource.resource_type === "note" ? "Open" : "Download"}</a> : null}
                       </article>
                     ))}
                   </div>
@@ -293,6 +316,7 @@ export default function StudentDashboard() {
             </div>
           )}
         </section>
+        {viewer && <ResourceViewer resource={viewer} onClose={() => setViewer(null)} />}
       </div>
     </div>
   );
