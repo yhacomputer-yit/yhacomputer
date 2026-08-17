@@ -8,6 +8,11 @@ function display(value) {
   return value || "Not provided";
 }
 
+function formatAmount(value) {
+  const amount = Number(value || 0);
+  return amount.toLocaleString();
+}
+
 function statusLabel(status) {
   return {
     approved: "ENROLLED",
@@ -73,6 +78,14 @@ export default function StudentDashboard() {
     () => learning.enrollments.filter((item) => item.status === "pending").length,
     [learning.enrollments]
   );
+  const paymentTotals = useMemo(() => learning.enrollments.reduce((totals, item) => {
+    const due = Number(item.payment_due || 0);
+    const paid = Number(item.payment_paid || 0);
+    totals.due += due;
+    totals.paid += paid;
+    totals.balance += Math.max(0, due - paid);
+    return totals;
+  }, { due: 0, paid: 0, balance: 0 }), [learning.enrollments]);
 
   if (!user) {
     return (
@@ -155,7 +168,7 @@ export default function StudentDashboard() {
     const grouped = new Map();
     learning.resources.forEach((resource) => {
       const key = String(resource.course_id);
-      if (!grouped.has(key)) grouped.set(key, { title: resource.course_title || "Course resources", items: [] });
+      if (!grouped.has(key)) grouped.set(key, { courseId: key, title: resource.course_title || "Course resources", items: [] });
       grouped.get(key).items.push(resource);
     });
     return [...grouped.values()];
@@ -164,20 +177,23 @@ export default function StudentDashboard() {
   return (
     <div className="dashboard-page">
       <div className="container">
-        <div className="dashboard-header">
-          <div>
-            <span className="eyebrow">Student portal</span>
+        <div className="dashboard-header dashboard-hero">
+          <div className="dashboard-hero-copy">
+            <span className="eyebrow">Student portal · Personal workspace</span>
             <h1>My Learning</h1>
-            <p>Welcome, {display(user.name)}. Track your course requests and learner profile.</p>
+            <p>Welcome back, <strong>{display(user.name)}</strong>. Your courses, resources, and payment progress are all in one place.</p>
+            <div className="dashboard-hero-meta"><span>Student ID: {display(user.student_id)}</span><span className="dashboard-account-status">{statusLabel(user.status)}</span></div>
           </div>
-          <button className="button button-ghost-dark" onClick={logout}>Logout</button>
+          <div className="dashboard-hero-actions"><Link to="/courses" className="button button-primary">Explore courses</Link><button className="button button-ghost-dark" onClick={logout}>Logout</button></div>
         </div>
 
         {notice.type !== "idle" && <p className={`form-status form-status-${notice.type}`} role="status">{notice.message}</p>}
 
         <div className="dashboard-metrics">
-          <div><strong>{courseCount}</strong><span>Active courses</span></div>
-          <div><strong>{pendingCount}</strong><span>Awaiting review</span></div>
+          <div className="dashboard-metric dashboard-metric-primary"><strong>{courseCount}</strong><span>Active courses</span><small>Approved or completed</small></div>
+          <div className="dashboard-metric"><strong>{pendingCount}</strong><span>Awaiting review</span><small>Requests being reviewed</small></div>
+          <div className="dashboard-metric"><strong>{learning.resources.length}</strong><span>Resources</span><small>Available to you</small></div>
+          <div className="dashboard-metric dashboard-metric-balance"><strong>{formatAmount(paymentTotals.balance)}</strong><span>Balance remaining</span><small>Across all enrollments</small></div>
         </div>
 
         <div className="dashboard-grid">
@@ -243,8 +259,8 @@ export default function StudentDashboard() {
                     <div><h4>{enrollment.course_title}</h4><span className={`dashboard-status dashboard-status-${enrollment.status}`}>{statusLabel(enrollment.status)}</span></div>
                     {enrollment.session_name && <p>{enrollment.session_name}{enrollment.session_start_time ? ` · ${enrollment.session_start_time}–${enrollment.session_end_time}` : ""}</p>}
                     <p>{enrollment.course_duration || ""}{enrollment.course_price ? ` · ${enrollment.course_price}` : ""}</p>
-                    <p className={`dashboard-payment dashboard-payment-${enrollment.payment_status || "unpaid"}`}>Payment: {(enrollment.payment_status || "unpaid").toUpperCase()}{enrollment.payment_due ? ` · Due ${enrollment.payment_due}` : ""}{enrollment.payment_paid ? ` · Paid ${enrollment.payment_paid}` : ""}</p>
-                    {(enrollment.payment_method || enrollment.payment_reference) && <small>{enrollment.payment_method || ""}{enrollment.payment_reference ? ` · ${enrollment.payment_reference}` : ""}</small>}
+                    <div className={`dashboard-payment dashboard-payment-${enrollment.payment_status || "unpaid"}`}><div><span>Payment</span><strong>{(enrollment.payment_status || "unpaid").toUpperCase()}</strong></div><div><span>Total</span><strong>{formatAmount(enrollment.payment_due)}</strong></div><div><span>Paid</span><strong>{formatAmount(enrollment.payment_paid)}</strong></div><div><span>Balance</span><strong>{formatAmount(Math.max(0, Number(enrollment.payment_due || 0) - Number(enrollment.payment_paid || 0)))}</strong></div></div>
+                    {(enrollment.payment_method || enrollment.payment_reference || enrollment.payment_due_date || enrollment.payment_paid_date) && <small className="dashboard-payment-meta">{enrollment.payment_method || "Payment method not provided"}{enrollment.payment_reference ? ` · Ref: ${enrollment.payment_reference}` : ""}{enrollment.payment_due_date ? ` · Due: ${String(enrollment.payment_due_date).slice(0, 10)}` : ""}{enrollment.payment_paid_date ? ` · Paid: ${String(enrollment.payment_paid_date).slice(0, 10)}` : ""}</small>}
                     {(enrollment.admin_note || enrollment.student_note) && <small>{enrollment.admin_note || enrollment.student_note}</small>}
                     {enrollment.status === "pending" && <button className="button button-ghost-dark" disabled={busy === `cancel-${enrollment.id}`} onClick={() => cancelEnrollment(enrollment.id)}>{busy === `cancel-${enrollment.id}` ? "Cancelling…" : "Cancel request"}</button>}
                   </article>
@@ -262,7 +278,7 @@ export default function StudentDashboard() {
             <div className="dashboard-resource-groups">
               {resourcesByCourse.map((group) => (
                 <div className="dashboard-resource-group" key={group.title}>
-                  <h4>{group.title}</h4>
+                  <div className="dashboard-resource-group-heading"><div><span className="eyebrow">Learning library</span><h4>{group.title}</h4></div><span>{group.items.length} item{group.items.length === 1 ? "" : "s"}</span></div>
                   <div className="dashboard-resource-list">
                     {group.items.map((resource) => (
                       <article className="dashboard-resource" key={resource.id}>
