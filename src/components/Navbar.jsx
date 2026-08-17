@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useSiteData } from "../data.jsx";
 
@@ -17,7 +17,9 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const handleLogout = () => { logout(); navigate("/login", { replace: true }); };
   const { notifications: publicNotifications } = useSiteData();
   const [privateNotifications, setPrivateNotifications] = useState([]);
   const notifications = [...privateNotifications, ...publicNotifications]
@@ -140,7 +142,7 @@ export default function Navbar() {
                 )}
               </li>
               <li>
-                <button className="nav-logout" onClick={logout}>Logout</button>
+                <button type="button" className="nav-logout" onClick={handleLogout}>Logout</button>
               </li>
             </>
           ) : (

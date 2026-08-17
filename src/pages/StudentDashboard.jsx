@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSeo } from "../seo.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useSiteData } from "../data.jsx";
@@ -52,7 +52,9 @@ function ResourceViewer({ resource, onClose }) {
 
 export default function StudentDashboard() {
   const { user, login, logout } = useAuth();
+  const navigate = useNavigate();
   const { courses } = useSiteData();
+  const handleLogout = () => { logout(); navigate("/login", { replace: true }); };
   const [learning, setLearning] = useState({ enrollments: [], resources: [] });
   const [notifications, setNotifications] = useState([]);
   const [attendance, setAttendance] = useState({ rows: [], summary: [] });
@@ -268,7 +270,7 @@ export default function StudentDashboard() {
             <p>Welcome back, <strong>{display(user.name)}</strong>. Your courses, resources, and payment progress are all in one place.</p>
             <div className="dashboard-hero-meta"><span>Student ID: {display(user.student_id)}</span><span className="dashboard-account-status">{statusLabel(user.status)}</span></div>
           </div>
-          <div className="dashboard-hero-actions"><Link to="/courses" className="button button-primary">Explore courses</Link><button className="button button-ghost-dark" onClick={logout}>Logout</button></div>
+          <div className="dashboard-hero-actions"><Link to="/courses" className="button button-primary">Explore courses</Link><button type="button" className="button button-ghost-dark" onClick={handleLogout}>Logout</button></div>
         </div>
 
         {notice.type !== "idle" && <p className={`form-status form-status-${notice.type}`} role="status">{notice.message}</p>}

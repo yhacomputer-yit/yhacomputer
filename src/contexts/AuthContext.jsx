@@ -25,7 +25,10 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    sessionStorage.removeItem("yha_student");
+    localStorage.removeItem("yha_student");
     setUser(null);
+    window.dispatchEvent(new Event("yha-auth-changed"));
   };
 
   return (
