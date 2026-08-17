@@ -55,6 +55,8 @@ export default function StudentDashboard() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(null);
   const [viewer, setViewer] = useState(null);
+  const [resourceSearch, setResourceSearch] = useState("");
+  const [resourceCourse, setResourceCourse] = useState("all");
 
   useSeo({
     title: "Student Dashboard",
@@ -187,15 +189,33 @@ export default function StudentDashboard() {
     }
   };
 
+  const resourceCourses = useMemo(() => {
+    const seen = new Map();
+    learning.resources.forEach((resource) => {
+      const key = String(resource.course_id);
+      if (!seen.has(key)) seen.set(key, { id: key, title: resource.course_title || "Course resources", subject: resource.course_subject || "" });
+    });
+    return [...seen.values()];
+  }, [learning.resources]);
+
+  const filteredResources = useMemo(() => {
+    const query = resourceSearch.trim().toLowerCase();
+    return learning.resources.filter((resource) => {
+      const matchesCourse = resourceCourse === "all" || String(resource.course_id) === resourceCourse;
+      const haystack = [resource.title, resource.note, resource.resource_type, resource.course_title, resource.course_subject].join(" ").toLowerCase();
+      return matchesCourse && (!query || haystack.includes(query));
+    });
+  }, [learning.resources, resourceCourse, resourceSearch]);
+
   const resourcesByCourse = useMemo(() => {
     const grouped = new Map();
-    learning.resources.forEach((resource) => {
+    filteredResources.forEach((resource) => {
       const key = String(resource.course_id);
       if (!grouped.has(key)) grouped.set(key, { courseId: key, title: resource.course_title || "Course resources", items: [] });
       grouped.get(key).items.push(resource);
     });
     return [...grouped.values()];
-  }, [learning.resources]);
+  }, [filteredResources]);
 
   return (
     <div className="dashboard-page">
@@ -296,8 +316,14 @@ export default function StudentDashboard() {
         <section className="dashboard-card dashboard-resources-card">
           <div className="dashboard-card-heading">
             <div><h3>Course Resources</h3><p>Files, PDFs, ZIP archives, YouTube videos, and notes for your approved courses.</p></div>
+            <span className="dashboard-resource-count">{filteredResources.length} result{filteredResources.length === 1 ? "" : "s"}</span>
           </div>
-          {loading ? <p>Loading course resources…</p> : resourcesByCourse.length === 0 ? <p>Resources will appear here after an admin approves your course enrollment.</p> : (
+          <div className="dashboard-resource-toolbar">
+            <label className="dashboard-resource-search"><span className="sr-only">Search resources</span><input type="search" value={resourceSearch} onChange={(event) => setResourceSearch(event.target.value)} placeholder="Search title, note, or resource type…" /></label>
+            <label className="dashboard-resource-filter"><span className="sr-only">Filter by course or subject</span><select value={resourceCourse} onChange={(event) => setResourceCourse(event.target.value)}><option value="all">All courses and subjects</option>{resourceCourses.map((course) => <option key={course.id} value={course.id}>{course.title}{course.subject ? ` · ${course.subject}` : ""}</option>)}</select></label>
+            {(resourceSearch || resourceCourse !== "all") && <button className="button button-ghost-dark dashboard-resource-clear" onClick={() => { setResourceSearch(""); setResourceCourse("all"); }}>Clear filters</button>}
+          </div>
+          {loading ? <p>Loading course resources…</p> : learning.resources.length === 0 ? <p>Resources will appear here after an admin approves your course enrollment.</p> : resourcesByCourse.length === 0 ? <div className="dashboard-resource-empty"><strong>No matching resources</strong><span>Try another search word or choose a different course/subject.</span></div> : (
             <div className="dashboard-resource-groups">
               {resourcesByCourse.map((group) => (
                 <div className="dashboard-resource-group" key={group.title}>

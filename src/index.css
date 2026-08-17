@@ -3911,3 +3911,16 @@ body {
 .resource-viewer-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: .78rem; }
 .resource-viewer-footer > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 620px) { .resource-viewer-backdrop { padding: 10px; } .resource-viewer-card { height: 94vh; border-radius: 17px; } .resource-viewer-header { padding: 15px; } .resource-viewer-footer { align-items: stretch; flex-direction: column; padding: 12px 15px; } .resource-viewer-footer > span { white-space: normal; } .resource-video-frame { padding: 10px; } }
+
+.dashboard-resource-count { flex: 0 0 auto; padding: 7px 10px; border-radius: 999px; color: var(--orange-dark); background: var(--orange-soft); font-size: .72rem; font-weight: 900; }
+.dashboard-resource-toolbar { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(220px, .9fr) auto; gap: 10px; margin: 0 0 24px; }
+.dashboard-resource-toolbar label { display: block; }
+.dashboard-resource-toolbar input, .dashboard-resource-toolbar select { width: 100%; min-height: 46px; border: 1px solid var(--line); border-radius: 12px; background: #f8fafc; color: var(--ink); font: inherit; font-size: .84rem; outline: none; }
+.dashboard-resource-toolbar input { padding: 0 14px; }
+.dashboard-resource-toolbar select { padding: 0 12px; }
+.dashboard-resource-toolbar input:focus, .dashboard-resource-toolbar select:focus { border-color: var(--orange); box-shadow: 0 0 0 4px rgba(249,115,22,.11); }
+.dashboard-resource-clear { min-height: 46px; padding-inline: 14px; font-size: .78rem; }
+.dashboard-resource-empty { display: grid; gap: 5px; place-items: center; padding: 38px 20px; border: 1px dashed var(--line); border-radius: 16px; color: var(--muted); text-align: center; }
+.dashboard-resource-empty strong { color: var(--ink); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+@media (max-width: 720px) { .dashboard-resource-toolbar { grid-template-columns: 1fr; } .dashboard-resource-clear { width: 100%; } }

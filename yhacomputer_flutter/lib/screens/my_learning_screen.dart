@@ -19,6 +19,8 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
   StudentLearningBundle? _learning;
   bool _loading = true;
   String _error = '';
+  String _resourceQuery = '';
+  int _resourceCourseId = -1;
 
   @override
   void initState() {
@@ -221,6 +223,7 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
     }
 
     final learning = _learning;
+    final filteredResources = _filteredResources(learning?.resources ?? const <CourseResource>[]);
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Learning'),
@@ -274,21 +277,46 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
                   else
                     ...learning.enrollments.map(_enrollmentCard),
                   const SizedBox(height: AppSpacing.lg),
-                  Text('Course resources', style: AppTextStyles.titleLarge),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Course resources', style: AppTextStyles.titleLarge), if (learning != null) Text('${filteredResources.length} result${filteredResources.length == 1 ? '' : 's'}', style: AppTextStyles.bodySmall)]),
                   const SizedBox(height: AppSpacing.sm),
+                  if (learning != null && learning.resources.isNotEmpty) ...[
+                    TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search_rounded), hintText: 'Search title, note, or type'), onChanged: (value) => setState(() => _resourceQuery = value)),
+                    const SizedBox(height: AppSpacing.sm),
+                    DropdownButtonFormField<int>(value: _resourceCourseId, decoration: const InputDecoration(prefixIcon: Icon(Icons.filter_list_rounded), labelText: 'Filter by course or subject'), items: [const DropdownMenuItem<int>(value: -1, child: Text('All courses and subjects')), ..._resourceCourseItems(learning.resources)], onChanged: (value) => setState(() => _resourceCourseId = value ?? -1)),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
                   if (learning == null || learning.resources.isEmpty)
                     AppEmptyState(
                       title: 'No resources yet',
                       subtitle: 'Files, PDFs, videos, ZIP archives, and notes will appear after your course is approved.',
                       icon: Icons.folder_open_outlined,
                     )
+                  else if (filteredResources.isEmpty)
+                    AppEmptyState(title: 'No matching resources', subtitle: 'Try another search word or choose a different course or subject.', icon: Icons.search_off_rounded)
                   else
-                    ..._resourceGroups(learning.resources),
+                    ..._resourceGroups(filteredResources),
                 ],
               ),
             ),
       bottomNavigationBar: const NavBar(),
     );
+  }
+
+  List<CourseResource> _filteredResources(List<CourseResource> resources) {
+    final query = _resourceQuery.trim().toLowerCase();
+    return resources.where((resource) {
+      final matchesCourse = _resourceCourseId == -1 || resource.courseId == _resourceCourseId;
+      final haystack = '${resource.title} ${resource.note} ${resource.resourceType} ${resource.courseTitle} ${resource.courseSubject}'.toLowerCase();
+      return matchesCourse && (query.isEmpty || haystack.contains(query));
+    }).toList();
+  }
+
+  List<DropdownMenuItem<int>> _resourceCourseItems(List<CourseResource> resources) {
+    final courses = <int, String>{};
+    for (final resource in resources) {
+      courses[resource.courseId] = '${resource.courseTitle.isEmpty ? 'Course resources' : resource.courseTitle}${resource.courseSubject.isEmpty ? '' : ' · ${resource.courseSubject}'}';
+    }
+    return courses.entries.map((entry) => DropdownMenuItem<int>(value: entry.key, child: Text(entry.value, overflow: TextOverflow.ellipsis))).toList();
   }
 
   List<Widget> _resourceGroups(List<CourseResource> resources) {

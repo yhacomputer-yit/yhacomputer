@@ -201,7 +201,7 @@ async function learningBundle(student) {
   );
   const resources = await query(
     `SELECT DISTINCT r.id, r.course_id, r.title, r.resource_type, r.url, r.note, r.sort_order, r.created_at, r.updated_at,
-        c.title AS course_title
+        c.title AS course_title, c.subject AS course_subject
        FROM resources r
        JOIN courses c ON c.id = r.course_id
        JOIN enrollments e ON e.course_id = r.course_id

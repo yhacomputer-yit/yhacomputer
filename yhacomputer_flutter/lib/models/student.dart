@@ -202,17 +202,18 @@ class CourseResource {
   final int id;
   final int courseId;
   final String courseTitle;
+  final String courseSubject;
   final String title;
   final String resourceType;
   final String url;
   final String note;
-  const CourseResource({required this.id, required this.courseId, required this.courseTitle, required this.title, required this.resourceType, required this.url, required this.note});
+  const CourseResource({required this.id, required this.courseId, required this.courseTitle, this.courseSubject = '', required this.title, required this.resourceType, required this.url, required this.note});
   factory CourseResource.fromJson(Map<String, dynamic> json) {
     int parseInt(dynamic value) => int.tryParse('${value ?? ''}') ?? 0;
     String parseText(dynamic value) => value?.toString() ?? '';
-    return CourseResource(id: parseInt(json['id']), courseId: parseInt(json['course_id']), courseTitle: parseText(json['course_title']), title: parseText(json['title']), resourceType: parseText(json['resource_type']), url: parseText(json['url']), note: parseText(json['note']));
+    return CourseResource(id: parseInt(json['id']), courseId: parseInt(json['course_id']), courseTitle: parseText(json['course_title']), courseSubject: parseText(json['course_subject']), title: parseText(json['title']), resourceType: parseText(json['resource_type']), url: parseText(json['url']), note: parseText(json['note']));
   }
-  Map<String, dynamic> toJson() => {'id': id, 'course_id': courseId, 'course_title': courseTitle, 'title': title, 'resource_type': resourceType, 'url': url, 'note': note};
+  Map<String, dynamic> toJson() => {'id': id, 'course_id': courseId, 'course_title': courseTitle, 'course_subject': courseSubject, 'title': title, 'resource_type': resourceType, 'url': url, 'note': note};
 }
 
 class StudentLearningBundle {
