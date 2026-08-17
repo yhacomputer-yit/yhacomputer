@@ -141,6 +141,20 @@ export default function StudentDashboard() {
     await fetch("/api/student", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${user.token}` }, body: JSON.stringify({ action: "mark_notification_read", notification_id: notificationId }) }).catch(() => {});
   };
 
+  const submitAssignment = async (assignment) => {
+    const submissionUrl = window.prompt(`Submission link for ${assignment.title} (optional):`, assignment.submission_url || "");
+    if (submissionUrl === null) return;
+    const submissionNote = window.prompt("Submission note (optional):", assignment.submission_note || "");
+    if (submissionNote === null) return;
+    try {
+      const response = await fetch("/api/student", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${user.token}` }, body: JSON.stringify({ action: "submit_assignment", assignment_id: assignment.id, submission_url: submissionUrl, submission_note: submissionNote }) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to submit assignment.");
+      setAssignments(data.assignments || []);
+      setNotice({ type: "success", message: "Assignment submitted." });
+    } catch (error) { setNotice({ type: "error", message: error.message }); }
+  };
+
   const downloadResource = async (resource) => {
     try {
       const response = await fetch("/api/student", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${user.token}` }, body: JSON.stringify({ action: "download_resource", resource_id: resource.id }) });
@@ -344,7 +358,7 @@ export default function StudentDashboard() {
 
         <section className="dashboard-card dashboard-progress-card"><div className="dashboard-card-heading"><div><span className="eyebrow">Progress tracking</span><h3>Attendance</h3></div><span className="dashboard-resource-count">{attendance.rows.length} records</span></div>{attendance.summary.length === 0 ? <p>Attendance records will appear after your instructor marks a class.</p> : <div className="dashboard-attendance-grid">{attendance.summary.map((item) => <div className="dashboard-attendance-item" key={item.course_id}><strong>{item.attended || 0}/{item.total || 0}</strong><span>{learning.enrollments.find((row) => String(row.course_id) === String(item.course_id))?.course_title || "Course"}</span></div>)}</div>}</section>
 
-        <section className="dashboard-card dashboard-assignments-card"><div className="dashboard-card-heading"><div><span className="eyebrow">Keep learning</span><h3>Assignments</h3></div><span className="dashboard-resource-count">{assignments.length} total</span></div>{assignments.length === 0 ? <p>No assignments have been published for your approved courses yet.</p> : <div className="dashboard-assignment-list">{assignments.slice(0, 8).map((item) => <article className="dashboard-assignment" key={item.id}><div><strong>{item.title}</strong><span>{item.course_title} · Due {item.due_date ? new Date(item.due_date).toLocaleDateString() : "No due date"}</span></div><b className={`assignment-status ${item.submission_status || "pending"}`}>{item.submission_status ? item.submission_status.toUpperCase() : "NOT SUBMITTED"}</b></article>)}</div>}</section>
+        <section className="dashboard-card dashboard-assignments-card"><div className="dashboard-card-heading"><div><span className="eyebrow">Keep learning</span><h3>Assignments</h3></div><span className="dashboard-resource-count">{assignments.length} total</span></div>{assignments.length === 0 ? <p>No assignments have been published for your approved courses yet.</p> : <div className="dashboard-assignment-list">{assignments.slice(0, 8).map((item) => <article className="dashboard-assignment" key={item.id}><div><strong>{item.title}</strong><span>{item.course_title} · Due {item.due_date ? new Date(item.due_date).toLocaleDateString() : "No due date"}</span></div><div className="dashboard-assignment-actions"><b className={`assignment-status ${item.submission_status || "pending"}`}>{item.submission_status ? item.submission_status.toUpperCase() : "NOT SUBMITTED"}</b>{!item.submission_status || item.submission_status === "returned" ? <button className="button button-ghost-dark" onClick={() => submitAssignment(item)}>Submit</button> : null}</div></article>)}</div>}</section>
 
         <section className="dashboard-card dashboard-resources-card">
           <div className="dashboard-card-heading">
