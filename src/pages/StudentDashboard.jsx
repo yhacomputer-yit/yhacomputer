@@ -338,7 +338,7 @@ export default function StudentDashboard() {
                       <article className="dashboard-resource" key={resource.id}>
                         <div className="dashboard-resource-icon" aria-hidden="true">{resourceTypeOf(resource) === "youtube" ? "▶" : resourceTypeOf(resource) === "note" ? "✎" : resourceTypeOf(resource) === "pdf" ? "▣" : "↓"}</div>
                         <div className="dashboard-resource-body"><strong>{resource.title}</strong>{resource.note && <p>{resource.note}</p>}<span>{resourceTypeOf(resource).toUpperCase()}</span></div>
-                        {resource.url && (resourceTypeOf(resource) === "youtube" || resourceTypeOf(resource) === "pdf") ? <button className="button button-ghost-dark" onClick={() => setViewer(resource)}>{resourceTypeOf(resource) === "youtube" ? "Watch" : "Read PDF"}</button> : resource.url ? <a className="button button-ghost-dark" href={resource.url} target="_blank" rel="noopener noreferrer" download={resourceTypeOf(resource) === "zip" ? true : undefined}>{resourceTypeOf(resource) === "note" ? "Open" : "Download"}</a> : null}
+                        {resource.url && resourceTypeOf(resource) === "youtube" ? <button className="button button-ghost-dark" onClick={() => setViewer(resource)}>Watch</button> : resource.url ? <a className="button button-ghost-dark" href={resource.url} target="_blank" rel="noopener noreferrer" download={resourceTypeOf(resource) === "pdf" || resourceTypeOf(resource) === "zip" ? true : undefined}>{resourceTypeOf(resource) === "pdf" ? "Download PDF" : resourceTypeOf(resource) === "note" ? "Open" : "Download"}</a> : null}
                       </article>
                     ))}
                   </div>

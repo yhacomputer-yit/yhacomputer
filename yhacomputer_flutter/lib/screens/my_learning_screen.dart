@@ -352,9 +352,9 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
         title: Text(resource.title, style: AppTextStyles.titleMedium),
         subtitle: resource.note.isEmpty ? Text(resource.resourceType.toUpperCase()) : Text('${resource.resourceType.toUpperCase()} · ${resource.note}'),
         trailing: resource.url.isEmpty ? null : IconButton(
-          tooltip: isVideo ? 'Watch video' : isPdf ? 'Read PDF' : 'Download resource',
-          icon: Icon(isVideo ? Icons.play_circle_outline_rounded : isPdf ? Icons.menu_book_rounded : Icons.download_rounded, color: AppColors.primary),
-          onPressed: () => (isVideo || isPdf) ? _showResourceViewer(resource) : _openResource(resource.url),
+          tooltip: isVideo ? 'Watch video' : isPdf ? 'Download PDF' : 'Download resource',
+          icon: Icon(isVideo ? Icons.play_circle_outline_rounded : Icons.download_rounded, color: AppColors.primary),
+          onPressed: () => isVideo ? _showResourceViewer(resource) : _openResource(resource.url),
         ),
       ),
     );
