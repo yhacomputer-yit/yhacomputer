@@ -23,24 +23,29 @@ function statusLabel(status) {
   }[String(status || "pending").toLowerCase()] || "PENDING";
 }
 
+function resourceTypeOf(resource) {
+  return String(resource?.resource_type || "file").trim().toLowerCase();
+}
+
 function youtubeEmbedUrl(value) {
   try {
-    const url = new URL(value);
+    const url = new URL(String(value || "").trim());
     const id = url.hostname.includes("youtu.be") ? url.pathname.slice(1) : url.searchParams.get("v") || url.pathname.split("/").pop();
-    return id ? `https://www.youtube-nocookie.com/embed/${id}?rel=0` : "";
+    return id ? `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1` : "";
   } catch {
     return "";
   }
 }
 
 function ResourceViewer({ resource, onClose }) {
-  const type = String(resource.resource_type || "file").toLowerCase();
+  const type = resourceTypeOf(resource);
+  const [failed, setFailed] = useState(false);
   const videoUrl = type === "youtube" ? youtubeEmbedUrl(resource.url) : "";
   return <div className="resource-viewer-backdrop" role="dialog" aria-modal="true" aria-label={resource.title}>
     <section className="resource-viewer-card">
       <div className="resource-viewer-header"><div><span className="eyebrow">{type === "youtube" ? "Video lesson" : type === "pdf" ? "PDF preview" : "Resource"}</span><h3>{resource.title}</h3></div><button className="resource-viewer-close" onClick={onClose} aria-label="Close viewer">×</button></div>
-      {type === "youtube" && videoUrl ? <div className="resource-video-frame"><iframe src={videoUrl} title={resource.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div> : type === "pdf" && resource.url ? <iframe className="resource-pdf-frame" src={resource.url} title={resource.title} /> : <div className="resource-note-preview">{resource.note || "This resource does not have an inline preview."}</div>}
-      <div className="resource-viewer-footer"><span>{resource.note || "You can close this viewer and continue learning."}</span>{resource.url && type !== "youtube" && <a className="button button-ghost-dark" href={resource.url} target="_blank" rel="noreferrer">Open separately</a>}</div>
+      {failed ? <div className="resource-note-preview"><strong>Preview unavailable in this browser.</strong><p>Use “Open separately” below to open the original resource.</p></div> : type === "youtube" && videoUrl ? <div className="resource-video-frame"><iframe src={videoUrl} title={resource.title} onError={() => setFailed(true)} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div> : type === "pdf" && resource.url ? <iframe className="resource-pdf-frame" src={resource.url} title={resource.title} onError={() => setFailed(true)} /> : <div className="resource-note-preview">{resource.note || "This resource does not have an inline preview."}</div>}
+      <div className="resource-viewer-footer"><span>{resource.note || "If the preview does not load, open the original resource."}</span>{resource.url && <a className="button button-ghost-dark" href={resource.url} target="_blank" rel="noopener noreferrer">Open separately</a>}</div>
     </section>
   </div>;
 }
@@ -331,9 +336,9 @@ export default function StudentDashboard() {
                   <div className="dashboard-resource-list">
                     {group.items.map((resource) => (
                       <article className="dashboard-resource" key={resource.id}>
-                        <div className="dashboard-resource-icon" aria-hidden="true">{resource.resource_type === "youtube" ? "▶" : resource.resource_type === "note" ? "✎" : "↓"}</div>
-                        <div className="dashboard-resource-body"><strong>{resource.title}</strong>{resource.note && <p>{resource.note}</p>}<span>{String(resource.resource_type || "file").toUpperCase()}</span></div>
-                        {resource.url && (resource.resource_type === "youtube" || resource.resource_type === "pdf") ? <button className="button button-ghost-dark" onClick={() => setViewer(resource)}>{resource.resource_type === "youtube" ? "Watch" : "Read PDF"}</button> : resource.url ? <a className="button button-ghost-dark" href={resource.url} target="_blank" rel="noreferrer" download={resource.resource_type === "zip" ? true : undefined}>{resource.resource_type === "note" ? "Open" : "Download"}</a> : null}
+                        <div className="dashboard-resource-icon" aria-hidden="true">{resourceTypeOf(resource) === "youtube" ? "▶" : resourceTypeOf(resource) === "note" ? "✎" : resourceTypeOf(resource) === "pdf" ? "▣" : "↓"}</div>
+                        <div className="dashboard-resource-body"><strong>{resource.title}</strong>{resource.note && <p>{resource.note}</p>}<span>{resourceTypeOf(resource).toUpperCase()}</span></div>
+                        {resource.url && (resourceTypeOf(resource) === "youtube" || resourceTypeOf(resource) === "pdf") ? <button className="button button-ghost-dark" onClick={() => setViewer(resource)}>{resourceTypeOf(resource) === "youtube" ? "Watch" : "Read PDF"}</button> : resource.url ? <a className="button button-ghost-dark" href={resource.url} target="_blank" rel="noopener noreferrer" download={resourceTypeOf(resource) === "zip" ? true : undefined}>{resourceTypeOf(resource) === "note" ? "Open" : "Download"}</a> : null}
                       </article>
                     ))}
                   </div>

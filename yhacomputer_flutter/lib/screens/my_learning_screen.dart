@@ -337,9 +337,10 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
   }
 
   Widget _resourceCard(CourseResource resource) {
-    final isVideo = resource.resourceType == 'youtube';
-    final isPdf = resource.resourceType == 'pdf';
-    final isNote = resource.resourceType == 'note';
+    final resourceType = resource.resourceType.trim().toLowerCase();
+    final isVideo = resourceType == 'youtube';
+    final isPdf = resourceType == 'pdf';
+    final isNote = resourceType == 'note';
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: ListTile(
@@ -367,7 +368,8 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
   }
 
   Future<void> _showResourceViewer(CourseResource resource) async {
-    final isVideo = resource.resourceType == 'youtube';
+    final resourceType = resource.resourceType.trim().toLowerCase();
+    final isVideo = resourceType == 'youtube';
     final source = isVideo ? _youtubeEmbedUrl(resource.url) : 'https://docs.google.com/gview?embedded=1&url=${Uri.encodeComponent(resource.url)}';
     final controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -386,7 +388,7 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
               ListTile(
                 title: Text(resource.title, maxLines: 1, overflow: TextOverflow.ellipsis),
                 subtitle: Text(isVideo ? 'Video lesson' : 'PDF preview'),
-                trailing: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(dialogContext).pop()),
+                trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(tooltip: 'Open externally', icon: const Icon(Icons.open_in_new_rounded), onPressed: () => _openResource(resource.url)), IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(dialogContext).pop())]),
               ),
               const Divider(height: 1),
               Expanded(child: WebViewWidget(controller: controller)),
