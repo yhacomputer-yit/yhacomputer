@@ -227,43 +227,6 @@ class ApiService {
     );
   }
 
-  static Future<Map<String, dynamic>> adminRequest(
-    String action,
-    String table, {
-    Map<String, dynamic>? values,
-    int? id,
-    String? password,
-  }) async {
-    final url = Uri.parse('$baseUrl/api/admin');
-    final body = <String, dynamic>{'action': action, 'table': table};
-    if (id != null) body['id'] = id;
-    if (values != null) body['values'] = values;
-
-    final headers = <String, String>{'Content-Type': 'application/json'};
-    if (password != null && password.isNotEmpty) {
-      headers['x-admin-password'] = password;
-    }
-
-    try {
-      final response = await http
-          .post(url, headers: headers, body: json.encode(body))
-          .timeout(_timeout);
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      final errorBody = json.decode(response.body);
-      throw _ApiException(errorBody['error'] ?? 'Request failed');
-    } on _ApiException {
-      rethrow;
-    } on http.ClientException {
-      throw _ApiException(
-        'Unable to reach the server. Please check your internet connection.',
-      );
-    } catch (e) {
-      throw _ApiException('Something went wrong. Please try again later.');
-    }
-  }
-
   static Future<Map<String, dynamic>> submitContact({
     required String name,
     required String email,
@@ -300,55 +263,6 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> createNotification({
-    required String title,
-    required String message,
-    int? courseId,
-    String priority = 'normal',
-    String? actionUrl,
-    DateTime? publishAt,
-    DateTime? expiresAt,
-    String? password,
-  }) async {
-    final url = Uri.parse('$baseUrl/api/admin');
-    final body = <String, dynamic>{
-      'action': 'create',
-      'table': 'notifications',
-      'values': {
-        'title': title,
-        'message': message,
-        'course_id': courseId,
-        'priority': priority,
-        'action_url': actionUrl,
-        'publish_at': publishAt?.toUtc().toIso8601String(),
-        'expires_at': expiresAt?.toUtc().toIso8601String(),
-      },
-    };
-
-    final headers = <String, String>{'Content-Type': 'application/json'};
-    if (password != null && password.isNotEmpty) {
-      headers['x-admin-password'] = password;
-    }
-
-    try {
-      final response = await http
-          .post(url, headers: headers, body: json.encode(body))
-          .timeout(_timeout);
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      final errorBody = json.decode(response.body);
-      throw _ApiException(errorBody['error'] ?? 'Request failed');
-    } on _ApiException {
-      rethrow;
-    } on http.ClientException {
-      throw _ApiException(
-        'Unable to reach the server. Please check your internet connection.',
-      );
-    } catch (e) {
-      throw _ApiException('Something went wrong. Please try again later.');
-    }
-  }
 }
 
 class _ApiException implements Exception {

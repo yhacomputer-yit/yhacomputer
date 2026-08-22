@@ -74,6 +74,110 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
     }
   }
 
+  Future<void> _submitAssignment(StudentAssignment assignment) async {
+    final link = TextEditingController(text: assignment.submissionUrl);
+    final note = TextEditingController(text: assignment.submissionNote);
+    final formKey = GlobalKey<FormState>();
+    try {
+      final submit = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => Padding(
+          padding: EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, MediaQuery.of(context).viewInsets.bottom + AppSpacing.md),
+          child: SafeArea(
+            top: false,
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('Submit assignment', style: AppTextStyles.titleLarge),
+                    const SizedBox(height: 6),
+                    Text(assignment.title, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: AppSpacing.md),
+                    TextFormField(controller: link, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'Submission link (optional)', hintText: 'Google Drive, GitHub, or another shareable link'), validator: (value) { final raw = value?.trim() ?? ''; return raw.isEmpty || Uri.tryParse(raw)?.hasScheme == true ? null : 'Enter a valid link or leave it blank.'; }),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextFormField(controller: note, minLines: 3, maxLines: 5, maxLength: 2000, decoration: const InputDecoration(labelText: 'Note for your teacher (optional)', hintText: 'Briefly explain what you completed.')),
+                    const SizedBox(height: AppSpacing.md),
+                    FilledButton.icon(onPressed: () { if (formKey.currentState!.validate()) Navigator.pop(context, true); }, icon: const Icon(Icons.upload_file_rounded), label: const Text('Submit work')),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      if (submit != true) return;
+      final learning = await StudentAuthService.instance.submitAssignment(assignmentId: assignment.id, submissionUrl: link.text, submissionNote: note.text);
+      if (!mounted) return;
+      setState(() => _learning = learning);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Assignment submitted for teacher review.')));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      link.dispose();
+      note.dispose();
+    }
+  }
+
+  Future<void> _showAttendanceHistory() async {
+    try {
+      final records = await StudentAuthService.instance.fetchAttendanceHistory();
+      if (!mounted) return;
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => SafeArea(
+          top: false,
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * .75,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Attendance history', style: AppTextStyles.titleLarge),
+                  const SizedBox(height: 4),
+                  Text('Review recorded class attendance. Contact YHA if a record needs correction.', style: AppTextStyles.bodySmall),
+                  const SizedBox(height: AppSpacing.md),
+                  Expanded(
+                    child: records.isEmpty
+                        ? const AppEmptyState(title: 'No attendance records yet', subtitle: 'Your teacher will mark attendance after each class.', icon: Icons.fact_check_outlined)
+                        : ListView.separated(
+                            itemCount: records.length,
+                            separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+                            itemBuilder: (_, index) {
+                              final record = records[index];
+                              final status = record.status.isEmpty ? 'unverified' : record.status;
+                              final statusColor = status == 'present' ? AppColors.success : status == 'late' ? AppColors.accent : status == 'absent' ? AppColors.error : AppColors.onSurfaceVariant;
+                              return AppCard(
+                                child: ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: CircleAvatar(backgroundColor: statusColor.withValues(alpha: .14), child: Icon(status == 'present' ? Icons.check_rounded : status == 'late' ? Icons.schedule_rounded : Icons.event_busy_rounded, color: statusColor)),
+                                  title: Text(record.courseTitle.isEmpty ? 'Class attendance' : record.courseTitle),
+                                  subtitle: Text('${record.attendanceDate.isEmpty ? 'Recorded class' : record.attendanceDate.substring(0, record.attendanceDate.length > 10 ? 10 : record.attendanceDate.length)}${record.note.isEmpty ? '' : '\n${record.note}'}'),
+                                  isThreeLine: record.note.isNotEmpty,
+                                  trailing: AppBadge(text: status.toUpperCase()),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
   Future<void> _editProfile() async {
     final learning = _learning;
     if (learning == null) return;
@@ -311,11 +415,49 @@ class _MyLearningScreenState extends State<MyLearningScreen> {
   }
 
   Widget _attendanceSection(StudentLearningBundle learning) {
-    return Padding(padding: const EdgeInsets.only(bottom: AppSpacing.lg), child: AppCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Attendance', style: AppTextStyles.titleLarge), const SizedBox(height: AppSpacing.sm), ...learning.attendanceSummary.map((item) => ListTile(contentPadding: EdgeInsets.zero, leading: CircleAvatar(child: Text('${item.percentage.round()}%')), title: Text(learning.enrollments.firstWhere((enrollment) => enrollment.course.id == item.courseId, orElse: () => learning.enrollments.first).course.title), subtitle: Text('${item.attended} attended of ${item.total} recorded')))])));
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Attendance', style: AppTextStyles.titleLarge), TextButton(onPressed: _showAttendanceHistory, child: const Text('History'))]),
+            ...learning.attendanceSummary.map((item) => ListTile(contentPadding: EdgeInsets.zero, leading: CircleAvatar(child: Text('${item.percentage.round()}%')), title: Text(learning.enrollments.firstWhere((enrollment) => enrollment.course.id == item.courseId, orElse: () => learning.enrollments.first).course.title), subtitle: Text('${item.attended} attended of ${item.total} recorded'))),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _assignmentSection(List<StudentAssignment> assignments) {
-    return Padding(padding: const EdgeInsets.only(bottom: AppSpacing.lg), child: AppCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Assignments', style: AppTextStyles.titleLarge), const SizedBox(height: AppSpacing.sm), ...assignments.take(8).map((item) => ListTile(contentPadding: EdgeInsets.zero, leading: Icon(item.submissionStatus.isEmpty ? Icons.assignment_outlined : Icons.assignment_turned_in_outlined, color: AppColors.primary), title: Text(item.title), subtitle: Text('${item.courseTitle} · ${item.dueDate.isEmpty ? 'No due date' : 'Due ${item.dueDate.substring(0, item.dueDate.length > 10 ? 10 : item.dueDate.length)}'}'), trailing: Text(item.submissionStatus.isEmpty ? 'Not submitted' : item.submissionStatus.toUpperCase(), style: AppTextStyles.labelSmall)))])));
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Assignments', style: AppTextStyles.titleLarge),
+            const SizedBox(height: AppSpacing.sm),
+            ...assignments.take(8).map((item) {
+              final submitted = item.submissionStatus.isNotEmpty;
+              final graded = item.submissionStatus == 'graded';
+              final detail = '${item.courseTitle} · ${item.dueDate.isEmpty ? 'No due date' : 'Due ${item.dueDate.substring(0, item.dueDate.length > 10 ? 10 : item.dueDate.length)}${graded && item.score != null ? ' · Score ${item.score}/${item.maxScore}' : ''}${item.feedback.isNotEmpty ? '\nFeedback: ${item.feedback}' : ''}';
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                isThreeLine: item.feedback.isNotEmpty,
+                leading: Icon(submitted ? Icons.assignment_turned_in_outlined : Icons.assignment_outlined, color: submitted ? AppColors.success : AppColors.primary),
+                title: Text(item.title),
+                subtitle: Text(detail),
+                trailing: TextButton(
+                  onPressed: () => _submitAssignment(item),
+                  child: Text(submitted ? 'Update' : 'Submit'),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
   }
 
   List<CourseResource> _filteredResources(List<CourseResource> resources) {

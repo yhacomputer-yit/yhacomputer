@@ -102,6 +102,23 @@ void main() {
         expect(notification.actionUrl, '/courses/12');
       },
     );
+
+    test('preserves learner notification actions and parses attendance history', () {
+      final learning = StudentLearningBundle.fromJson({
+        'student': {'id': 1, 'student_id': 'YHA0001', 'name': 'Learner', 'email': 'learner@example.com', 'phone': '0900000000', 'status': 'active'},
+        'enrollments': const [],
+        'notifications': [
+          {'id': '41', 'title': 'Payment reminder', 'message': 'Your balance is due.', 'course_id': '12', 'action_url': 'https://www.yha-edu.tech/courses/12', 'created_at': '2026-08-22T00:00:00.000Z'},
+        ],
+      });
+      final cached = StudentLearningBundle.fromJson(learning.toJson());
+      final attendance = StudentAttendanceRecord.fromJson({'id': '3', 'course_id': '12', 'course_title': 'Python', 'attendance_date': '2026-08-20', 'status': 'present', 'note': 'On time'});
+
+      expect(cached.notifications.single.courseId, 12);
+      expect(cached.notifications.single.actionUrl, 'https://www.yha-edu.tech/courses/12');
+      expect(attendance.status, 'present');
+      expect(attendance.courseTitle, 'Python');
+    });
   });
 
   group('Course fee formatting', () {

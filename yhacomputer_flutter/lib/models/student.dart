@@ -226,8 +226,12 @@ class StudentNotification {
   final String message;
   final String priority;
   final bool isRead;
-  const StudentNotification({required this.id, required this.title, required this.message, this.priority = 'normal', this.isRead = false});
-  factory StudentNotification.fromJson(Map<String, dynamic> json) => StudentNotification(id: int.tryParse('${json['id'] ?? 0}') ?? 0, title: json['title']?.toString() ?? '', message: json['message']?.toString() ?? '', priority: json['priority']?.toString() ?? 'normal', isRead: '${json['is_read'] ?? 0}' == '1' || '${json['is_read'] ?? 0}'.toLowerCase() == 'true');
+  final int? courseId;
+  final String actionUrl;
+  final String createdAt;
+  const StudentNotification({required this.id, required this.title, required this.message, this.priority = 'normal', this.isRead = false, this.courseId, this.actionUrl = '', this.createdAt = ''});
+  factory StudentNotification.fromJson(Map<String, dynamic> json) => StudentNotification(id: int.tryParse('${json['id'] ?? 0}') ?? 0, title: json['title']?.toString() ?? '', message: json['message']?.toString() ?? '', priority: json['priority']?.toString() ?? 'normal', isRead: '${json['is_read'] ?? 0}' == '1' || '${json['is_read'] ?? 0}'.toLowerCase() == 'true', courseId: json['course_id'] == null ? null : int.tryParse('${json['course_id']}'), actionUrl: json['action_url']?.toString() ?? '', createdAt: json['created_at']?.toString() ?? '');
+  Map<String, dynamic> toJson() => {'id': id, 'title': title, 'message': message, 'priority': priority, 'is_read': isRead ? 1 : 0, 'course_id': courseId, 'action_url': actionUrl, 'created_at': createdAt};
 }
 
 class AttendanceSummary {
@@ -237,6 +241,17 @@ class AttendanceSummary {
   const AttendanceSummary({required this.courseId, this.total = 0, this.attended = 0});
   double get percentage => total == 0 ? 0 : attended * 100 / total;
   factory AttendanceSummary.fromJson(Map<String, dynamic> json) => AttendanceSummary(courseId: int.tryParse('${json['course_id'] ?? 0}') ?? 0, total: int.tryParse('${json['total'] ?? 0}') ?? 0, attended: int.tryParse('${json['attended'] ?? 0}') ?? 0);
+}
+
+class StudentAttendanceRecord {
+  final int id;
+  final int courseId;
+  final String courseTitle;
+  final String attendanceDate;
+  final String status;
+  final String note;
+  const StudentAttendanceRecord({required this.id, required this.courseId, required this.courseTitle, required this.attendanceDate, required this.status, this.note = ''});
+  factory StudentAttendanceRecord.fromJson(Map<String, dynamic> json) => StudentAttendanceRecord(id: int.tryParse('${json['id'] ?? 0}') ?? 0, courseId: int.tryParse('${json['course_id'] ?? 0}') ?? 0, courseTitle: json['course_title']?.toString() ?? '', attendanceDate: json['attendance_date']?.toString() ?? '', status: json['status']?.toString().toLowerCase() ?? '', note: json['note']?.toString() ?? '');
 }
 
 class StudentAssignment {
@@ -292,7 +307,7 @@ class StudentLearningBundle {
     'student': student.toJson(),
     'enrollments': enrollments.map((row) => row.toJson()).toList(),
     'resources': resources.map((row) => row.toJson()).toList(),
-    'notifications': notifications.map((row) => {'id': row.id, 'title': row.title, 'message': row.message, 'priority': row.priority, 'is_read': row.isRead ? 1 : 0}).toList(),
+    'notifications': notifications.map((row) => row.toJson()).toList(),
     'attendance_summary': attendanceSummary.map((row) => {'course_id': row.courseId, 'total': row.total, 'attended': row.attended}).toList(),
     'assignments': assignments.map((row) => {'id': row.id, 'course_id': row.courseId, 'course_title': row.courseTitle, 'title': row.title, 'description': row.description, 'due_date': row.dueDate, 'max_score': row.maxScore, 'submission_url': row.submissionUrl, 'submission_note': row.submissionNote, 'submission_status': row.submissionStatus, 'score': row.score, 'feedback': row.feedback}).toList(),
   };

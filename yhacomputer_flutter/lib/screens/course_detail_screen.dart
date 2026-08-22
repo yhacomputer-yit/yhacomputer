@@ -20,6 +20,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   String error = '';
   Course? course;
   List<Subject> courseSubjects = [];
+  List<Map<String, dynamic>> courseSessions = [];
   bool enrollmentSubmitting = false;
 
   @override
@@ -41,6 +42,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       final courseData = data?['data'];
       final related = data?['related'] as Map? ?? const {};
       final subjectData = related['subjects'] as List? ?? const [];
+      final sessionData = related['sessions'] as List? ?? const [];
       final loadedCourse = courseData is Map<String, dynamic>
           ? Course.fromJson(courseData)
           : Course(title: '');
@@ -54,6 +56,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       setState(() {
         course = loadedCourse;
         courseSubjects = loadedSubjects;
+        courseSessions = sessionData.whereType<Map>().map((session) => Map<String, dynamic>.from(session)).toList();
         loading = false;
       });
     } catch (e) {
@@ -83,6 +86,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     }
 
     final note = TextEditingController();
+    int? preferredSessionId;
     try {
       final confirmed = await showModalBottomSheet<bool>(
         context: context,
@@ -96,38 +100,52 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           ),
           child: SafeArea(
             top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('Request enrollment', style: AppTextStyles.titleLarge),
-                const SizedBox(height: 6),
-                Text('Send a request for ${selectedCourse.title}. YHA will review it in the Admin Dashboard.', style: AppTextStyles.bodyMedium),
-                const SizedBox(height: AppSpacing.md),
-                TextField(
-                  controller: note,
-                  minLines: 2,
-                  maxLines: 4,
-                  maxLength: 1000,
-                  decoration: const InputDecoration(
-                    labelText: 'Note for admissions (optional)',
-                    hintText: 'Preferred class time or a question',
+            child: StatefulBuilder(
+              builder: (context, setSheetState) => Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Request enrollment', style: AppTextStyles.titleLarge),
+                  const SizedBox(height: 6),
+                  Text('Send a request for ${selectedCourse.title}. YHA will review it in the Admin Dashboard.', style: AppTextStyles.bodyMedium),
+                  if (courseSessions.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    DropdownButtonFormField<int>(
+                      value: preferredSessionId,
+                      decoration: const InputDecoration(labelText: 'Preferred class session (optional)', prefixIcon: Icon(Icons.schedule_rounded)),
+                      items: [
+                        const DropdownMenuItem<int>(value: null, child: Text('Let YHA assign a session')),
+                        ...courseSessions.map((session) => DropdownMenuItem<int>(value: int.tryParse('${session['id']}'), child: Text('${session['name'] ?? 'Class session'}${session['start_time'] == null || '${session['start_time']}'.isEmpty ? '' : ' · ${session['start_time']}'}'))),
+                      ],
+                      onChanged: (value) => setSheetState(() => preferredSessionId = value),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.md),
+                  TextField(
+                    controller: note,
+                    minLines: 2,
+                    maxLines: 4,
+                    maxLength: 1000,
+                    decoration: const InputDecoration(
+                      labelText: 'Note for admissions (optional)',
+                      hintText: 'Preferred class time or a question',
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                FilledButton.icon(
-                  onPressed: () => Navigator.pop(context, true),
-                  icon: const Icon(Icons.send_rounded),
-                  label: const Text('Send request'),
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.sm),
+                  FilledButton.icon(
+                    onPressed: () => Navigator.pop(context, true),
+                    icon: const Icon(Icons.send_rounded),
+                    label: const Text('Send request'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       );
       if (confirmed != true || !mounted) return;
       setState(() => enrollmentSubmitting = true);
-      await StudentAuthService.instance.enroll(courseId: selectedCourse.id!, note: note.text);
+      await StudentAuthService.instance.enroll(courseId: selectedCourse.id!, sessionId: preferredSessionId, note: note.text);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Enrollment request sent. You can track it in My Learning.')),

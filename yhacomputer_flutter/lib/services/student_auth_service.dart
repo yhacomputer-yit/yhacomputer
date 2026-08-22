@@ -97,6 +97,8 @@ class StudentAuthService {
     String? viberPhone,
     String? city,
     String? township,
+    String? birthday,
+    String? gender,
     String? education,
   }) async {
     final values = <String, dynamic>{
@@ -111,6 +113,8 @@ class StudentAuthService {
     if (viberPhone != null && viberPhone.trim().isNotEmpty) values['viber_phone'] = viberPhone.trim();
     if (city != null && city.trim().isNotEmpty) values['city'] = city.trim();
     if (township != null && township.trim().isNotEmpty) values['township'] = township.trim();
+    if (birthday != null && birthday.trim().isNotEmpty) values['birthday'] = birthday.trim();
+    if (gender != null && gender.trim().isNotEmpty) values['gender'] = gender.trim();
     if (education != null && education.trim().isNotEmpty) values['education'] = education.trim();
     final payload = await ApiService.studentRequest('register', values: values);
     return payload['message']?.toString() ?? 'Registration request sent.';
@@ -202,6 +206,14 @@ class StudentAuthService {
     final payload = await ApiService.studentRequest('mark_notification_read', token: current.token, values: {'notification_id': notificationId});
     final learning = StudentLearningBundle.fromJson(payload);
     await _persist(StudentSession(token: current.token, learning: learning));
+  }
+
+  Future<List<StudentAttendanceRecord>> fetchAttendanceHistory() async {
+    final current = session.value;
+    if (current == null) throw Exception('Please sign in to continue.');
+    final payload = await ApiService.studentRequest('attendance', token: current.token);
+    final rows = payload['attendance'] as List? ?? const [];
+    return rows.map((row) => StudentAttendanceRecord.fromJson(Map<String, dynamic>.from(row as Map))).toList();
   }
 
   Future<String> downloadResource(int resourceId) async {

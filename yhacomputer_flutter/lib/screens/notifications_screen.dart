@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/notification_model.dart';
 import '../services/notification_sync_service.dart';
@@ -70,6 +71,35 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ..._notifications.map((notification) => notification.syncKey),
       };
     });
+  }
+
+  Future<void> _openAction(NotificationModel notification) async {
+    await _markRead(notification);
+    if (!mounted) return;
+    final raw = notification.actionUrl?.trim() ?? '';
+    if (raw.isEmpty) return;
+    final uri = Uri.tryParse(raw);
+    if (uri == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('This update link is not valid.')));
+      return;
+    }
+    final segments = uri.pathSegments;
+    final courseIndex = segments.indexOf('courses');
+    if (courseIndex >= 0 && segments.length > courseIndex + 1) {
+      final id = int.tryParse(segments[courseIndex + 1]);
+      if (id != null) {
+        Navigator.pushNamed(context, '/courses/:id', arguments: {'id': id});
+        return;
+      }
+    }
+    if (uri.scheme == 'http' || uri.scheme == 'https') {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to open this update link.')));
+      }
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('This update link is not supported.')));
   }
 
   String _displayDate(String? rawValue) {
@@ -182,6 +212,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               arguments: {'id': notification.courseId},
                             );
                           },
+                    onOpenAction: (notification.actionUrl?.trim().isNotEmpty ?? false)
+                        ? () => _openAction(notification)
+                        : null,
                   );
                 },
               ),
@@ -278,6 +311,7 @@ class _NotificationCard extends StatelessWidget {
   final String dateLabel;
   final VoidCallback onTap;
   final VoidCallback? onOpenCourse;
+  final VoidCallback? onOpenAction;
 
   const _NotificationCard({
     required this.notification,
@@ -285,6 +319,7 @@ class _NotificationCard extends StatelessWidget {
     required this.dateLabel,
     required this.onTap,
     this.onOpenCourse,
+    this.onOpenAction,
   });
 
   @override
@@ -393,24 +428,21 @@ class _NotificationCard extends StatelessWidget {
                             color: AppColors.onSurfaceVariant,
                           ),
                         ),
-                        if (onOpenCourse != null) ...[
-                          const Spacer(),
+                        if (onOpenCourse != null || onOpenAction != null) const Spacer(),
+                        if (onOpenCourse != null)
                           TextButton.icon(
                             onPressed: onOpenCourse,
-                            icon: const Icon(
-                              Icons.auto_stories_outlined,
-                              size: 16,
-                            ),
+                            icon: const Icon(Icons.auto_stories_outlined, size: 16),
                             label: const Text('Course'),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              minimumSize: const Size(0, 34),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
+                            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), minimumSize: const Size(0, 34), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                           ),
-                        ],
+                        if (onOpenAction != null)
+                          TextButton.icon(
+                            onPressed: onOpenAction,
+                            icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                            label: const Text('Open'),
+                            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), minimumSize: const Size(0, 34), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                          ),
                       ],
                     ),
                   ],

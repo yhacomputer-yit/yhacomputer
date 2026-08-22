@@ -35,7 +35,12 @@ export default function Register() {
   });
 
   const onChange = (event) => {
-    setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+    const { name, value } = event.target;
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+      ...(name === "course_id" ? { session_id: "" } : {}),
+    }));
   };
 
   const availableSessions = sessions.filter(
@@ -45,8 +50,43 @@ export default function Register() {
   const selectedCourse = courses.find((c) => String(c.id) === String(form.course_id));
   const selectedSession = sessions.find((s) => String(s.id) === String(form.session_id));
 
-  const nextStep = () => setStep((s) => Math.min(s + 1, 3));
-  const prevStep = () => setStep((s) => Math.max(s - 1, 1));
+  const validateCurrentStep = () => {
+    if (step === 1) {
+      if (!form.name.trim() || !form.email.trim() || !form.phone.trim() || !form.password || !form.confirm_password) {
+        setStatus({ type: "error", message: "Complete your name, email, phone, and password before continuing." });
+        return false;
+      }
+      if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) {
+        setStatus({ type: "error", message: "Enter a valid email address." });
+        return false;
+      }
+      if (form.password.length < 8) {
+        setStatus({ type: "error", message: "Password must be at least 8 characters." });
+        return false;
+      }
+      if (form.password !== form.confirm_password) {
+        setStatus({ type: "error", message: "Passwords do not match." });
+        return false;
+      }
+    }
+    if (step === 2) {
+      if (!form.course_id || !form.session_id) {
+        setStatus({ type: "error", message: "Select a course and its class session before continuing." });
+        return false;
+      }
+      if (!availableSessions.some((session) => String(session.id) === String(form.session_id))) {
+        setStatus({ type: "error", message: "Select a session that belongs to the selected course." });
+        return false;
+      }
+    }
+    setStatus({ type: "idle", message: "" });
+    return true;
+  };
+
+  const nextStep = () => {
+    if (validateCurrentStep()) setStep((s) => Math.min(s + 1, 3));
+  };
+  const prevStep = () => { setStatus({ type: "idle", message: "" }); setStep((s) => Math.max(s - 1, 1)); };
 
   const onSubmit = async (event) => {
     event.preventDefault();

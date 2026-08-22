@@ -33,3 +33,12 @@ test("admin API never exposes teacher password hashes in account list responses"
   assert.doesNotMatch(admin, /SELECT a\.\*, t\.name AS teacher_name/);
   assert.match(admin, /Create the teacher account as pending, then generate a password to activate access safely/);
 });
+
+
+test("admin student editing excludes password hashes and system timestamps", async () => {
+  const admin = await source("api/admin.js");
+  const studentTable = admin.match(/students:\s*\[([\s\S]*?)\],\n\s*enrollments:/)?.[1] ?? "";
+  assert.doesNotMatch(studentTable, /password_hash/);
+  assert.doesNotMatch(studentTable, /created_at/);
+  assert.doesNotMatch(studentTable, /updated_at/);
+});

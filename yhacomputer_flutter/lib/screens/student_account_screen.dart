@@ -21,6 +21,11 @@ class _StudentAccountScreenState extends State<StudentAccountScreen> {
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _phone = TextEditingController();
+  final _viber = TextEditingController();
+  final _city = TextEditingController();
+  final _township = TextEditingController();
+  final _birthday = TextEditingController();
+  final _education = TextEditingController();
   final _newPassword = TextEditingController();
   final _confirmPassword = TextEditingController();
   final _note = TextEditingController();
@@ -31,6 +36,7 @@ class _StudentAccountScreenState extends State<StudentAccountScreen> {
   bool _busy = false;
   bool _obscureLogin = true;
   bool _obscureRegister = true;
+  String _gender = '';
   String _message = '';
   bool _isError = false;
 
@@ -42,6 +48,11 @@ class _StudentAccountScreenState extends State<StudentAccountScreen> {
       _name,
       _email,
       _phone,
+      _viber,
+      _city,
+      _township,
+      _birthday,
+      _education,
       _newPassword,
       _confirmPassword,
       _note,
@@ -93,6 +104,12 @@ class _StudentAccountScreenState extends State<StudentAccountScreen> {
         password: _newPassword.text,
         courseId: widget.requestedCourseId,
         studentNote: _note.text,
+        viberPhone: _viber.text,
+        city: _city.text,
+        township: _township.text,
+        birthday: _birthday.text,
+        gender: _gender,
+        education: _education.text,
       );
       _showMessage(message);
       setState(() => _tab = 0);
@@ -258,6 +275,28 @@ class _StudentAccountScreenState extends State<StudentAccountScreen> {
           TextFormField(controller: _email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)), validator: _emailValidator),
           const SizedBox(height: AppSpacing.md),
           TextFormField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone', prefixIcon: Icon(Icons.phone_outlined)), validator: (value) => _required(value, 'Phone')),
+          const SizedBox(height: AppSpacing.sm),
+          AppCard(
+            backgroundColor: AppColors.background,
+            child: ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(top: AppSpacing.sm),
+              leading: const Icon(Icons.contact_page_outlined, color: AppColors.primary),
+              title: const Text('Add profile details (optional)'),
+              subtitle: const Text('Help YHA contact you and prepare your class profile.'),
+              children: [
+                TextFormField(controller: _viber, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Viber phone')),
+                const SizedBox(height: AppSpacing.sm),
+                Row(children: [Expanded(child: TextFormField(controller: _city, decoration: const InputDecoration(labelText: 'City'))), const SizedBox(width: AppSpacing.sm), Expanded(child: TextFormField(controller: _township, decoration: const InputDecoration(labelText: 'Township')))]),
+                const SizedBox(height: AppSpacing.sm),
+                TextFormField(controller: _birthday, keyboardType: TextInputType.datetime, decoration: const InputDecoration(labelText: 'Birthday', hintText: 'YYYY-MM-DD')),
+                const SizedBox(height: AppSpacing.sm),
+                DropdownButtonFormField<String>(value: _gender.isEmpty ? null : _gender, decoration: const InputDecoration(labelText: 'Gender'), items: const [DropdownMenuItem(value: 'Male', child: Text('Male')), DropdownMenuItem(value: 'Female', child: Text('Female')), DropdownMenuItem(value: 'Other', child: Text('Other'))], onChanged: (value) => setState(() => _gender = value ?? '')),
+                const SizedBox(height: AppSpacing.sm),
+                TextFormField(controller: _education, decoration: const InputDecoration(labelText: 'Education')),
+              ],
+            ),
+          ),
           const SizedBox(height: AppSpacing.md),
           TextFormField(
             controller: _newPassword,
