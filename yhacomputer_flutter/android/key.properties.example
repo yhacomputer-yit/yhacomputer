@@ -1,0 +1,6 @@
+# Copy this file to android/key.properties on a secure build machine.
+# Do not commit android/key.properties or the referenced .jks keystore.
+storePassword=REPLACE_WITH_KEYSTORE_PASSWORD
+keyPassword=REPLACE_WITH_KEY_PASSWORD
+keyAlias=yha-upload
+storeFile=/absolute/path/to/yha-computer-upload.jks

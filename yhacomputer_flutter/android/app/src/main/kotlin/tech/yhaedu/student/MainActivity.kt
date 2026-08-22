@@ -1,4 +1,4 @@
-package yha.yhacomputer_flutter
+package tech.yhaedu.student
 
 import io.flutter.embedding.android.FlutterActivity
 
