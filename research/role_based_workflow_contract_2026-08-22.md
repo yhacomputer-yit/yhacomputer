@@ -51,3 +51,9 @@ An admin approves enrollment, assigns a session, sets payment details, activates
 ## Acceptance criteria
 
 A teacher cannot load a course roster, create attendance, create an assignment, or grade a submission for a course that is not assigned through `course_teachers`. A learner cannot see another learner’s attendance or submission. An admin can activate/deactivate teacher access without editing teacher profile data or handling password hashes directly.
+
+## Deployment validation note
+
+On 2026-08-22, the local Vite preview rendered the `/teacher` login page correctly. The production URL `https://www.yha-edu.tech/teacher` still returned the existing application 404 page immediately after the GitHub push, indicating that the public Vercel deployment had not yet picked up commit `108d3c6` at the time of the check. The first request handled by the updated serverless API will run the idempotent `ensureSchema()` migration and create the new teacher-account tables/indexes.
+
+A second production check completed shortly afterward and confirmed that `https://www.yha-edu.tech/teacher` now renders the YHA Teacher Portal login screen successfully.
