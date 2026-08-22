@@ -397,6 +397,98 @@ async function generatePaymentReminders() {
   return { created, checked: rows.length };
 }
 
+async function getStudentDetail(studentId) {
+  const safeId = nullableId(studentId, "Student");
+  if (safeId == null) throw new Error("Missing student id.");
+  const students = await query("SELECT * FROM students WHERE id = ? LIMIT 1", [safeId]);
+  if (!students.length) {
+    const error = new Error("Student not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+  const { password_hash, ...student } = students[0];
+  student.password_set = Boolean(password_hash);
+
+  const [enrollments, attendance, submissions, notifications, passwordResets] = await Promise.all([
+    query(`SELECT e.*, c.title AS course_title, c.price AS course_price,
+      se.name AS session_name, se.start_time AS session_start_time, se.end_time AS session_end_time
+      FROM enrollments e
+      JOIN courses c ON c.id = e.course_id
+      LEFT JOIN sessions se ON se.id = e.session_id
+      WHERE e.student_id = ?
+      ORDER BY e.updated_at DESC, e.id DESC`, [safeId]),
+    query(`SELECT a.*, c.title AS course_title, se.name AS session_name
+      FROM attendance_records a
+      JOIN courses c ON c.id = a.course_id
+      LEFT JOIN sessions se ON se.id = a.session_id
+      WHERE a.student_id = ?
+      ORDER BY a.attendance_date DESC, a.id DESC
+      LIMIT 120`, [safeId]),
+    query(`SELECT s.*, a.title AS assignment_title, a.max_score, a.due_date,
+      c.title AS course_title
+      FROM assignment_submissions s
+      JOIN assignments a ON a.id = s.assignment_id
+      JOIN courses c ON c.id = a.course_id
+      WHERE s.student_id = ?
+      ORDER BY COALESCE(s.submitted_at, s.updated_at, s.created_at) DESC, s.id DESC
+      LIMIT 120`, [safeId]),
+    query(`SELECT n.id, n.title, n.message, n.priority, n.course_id, n.action_url,
+      n.publish_at, n.expires_at, n.created_at,
+      CASE WHEN nr.notification_id IS NULL THEN 0 ELSE 1 END AS is_read
+      FROM notifications n
+      LEFT JOIN notification_reads nr ON nr.notification_id = n.id AND nr.student_id = ?
+      WHERE n.student_id = ? OR n.student_id IS NULL
+      ORDER BY n.created_at DESC, n.id DESC
+      LIMIT 80`, [safeId, safeId]),
+    query(`SELECT id, status, requested_at, resolved_at, resolved_by, created_at, updated_at
+      FROM student_password_resets
+      WHERE student_id = ?
+      ORDER BY requested_at DESC, id DESC
+      LIMIT 40`, [safeId]),
+  ]);
+
+  const enrollmentIds = enrollments.map((row) => Number(row.id)).filter(Number.isInteger);
+  const reminders = enrollmentIds.length
+    ? await query(`SELECT r.*, e.course_id, c.title AS course_title
+      FROM payment_reminders r
+      JOIN enrollments e ON e.id = r.enrollment_id
+      JOIN courses c ON c.id = e.course_id
+      WHERE r.student_id = ?
+      ORDER BY r.scheduled_for DESC, r.id DESC
+      LIMIT 80`, [safeId])
+    : [];
+
+  const payment = enrollments.reduce((summary, enrollment) => {
+    const due = Number(enrollment.payment_due || 0);
+    const paid = Number(enrollment.payment_paid || 0);
+    summary.due += Number.isFinite(due) ? due : 0;
+    summary.paid += Number.isFinite(paid) ? paid : 0;
+    return summary;
+  }, { due: 0, paid: 0 });
+  payment.balance = Math.max(0, payment.due - payment.paid);
+
+  const attendanceSummary = attendance.reduce((summary, record) => {
+    summary.total += 1;
+    if (["present", "late"].includes(String(record.status).toLowerCase())) summary.attended += 1;
+    return summary;
+  }, { total: 0, attended: 0 });
+  attendanceSummary.rate = attendanceSummary.total
+    ? Math.round((attendanceSummary.attended / attendanceSummary.total) * 100)
+    : null;
+
+  return {
+    student,
+    enrollments,
+    payment,
+    attendance,
+    attendance_summary: attendanceSummary,
+    submissions,
+    notifications,
+    password_resets: passwordResets,
+    payment_reminders: reminders,
+  };
+}
+
 function readBody(req) {
   if (req.body && typeof req.body === "object") return Promise.resolve(req.body);
   return new Promise((resolve, reject) => {
@@ -448,6 +540,10 @@ export default async function handler(req, res) {
     const action = req.method === "GET" ? "list" : body.action;
     if (action === "generate_payment_reminders") {
       res.status(200).json(await generatePaymentReminders());
+      return;
+    }
+    if (action === "student_detail") {
+      res.status(200).json(await getStudentDetail(body.id));
       return;
     }
     const table = req.method === "GET" ? req.query.table : body.table;
