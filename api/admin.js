@@ -61,6 +61,7 @@ const TABLES = {
     "image",
     "bio",
   ],
+  teacher_accounts: ["teacher_id", "teacher_code", "status", "last_login_at"],
   course_teachers: [
     "course_id",
     "teacher_id",
@@ -196,6 +197,12 @@ async function ensureStudentExists(studentId) {
   if (!rows.length) throw new Error("Selected student does not exist.");
 }
 
+async function ensureTeacherExists(teacherId) {
+  if (teacherId == null) return;
+  const rows = await query("SELECT id FROM teachers WHERE id = ? LIMIT 1", [teacherId]);
+  if (!rows.length) throw new Error("Selected teacher does not exist.");
+}
+
 async function ensureSessionMatchesCourse(sessionId, courseId) {
   if (sessionId == null) return;
   const rows = await query("SELECT id, course_id FROM sessions WHERE id = ? LIMIT 1", [sessionId]);
@@ -254,6 +261,30 @@ async function normalizeManagedValues(table, values, { creating = false } = {}) 
     }
     if (normalized.sort_order !== undefined) normalized.sort_order = nonNegativeInteger(normalized.sort_order, "Display order");
     if (normalized.is_published !== undefined) normalized.is_published = booleanFlag(normalized.is_published, "Visible to students");
+  }
+
+  if (table === "teacher_accounts") {
+    if (creating || normalized.teacher_id !== undefined) {
+      normalized.teacher_id = nullableId(normalized.teacher_id, "Teacher");
+      if (normalized.teacher_id == null) throw new Error("Teacher is required.");
+      await ensureTeacherExists(normalized.teacher_id);
+    }
+    if (creating || normalized.teacher_code !== undefined) {
+      const fallbackCode = normalized.teacher_id ? `YHT${String(normalized.teacher_id).padStart(4, "0")}` : "";
+      const code = requiredText(normalized.teacher_code || fallbackCode, "Teacher code", 40).toUpperCase();
+      if (!/^[A-Z0-9_-]+$/.test(code)) throw new Error("Teacher code may contain only letters, numbers, hyphens, and underscores.");
+      normalized.teacher_code = code;
+    }
+    if (normalized.status !== undefined) {
+      normalized.status = String(normalized.status).trim().toLowerCase();
+      if (!["pending", "active", "inactive"].includes(normalized.status)) throw new Error("Invalid teacher account status.");
+    } else if (creating) {
+      normalized.status = "pending";
+    }
+    if (creating && normalized.status === "active") {
+      throw new Error("Create the teacher account as pending, then generate a password to activate access safely.");
+    }
+    if (normalized.last_login_at !== undefined) normalized.last_login_at = normalized.last_login_at ? normalizedIsoDate(normalized.last_login_at, "Last login") : null;
   }
 
   if (table === "enrollments") {
@@ -556,7 +587,14 @@ export default async function handler(req, res) {
 
     if (action === "list") {
       let rows;
-      if (table === "enrollments") {
+      if (table === "teacher_accounts") {
+        rows = await query(`SELECT a.id, a.teacher_id, a.teacher_code, a.status, a.last_login_at, a.created_at, a.updated_at,
+          CASE WHEN a.password_hash IS NULL OR a.password_hash = '' THEN 0 ELSE 1 END AS password_set,
+          t.name AS teacher_name, t.email AS teacher_email, t.phone AS teacher_phone, t.specialization AS teacher_specialization
+          FROM teacher_accounts a
+          JOIN teachers t ON t.id = a.teacher_id
+          ORDER BY CASE a.status WHEN 'active' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END, t.name COLLATE NOCASE`);
+      } else if (table === "enrollments") {
         rows = await query(`SELECT e.*, s.student_id AS student_code, s.name AS student_name, s.email AS student_email,
           s.phone AS student_phone, c.title AS course_title, c.price AS course_price, se.name AS session_name
           FROM enrollments e
@@ -622,7 +660,7 @@ export default async function handler(req, res) {
       const assignments = used.map((c) => c + " = ?");
       const argumentsList = used.map((c) => values[c]);
       const now = new Date().toISOString();
-      if (table === "courses" || table === "resources" || table === "enrollments" || table === "student_password_resets" || table === "students") {
+      if (table === "courses" || table === "resources" || table === "enrollments" || table === "student_password_resets" || table === "students" || table === "teacher_accounts") {
         assignments.push("updated_at = ?");
         argumentsList.push(now);
       }
@@ -683,31 +721,25 @@ export default async function handler(req, res) {
     }
 
     if (action === "generate_password") {
-      if (table !== "students") {
-        res.status(400).json({ error: "Password generation is only available for students." });
+      if (table !== "students" && table !== "teacher_accounts") {
+        res.status(400).json({ error: "Password generation is only available for learner or teacher accounts." });
         return;
       }
       const id = body.id;
       if (!id) {
-        res.status(400).json({ error: "Missing student id." });
+        res.status(400).json({ error: "Missing account id." });
         return;
       }
       const newPassword = generatePassword();
       const passwordHash = hashPassword(newPassword);
       const now = new Date().toISOString();
-      await execute(
-        "UPDATE students SET password_hash = ?, updated_at = ? WHERE id = ?",
-        [passwordHash, now, id]
-      );
-      await execute(
-        "UPDATE student_password_resets SET status = 'resolved', resolved_at = ?, resolved_by = ?, updated_at = ? WHERE student_id = ? AND status = 'pending'",
-        [now, "admin", now, id]
-      );
-      res.status(200).json({
-        ok: true,
-        password: newPassword,
-        message: "Password generated successfully.",
-      });
+      if (table === "teacher_accounts") {
+        await execute("UPDATE teacher_accounts SET password_hash = ?, status = 'active', updated_at = ? WHERE id = ?", [passwordHash, now, id]);
+      } else {
+        await execute("UPDATE students SET password_hash = ?, updated_at = ? WHERE id = ?", [passwordHash, now, id]);
+        await execute("UPDATE student_password_resets SET status = 'resolved', resolved_at = ?, resolved_by = ?, updated_at = ? WHERE student_id = ? AND status = 'pending'", [now, "admin", now, id]);
+      }
+      res.status(200).json({ ok: true, password: newPassword, message: "Password generated successfully." });
       return;
     }
 

@@ -6,6 +6,7 @@ const TABLE_COLUMNS = {
   resources: ["course_id", "subject_id", "title", "resource_type", "url", "note", "lesson", "week", "file_size", "download_count", "sort_order", "is_published", "created_at", "updated_at"],
   sessions: ["course_id", "name", "start_time", "end_time", "created_at"],
   teachers: ["name", "email", "phone", "specialization", "image", "bio", "created_at"],
+  teacher_accounts: ["teacher_id", "teacher_code", "password_hash", "status", "last_login_at", "created_at", "updated_at"],
   course_teachers: ["course_id", "teacher_id", "created_at"],
   events: ["title", "description", "date", "venue", "category", "event_type", "duration", "image", "created_at", "updated_at"],
   reviews: ["name", "course_id", "message", "created_at"],
@@ -16,9 +17,9 @@ const TABLE_COLUMNS = {
   student_password_resets: ["student_id", "status", "requested_at", "resolved_at", "resolved_by", "created_at", "updated_at"],
   notification_reads: ["notification_id", "student_id", "read_at"],
   payment_reminders: ["enrollment_id", "student_id", "reminder_type", "scheduled_for", "sent_at", "status", "created_at"],
-  attendance_records: ["enrollment_id", "student_id", "course_id", "session_id", "attendance_date", "status", "note", "marked_by", "created_at", "updated_at"],
-  assignments: ["course_id", "subject_id", "title", "description", "due_date", "max_score", "resource_url", "status", "created_at", "updated_at"],
-  assignment_submissions: ["assignment_id", "student_id", "enrollment_id", "submission_url", "submission_note", "submitted_at", "score", "feedback", "status", "graded_at", "graded_by", "created_at", "updated_at"],
+  attendance_records: ["enrollment_id", "student_id", "course_id", "session_id", "attendance_date", "status", "note", "marked_by", "marked_by_teacher_id", "created_at", "updated_at"],
+  assignments: ["course_id", "subject_id", "title", "description", "due_date", "max_score", "resource_url", "created_by_teacher_id", "status", "created_at", "updated_at"],
+  assignment_submissions: ["assignment_id", "student_id", "enrollment_id", "submission_url", "submission_note", "submitted_at", "score", "feedback", "status", "graded_at", "graded_by", "graded_by_teacher_id", "created_at", "updated_at"],
 };
 
 const CREATE_STATEMENTS = [
@@ -74,6 +75,16 @@ const CREATE_STATEMENTS = [
     image TEXT,
     bio TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS teacher_accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    teacher_id INTEGER NOT NULL UNIQUE REFERENCES teachers(id) ON DELETE CASCADE,
+    teacher_code TEXT NOT NULL UNIQUE,
+    password_hash TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'inactive')),
+    last_login_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
   `CREATE TABLE IF NOT EXISTS course_teachers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -196,6 +207,7 @@ const CREATE_STATEMENTS = [
     status TEXT NOT NULL DEFAULT 'present' CHECK (status IN ('present', 'absent', 'late', 'excused')),
     note TEXT,
     marked_by TEXT,
+    marked_by_teacher_id INTEGER REFERENCES teachers(id) ON DELETE SET NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE(enrollment_id, attendance_date)
@@ -209,6 +221,7 @@ const CREATE_STATEMENTS = [
     due_date TEXT,
     max_score INTEGER NOT NULL DEFAULT 100,
     resource_url TEXT,
+    created_by_teacher_id INTEGER REFERENCES teachers(id) ON DELETE SET NULL,
     status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('draft', 'published', 'closed')),
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -226,6 +239,7 @@ const CREATE_STATEMENTS = [
     status TEXT NOT NULL DEFAULT 'submitted' CHECK (status IN ('draft', 'submitted', 'graded', 'returned')),
     graded_at TEXT,
     graded_by TEXT,
+    graded_by_teacher_id INTEGER REFERENCES teachers(id) ON DELETE SET NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE(assignment_id, student_id)
@@ -245,7 +259,10 @@ const CREATE_STATEMENTS = [
 const INDEX_STATEMENTS = [
   "CREATE INDEX IF NOT EXISTS idx_subjects_course_id ON subjects(course_id)",
   "CREATE INDEX IF NOT EXISTS idx_resources_course_public ON resources(course_id, is_published, sort_order, id)",
+  "CREATE INDEX IF NOT EXISTS idx_resources_subject_id ON resources(subject_id, sort_order, id)",
   "CREATE INDEX IF NOT EXISTS idx_sessions_course_id ON sessions(course_id)",
+  "CREATE INDEX IF NOT EXISTS idx_teacher_accounts_teacher_id ON teacher_accounts(teacher_id, status)",
+  "CREATE INDEX IF NOT EXISTS idx_teacher_accounts_code ON teacher_accounts(teacher_code, status)",
   "CREATE INDEX IF NOT EXISTS idx_course_teachers_course_id ON course_teachers(course_id)",
   "CREATE INDEX IF NOT EXISTS idx_course_teachers_teacher_id ON course_teachers(teacher_id)",
   "CREATE INDEX IF NOT EXISTS idx_reviews_course_id ON reviews(course_id)",
@@ -267,8 +284,10 @@ const INDEX_STATEMENTS = [
   "CREATE INDEX IF NOT EXISTS idx_payment_reminders_student ON payment_reminders(student_id, status, scheduled_for)",
   "CREATE INDEX IF NOT EXISTS idx_attendance_student_date ON attendance_records(student_id, attendance_date DESC)",
   "CREATE INDEX IF NOT EXISTS idx_attendance_course_date ON attendance_records(course_id, attendance_date DESC)",
+  "CREATE INDEX IF NOT EXISTS idx_attendance_marking_teacher ON attendance_records(marked_by_teacher_id, attendance_date DESC)",
   "CREATE INDEX IF NOT EXISTS idx_assignments_course_due ON assignments(course_id, status, due_date)",
   "CREATE INDEX IF NOT EXISTS idx_submissions_student_status ON assignment_submissions(student_id, status, updated_at DESC)",
+  "CREATE INDEX IF NOT EXISTS idx_submissions_grading_teacher ON assignment_submissions(graded_by_teacher_id, updated_at DESC)",
 ];
 
 function toHttpUrl(url) {
@@ -325,7 +344,7 @@ export async function query(sql, args = []) {
 }
 
 function columnType(column) {
-  const numeric = new Set(["id", "student_id", "course_id", "subject_id", "session_id", "teacher_id", "notification_id", "enrollment_id", "assignment_id", "price", "payment_due", "payment_paid", "max_uses", "used_count", "is_read", "is_published", "featured", "sort_order", "enrollment_open", "is_active", "week", "file_size", "download_count", "max_score", "score"]);
+  const numeric = new Set(["id", "student_id", "course_id", "subject_id", "session_id", "teacher_id", "notification_id", "enrollment_id", "assignment_id", "price", "payment_due", "payment_paid", "max_uses", "used_count", "is_read", "is_published", "featured", "sort_order", "enrollment_open", "is_active", "week", "file_size", "download_count", "max_score", "score", "marked_by_teacher_id", "created_by_teacher_id", "graded_by_teacher_id"]);
   return numeric.has(column) ? "INTEGER" : "TEXT";
 }
 

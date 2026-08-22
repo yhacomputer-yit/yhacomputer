@@ -20,6 +20,7 @@ import Register from "./pages/Register.jsx";
 import StudentDashboard from "./pages/StudentDashboard.jsx";
 import Notifications from "./pages/Notifications.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
+import TeacherPortal from "./pages/TeacherPortal.jsx";
 import NotFound from "./pages/NotFound.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -29,6 +30,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             <Route path="/admin/*" element={<AdminDashboard />} />
+            <Route path="/teacher" element={<TeacherPortal />} />
             <Route element={<Layout />}>
               <Route path="/" element={<Home />} />
               <Route path="/courses" element={<Courses />} />
