@@ -1,0 +1,937 @@
+/* CSS Custom Properties */
+:root {
+  --primary-color: #fd6b21;
+  --primary-gradient: linear-gradient(135deg, #eaa666 0%, #eb5a00 100%);
+  --secondary-color: #eab25f;
+  --secondary-gradient: linear-gradient(135deg, #ea6315 0%, #f5576c 100%);
+  --success-color: #e67300;
+  --success-gradient: linear-gradient(135deg, #d28033 0%, #dc7200 100%);
+  --warning-color: #ffeaa7;
+  --danger-color: #fd79a8;
+  --dark-color: #2d3436;
+  --light-color: #ffffff;
+  --gray-100: #f8f9fa;
+  --gray-200: #e9ecef;
+  --gray-300: #dee2e6;
+  --gray-400: #ced4da;
+  --gray-500: #adb5bd;
+  --gray-600: #6c757d;
+  --gray-700: #495057;
+  --gray-800: #343a40;
+  --gray-900: #212529;
+  --border-radius: 12px;
+  --border-radius-lg: 16px;
+  --shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --font-family:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Dark Theme Variables */
+[data-theme="dark"] {
+  --light-color: #1e1e1e;
+  --gray-100: #2d2d30;
+  --gray-200: #3e3e42;
+  --gray-300: #4f4f55;
+  --gray-400: #6f6f75;
+  --gray-500: #8f8f95;
+  --gray-600: #afafb5;
+  --gray-700: #cfcfd5;
+  --gray-800: #e0e0e5;
+  --gray-900: #f0f0f5;
+  --dark-color: #ffffff;
+  --primary-gradient: linear-gradient(135deg, #eaa666 0%, #eb5a00 100%);
+  --secondary-gradient: linear-gradient(135deg, #ea6315 0%, #f5576c 100%);
+  --success-gradient: linear-gradient(135deg, #d28033 0%, #dc7200 100%);
+}
+
+/* Global Styles (scoped to exam-app) */
+.exam-app {
+  box-sizing: border-box;
+  font-family: var(--font-family);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  color: var(--gray-700);
+  user-select: none;
+  min-height: 100vh;
+  margin: 0;
+  line-height: 1.6;
+  transition: var(--transition);
+}
+
+.exam-app * {
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .exam-app {
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+  color: var(--gray-300);
+}
+
+[data-theme="dark"] .exam-app .loading-overlay {
+  background: rgba(26, 26, 26, 0.95);
+}
+
+/* Container */
+.exam-app .container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+/* Loading Overlay */
+.exam-app .loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(10px);
+  transition: var(--transition);
+}
+
+.exam-app .loading-overlay {
+  display: none;
+}
+
+.exam-app .loading-overlay.active {
+  display: flex;
+}
+
+.exam-app .loader {
+  text-align: center;
+  color: var(--primary-color);
+}
+
+.exam-app .spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid var(--gray-200);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Header */
+.exam-app .modern-header {
+  background: var(--light-color);
+  box-shadow: var(--shadow);
+  padding: 1rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  transition: var(--transition);
+}
+
+.exam-app .header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.exam-app .logo {
+  display: flex;
+  align-items: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  gap: 0.5rem;
+}
+
+.exam-app .theme-btn {
+  background: var(--gray-100);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.exam-app .theme-btn:hover {
+  background: var(--gray-200);
+  transform: scale(1.1);
+}
+
+/* Main Container */
+.exam-app .main-container {
+  padding: 2rem 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Welcome Section */
+.exam-app .welcome-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh;
+}
+
+.exam-app .welcome-card {
+  background: var(--light-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  padding: 3rem;
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.exam-app .welcome-icon {
+  font-size: 3rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.exam-app .welcome-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-bottom: 0.5rem;
+}
+
+.exam-app .welcome-subtitle {
+  color: var(--gray-600);
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+/* Input Group */
+.exam-app .input-group-modern {
+  margin-bottom: 2rem;
+}
+
+.exam-app .input-wrapper {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.exam-app .input-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-400);
+  z-index: 2;
+}
+
+.exam-app .form-control-modern {
+  width: 100%;
+  padding: 1rem 1rem 1rem 3rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  background: var(--light-color);
+  color: var(--gray-700);
+  transition: var(--transition);
+}
+
+.exam-app .form-control-modern:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Modern Buttons */
+.exam-app .btn-modern {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.exam-app .btn-modern.btn-primary {
+  background: var(--primary-gradient);
+  color: white;
+  width: 100%;
+  justify-content: center;
+}
+
+.exam-app .btn-modern.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.exam-app .btn-modern.btn-secondary {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+.exam-app .btn-modern.btn-secondary:hover {
+  background: var(--gray-200);
+}
+
+.exam-app .btn-modern.btn-success {
+  background: var(--success-gradient);
+  color: white;
+}
+
+/* Features */
+.exam-app .exam-features {
+  display: flex;
+  justify-content: space-around;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+.exam-app .feature-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--gray-600);
+  font-size: 0.9rem;
+}
+
+.exam-app .feature-item i {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+/* Exam Section */
+.exam-app .exam-section {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.exam-app .exam-section.blur {
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+/* Progress Section */
+.exam-app .progress-section {
+  background: var(--light-color);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow);
+}
+
+.exam-app .progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.exam-app .progress-text {
+  color: var(--gray-700);
+}
+
+.exam-app .exam-id-display {
+  color: var(--primary-color);
+  font-size: 0.9rem;
+}
+
+.exam-app .progress-bar-modern {
+  width: 100%;
+  height: 8px;
+  background: var(--gray-200);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.exam-app .progress-fill {
+  height: 100%;
+  background: var(--primary-gradient);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+/* Question Card */
+.exam-app .question-card {
+  background: var(--light-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 2rem;
+  overflow: hidden;
+}
+
+.exam-app .question-header {
+  background: var(--primary-gradient);
+  color: white;
+  padding: 1.5rem;
+}
+
+.exam-app .question-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.exam-app .question-content {
+  padding: 2rem;
+}
+
+.exam-app .question-content h3 {
+  color: var(--gray-800);
+  margin-bottom: 1rem;
+}
+
+.exam-app .question-content p {
+  color: var(--gray-600);
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.exam-app .question-loading {
+  padding: 3rem;
+  text-align: center;
+  color: var(--gray-500);
+}
+
+/* PDF Card */
+.exam-app .pdf-card {
+  background: var(--light-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 2rem;
+  overflow: hidden;
+}
+
+.exam-app .card-header {
+  background: var(--gray-100);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.exam-app .card-header h3 {
+  margin: 0;
+  color: var(--gray-700);
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.exam-app .pdf-viewer {
+  padding: 1rem;
+  max-height: 600px;
+  overflow-y: auto;
+  position: relative;
+}
+
+.exam-app .pdf-iframe {
+  width: 100%;
+  height: 600px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius);
+  background: var(--gray-50);
+}
+
+.exam-app .pdf-viewer canvas {
+  width: 100%;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius);
+  margin-bottom: 1rem;
+  pointer-events: none;
+}
+
+.exam-app .pdf-fallback {
+  text-align: center;
+  padding: 1rem;
+  background: var(--gray-100);
+  border-radius: var(--border-radius);
+  margin-bottom: 1rem;
+}
+
+[data-theme="dark"] .exam-app .pdf-fallback {
+  background: var(--gray-200);
+}
+
+/* Resources Section */
+.exam-app .resources-section {
+  margin-bottom: 2rem;
+}
+
+.exam-app .resources-card {
+  background: var(--light-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+}
+
+.exam-app .resources-card h3 {
+  margin: 0 0 1rem 0;
+  color: var(--gray-700);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.exam-app .btn-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--success-gradient);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  text-decoration: none;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.exam-app .btn-download:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  color: white;
+  text-decoration: none;
+}
+
+/* Navigation */
+.exam-app .navigation-section {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.exam-app .btn-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.exam-app .btn-nav.btn-primary {
+  background: var(--primary-gradient);
+  color: white;
+  margin-left: auto;
+}
+
+.exam-app .btn-nav.btn-secondary {
+  background: var(--gray-200);
+  color: var(--gray-700);
+}
+
+.exam-app .btn-nav.btn-success {
+  background: var(--success-gradient);
+  color: white;
+  margin-left: auto;
+}
+
+.exam-app .btn-nav:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Modal */
+.exam-app .modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+
+.exam-app .modal.show {
+  display: flex;
+}
+
+.exam-app .modal-dialog {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.exam-app .modal-dialog-centered {
+  display: flex;
+  align-items: center;
+  min-height: 100%;
+}
+
+.exam-app .modal-content {
+  background: var(--light-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.exam-app .modern-modal {
+  border: none;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+.exam-app .modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  color: white;
+}
+
+.exam-app .success-header {
+  background: var(--success-gradient);
+}
+
+.exam-app .success-icon {
+  font-size: 1.5rem;
+}
+
+.exam-app .modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.exam-app .modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.exam-app .modal-body p {
+  margin-bottom: 1rem;
+}
+
+.exam-app .modal-body .text-danger {
+  color: var(--danger-color);
+  font-weight: 600;
+}
+
+.exam-app .exam-summary {
+  background: var(--gray-100);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.exam-app .summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.exam-app .summary-item:last-child {
+  margin-bottom: 0;
+}
+
+.exam-app .summary-item .label {
+  color: var(--gray-600);
+}
+
+.exam-app .summary-item .value {
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.exam-app .summary-item .value div {
+  text-align: right;
+}
+
+.exam-app .modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+/* Timer & Connection Status */
+.exam-app .timer-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.exam-app .timer-display {
+  background: var(--primary-gradient);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: var(--shadow);
+}
+
+.exam-app .timer-display.warning {
+  background: var(--secondary-gradient);
+  animation: pulse 1s infinite;
+}
+
+.exam-app .timer-display.danger {
+  background: var(--danger-color);
+  animation: pulse 0.5s infinite;
+}
+
+.exam-app .connection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--gray-600);
+}
+
+.exam-app .connection-status.online {
+  color: var(--success-color);
+}
+
+.exam-app .connection-status.offline {
+  color: var(--danger-color);
+}
+
+.exam-app .timer-bar-container {
+  width: 100%;
+  height: 4px;
+  background: var(--gray-200);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.exam-app .timer-bar {
+  height: 100%;
+  background: var(--primary-gradient);
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+.exam-app .timer-bar.warning {
+  background: var(--secondary-gradient);
+}
+
+.exam-app .timer-bar.danger {
+  background: linear-gradient(90deg, var(--danger-color), #ff6b6b);
+}
+
+/* Offline Banner */
+.exam-app .offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: var(--warning-color);
+  color: var(--dark-color);
+  z-index: 1001;
+  box-shadow: var(--shadow);
+}
+
+.exam-app .offline-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  font-weight: 600;
+}
+
+.exam-app .sync-btn {
+  background: rgba(0, 0, 0, 0.1);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.exam-app .sync-btn:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Notification Toasts */
+.exam-app .notification-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.exam-app .notification-toast {
+  padding: 1rem 1.5rem;
+  border-radius: var(--border-radius);
+  color: white;
+  font-weight: 600;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transform: translateX(400px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-lg);
+}
+
+.exam-app .notification-toast.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.exam-app .notification-success {
+  background: var(--success-color);
+}
+
+.exam-app .notification-error {
+  background: var(--danger-color);
+}
+
+.exam-app .notification-warning {
+  background: var(--warning-color);
+  color: var(--dark-color);
+}
+
+.exam-app .notification-info {
+  background: var(--primary-color);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .exam-app .main-container {
+    padding: 1rem;
+  }
+
+  .exam-app .welcome-card {
+    padding: 2rem 1.5rem;
+    margin: 1rem;
+  }
+
+  .exam-app .welcome-title {
+    font-size: 2rem;
+  }
+
+  .exam-app .exam-features {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .exam-app .feature-item {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .exam-app .navigation-section {
+    flex-direction: column;
+  }
+
+  .exam-app .btn-nav {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .exam-app .progress-info {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  .exam-app .timer-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .exam-app .question-content {
+    padding: 1.5rem;
+  }
+
+  .exam-app .modal-dialog {
+    margin: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .exam-app .welcome-card {
+    padding: 1.5rem 1rem;
+  }
+
+  .exam-app .welcome-title {
+    font-size: 1.75rem;
+  }
+
+  .exam-app .question-header {
+    padding: 1rem;
+  }
+
+  .exam-app .question-title {
+    font-size: 1.25rem;
+  }
+}

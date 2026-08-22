@@ -1,0 +1,302 @@
+-- YHA Computer canonical schema for Turso / SQLite
+-- Source of truth for local setup and production migrations.
+-- The API also runs the same idempotent schema bootstrap on first request.
+
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS courses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  description TEXT,
+  price INTEGER NOT NULL DEFAULT 0,
+  image TEXT,
+  subject TEXT,
+  level TEXT,
+  duration TEXT,
+  is_published INTEGER NOT NULL DEFAULT 1 CHECK (is_published IN (0, 1)),
+  featured INTEGER NOT NULL DEFAULT 0 CHECK (featured IN (0, 1)),
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  enrollment_open INTEGER NOT NULL DEFAULT 1 CHECK (enrollment_open IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS subjects (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS resources (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
+  title TEXT NOT NULL,
+  resource_type TEXT NOT NULL DEFAULT 'file' CHECK (resource_type IN ('file', 'pdf', 'zip', 'youtube', 'note')),
+  url TEXT,
+  note TEXT,
+  lesson TEXT,
+  week INTEGER NOT NULL DEFAULT 0,
+  file_size INTEGER,
+  download_count INTEGER NOT NULL DEFAULT 0,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  is_published INTEGER NOT NULL DEFAULT 1 CHECK (is_published IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  start_time TEXT,
+  end_time TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS teachers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  specialization TEXT,
+  image TEXT,
+  bio TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS teacher_accounts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  teacher_id INTEGER NOT NULL UNIQUE REFERENCES teachers(id) ON DELETE CASCADE,
+  teacher_code TEXT NOT NULL UNIQUE,
+  password_hash TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'inactive')),
+  last_login_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS course_teachers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  teacher_id INTEGER NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(course_id, teacher_id)
+);
+
+CREATE TABLE IF NOT EXISTS events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  description TEXT,
+  date TEXT,
+  venue TEXT,
+  category TEXT,
+  event_type TEXT,
+  duration TEXT,
+  image TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS reviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  course_id INTEGER REFERENCES courses(id) ON DELETE SET NULL,
+  message TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS contacts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  message TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  message TEXT,
+  student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
+  course_id INTEGER REFERENCES courses(id) ON DELETE SET NULL,
+  priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('normal', 'high', 'urgent')),
+  action_url TEXT,
+  publish_at TEXT,
+  expires_at TEXT,
+  is_read INTEGER NOT NULL DEFAULT 0 CHECK (is_read IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS students (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  student_id TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  father_name TEXT,
+  mother_name TEXT,
+  nrc_number TEXT,
+  register_date TEXT,
+  enroll_date TEXT,
+  viber_phone TEXT,
+  city TEXT,
+  township TEXT,
+  birthday TEXT,
+  gender TEXT,
+  image TEXT,
+  education TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'inactive', 'completed')),
+  course_id INTEGER REFERENCES courses(id) ON DELETE SET NULL,
+  session_id INTEGER REFERENCES sessions(id) ON DELETE SET NULL,
+  password_hash TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS enrollments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE RESTRICT,
+  session_id INTEGER REFERENCES sessions(id) ON DELETE SET NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled', 'completed')),
+  student_note TEXT,
+  admin_note TEXT,
+  payment_status TEXT NOT NULL DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid', 'partial', 'paid', 'waived', 'refunded')),
+  payment_due INTEGER NOT NULL DEFAULT 0,
+  payment_paid INTEGER NOT NULL DEFAULT 0,
+  payment_method TEXT,
+  payment_reference TEXT,
+  payment_date TEXT,
+  payment_due_date TEXT,
+  payment_paid_date TEXT,
+  payment_note TEXT,
+  requested_at TEXT NOT NULL DEFAULT (datetime('now')),
+  reviewed_at TEXT,
+  reviewed_by TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS student_password_resets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'resolved', 'cancelled')),
+  requested_at TEXT NOT NULL DEFAULT (datetime('now')),
+  resolved_at TEXT,
+  resolved_by TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS notification_reads (
+  notification_id INTEGER NOT NULL REFERENCES notifications(id) ON DELETE CASCADE,
+  student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  read_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (notification_id, student_id)
+);
+
+CREATE TABLE IF NOT EXISTS payment_reminders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  enrollment_id INTEGER NOT NULL REFERENCES enrollments(id) ON DELETE CASCADE,
+  student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  reminder_type TEXT NOT NULL DEFAULT 'due_soon',
+  scheduled_for TEXT NOT NULL,
+  sent_at TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'cancelled')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS attendance_records (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  enrollment_id INTEGER NOT NULL REFERENCES enrollments(id) ON DELETE CASCADE,
+  student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  session_id INTEGER REFERENCES sessions(id) ON DELETE SET NULL,
+  attendance_date TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'present' CHECK (status IN ('present', 'absent', 'late', 'excused')),
+  note TEXT,
+  marked_by TEXT,
+  marked_by_teacher_id INTEGER REFERENCES teachers(id) ON DELETE SET NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(enrollment_id, attendance_date)
+);
+
+CREATE TABLE IF NOT EXISTS assignments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  due_date TEXT,
+  max_score INTEGER NOT NULL DEFAULT 100,
+  resource_url TEXT,
+  created_by_teacher_id INTEGER REFERENCES teachers(id) ON DELETE SET NULL,
+  status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('draft', 'published', 'closed')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS assignment_submissions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  assignment_id INTEGER NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
+  student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  enrollment_id INTEGER NOT NULL REFERENCES enrollments(id) ON DELETE CASCADE,
+  submission_url TEXT,
+  submission_note TEXT,
+  submitted_at TEXT,
+  score INTEGER,
+  feedback TEXT,
+  status TEXT NOT NULL DEFAULT 'submitted' CHECK (status IN ('draft', 'submitted', 'graded', 'returned')),
+  graded_at TEXT,
+  graded_by TEXT,
+  graded_by_teacher_id INTEGER REFERENCES teachers(id) ON DELETE SET NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(assignment_id, student_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_subjects_course_id ON subjects(course_id);
+CREATE INDEX IF NOT EXISTS idx_resources_course_public ON resources(course_id, is_published, sort_order, id);
+CREATE INDEX IF NOT EXISTS idx_resources_subject_id ON resources(subject_id, sort_order, id);
+CREATE INDEX IF NOT EXISTS idx_sessions_course_id ON sessions(course_id);
+CREATE INDEX IF NOT EXISTS idx_teacher_accounts_teacher_id ON teacher_accounts(teacher_id, status);
+CREATE INDEX IF NOT EXISTS idx_teacher_accounts_code ON teacher_accounts(teacher_code, status);
+CREATE INDEX IF NOT EXISTS idx_course_teachers_course_id ON course_teachers(course_id);
+CREATE INDEX IF NOT EXISTS idx_course_teachers_teacher_id ON course_teachers(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_course_id ON reviews(course_id);
+CREATE INDEX IF NOT EXISTS idx_courses_public_list ON courses(is_published, featured, sort_order, id);
+CREATE INDEX IF NOT EXISTS idx_notifications_public_feed ON notifications(publish_at, expires_at, id);
+CREATE INDEX IF NOT EXISTS idx_notifications_student_feed ON notifications(student_id, publish_at, id);
+CREATE INDEX IF NOT EXISTS idx_students_course_id ON students(course_id);
+CREATE INDEX IF NOT EXISTS idx_students_session_id ON students(session_id);
+CREATE INDEX IF NOT EXISTS idx_students_status ON students(status);
+CREATE INDEX IF NOT EXISTS idx_contacts_created_at ON contacts(created_at);
+CREATE INDEX IF NOT EXISTS idx_enrollments_student_id ON enrollments(student_id, status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_enrollments_course_id ON enrollments(course_id, status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_enrollments_session_id ON enrollments(session_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_enrollments_one_open_request
+  ON enrollments(student_id, course_id)
+  WHERE status IN ('pending', 'approved');
+CREATE INDEX IF NOT EXISTS idx_password_resets_student_status
+  ON student_password_resets(student_id, status, requested_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payment_reminders_due ON payment_reminders(status, scheduled_for);
+CREATE INDEX IF NOT EXISTS idx_payment_reminders_student ON payment_reminders(student_id, status, scheduled_for);
+CREATE INDEX IF NOT EXISTS idx_attendance_student_date ON attendance_records(student_id, attendance_date DESC);
+CREATE INDEX IF NOT EXISTS idx_attendance_course_date ON attendance_records(course_id, attendance_date DESC);
+CREATE INDEX IF NOT EXISTS idx_attendance_marking_teacher ON attendance_records(marked_by_teacher_id, attendance_date DESC);
+CREATE INDEX IF NOT EXISTS idx_assignments_course_due ON assignments(course_id, status, due_date);
+CREATE INDEX IF NOT EXISTS idx_submissions_student_status ON assignment_submissions(student_id, status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_submissions_grading_teacher ON assignment_submissions(graded_by_teacher_id, updated_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_password_resets_one_pending
+  ON student_password_resets(student_id)
+  WHERE status = 'pending';
+
+-- Existing deployments with students.course_id/session_id as TEXT are repaired by
+-- api/_db.js into integer foreign keys while preserving valid references. Existing
+-- valid student course assignments are backfilled into the enrollments table by
+-- api/_db.js without overwriting enrollment history.
+-- Course curriculum content belongs in the subjects table; the legacy highlights field is not used.

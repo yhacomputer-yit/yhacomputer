@@ -1,25 +1,49 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { formatFee, hasConfirmedFee } from "../utils/formatters.js";
 
-export default function CourseCard({ course }) {
-  const navigate = useNavigate();
-  const go = () => navigate("/courses/" + course.id);
+export default function CourseCard({ course, subjects = [] }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const image = course.image
+    ? /^(https?:|data:)/i.test(course.image)
+      ? course.image
+      : "/" + course.image.replace(/^\/+/, "")
+    : "";
+  const category = course.subject ? [course.subject] : [];
+  const hasFee = hasConfirmedFee(course.price);
+  const hasSubjects = subjects.length > 0;
 
   return (
-    <div className="card course-card-home">
-      {course.image && <img src={"/" + course.image.replace(/^\/+/, "")} alt={course.title} />}
-      {course.level && <span className="level-badge">{course.level}</span>}
-      <h3>{course.title}</h3>
-      <div className="course-info">
-        {course.duration && (
-          <span className="course-info-item">&#9201; {course.duration}</span>
+    <article className="course-card">
+      <Link to={"/courses/" + course.id} className="course-card-media">
+        {image && !imageFailed ? (
+          <img src={image} alt={course.title} loading="lazy" width="400" height="260" onError={() => setImageFailed(true)} />
+        ) : (
+          <span className="course-image-fallback" aria-hidden="true">
+            {(course.title || "Y").charAt(0).toUpperCase()}
+          </span>
         )}
-        {course.price && (
-          <span className="course-info-item price">{course.price}</span>
-        )}
+        {course.level && <span className="course-level">{course.level}</span>}
+      </Link>
+      <div className="course-card-body">
+        {category.length > 0 && <div className="course-kicker">{category.join(" · ")}</div>}
+        <h3>
+          <Link to={"/courses/" + course.id}>{course.title}</Link>
+        </h3>
+        <p className={course.description ? "" : "course-card-placeholder"}>
+          {course.description || "Course details will be announced soon."}
+        </p>
+        <div className="course-card-detail-row">
+          <span>{course.duration || "Schedule to be announced"}</span>
+          <span>{hasSubjects ? subjects.length + " subjects" : "Curriculum pending"}</span>
+        </div>
+        <div className="course-card-footer">
+          <strong className={hasFee ? "" : "course-fee-pending"}>{formatFee(course.price)}</strong>
+          <Link className="circle-link" to={"/courses/" + course.id} aria-label={"View " + course.title}>
+            &rarr;
+          </Link>
+        </div>
       </div>
-      <button className="btn-enroll" onClick={go}>
-        View Details
-      </button>
-    </div>
+    </article>
   );
 }

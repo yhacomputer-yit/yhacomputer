@@ -6,15 +6,19 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:seed": "node scripts/seed-db.js",
+    "db:verify": "node scripts/verify-live-data.js",
+    "db:replace-catalog": "node scripts/replace-catalog-from-facebook.js"
   },
   "dependencies": {
+    "pdfjs-dist": "^6.2.108",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router-dom": "6.26.2"
+    "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "4.3.2",
-    "vite": "5.4.8"
+    "vite": "^5.4.21"
   }
 }
